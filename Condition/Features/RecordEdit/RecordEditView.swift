@@ -13,6 +13,13 @@ struct RecordEditView: View {
     @State private var showDatePicker = false
     @State private var showDeleteAlert = false
 
+    private static let dateTimeFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "ja_JP")
+        f.dateFormat = "yyyy年M月d日（E）HH:mm"
+        return f
+    }()
+
     private var isNewRecord: Bool {
         if case .addNew = vm.mode { return true }
         return false
@@ -172,7 +179,7 @@ struct RecordEditView: View {
                 Text(String(localized: "Field_DateTime", defaultValue: "日時"))
                     .foregroundStyle(.primary)
                 Spacer()
-                Text(vm.dateTime, format: .dateTime.year().month().day().hour().minute())
+                Text(Self.dateTimeFormatter.string(from: vm.dateTime))
                     .foregroundStyle(.secondary)
             }
         }
@@ -265,6 +272,7 @@ struct DatePickerSheet: View {
             )
             .datePickerStyle(.graphical)
             .labelsHidden()
+            .environment(\.locale, Locale(identifier: "ja_JP"))
             .padding()
             .navigationTitle(String(localized: "DatePicker_Title", defaultValue: "日時を選択"))
             .navigationBarTitleDisplayMode(.inline)
