@@ -11,12 +11,16 @@ enum GraphPeriod: Int, CaseIterable {
     case week        = 7
     case month       = 30
     case threeMonths = 90
+    case sixMonths   = 180
+    case year        = 365
 
     var label: String {
         switch self {
-        case .week:        return String(localized: "Period_Week",   defaultValue: "1週")
-        case .month:       return String(localized: "Period_Month",  defaultValue: "1ヶ月")
-        case .threeMonths: return String(localized: "Period_3Month", defaultValue: "3ヶ月")
+        case .week:        return String(localized: "Period_Week",    defaultValue: "1週")
+        case .month:       return String(localized: "Period_Month",   defaultValue: "1ヶ月")
+        case .threeMonths: return String(localized: "Period_3Month",  defaultValue: "3ヶ月")
+        case .sixMonths:   return String(localized: "Period_6Month",  defaultValue: "6ヶ月")
+        case .year:        return String(localized: "Period_1Year",   defaultValue: "1年")
         }
     }
 
@@ -27,6 +31,8 @@ enum GraphPeriod: Int, CaseIterable {
         case .week:        return 7
         case .month:       return 6
         case .threeMonths: return 6
+        case .sixMonths:   return 6
+        case .year:        return 6
         }
     }
 }
@@ -46,7 +52,7 @@ struct GraphView: View {
 
     @State private var showSettings = false
     @State private var limitCount = GraphConstants.graphPageLimit
-    @State private var period: GraphPeriod = .month
+    @State private var period: GraphPeriod = .threeMonths
 
     private var displayRecords: [BodyRecord] {
         Array(records.prefix(limitCount))
@@ -221,7 +227,7 @@ private extension View {
     func standardXAxis(period: GraphPeriod, scrollPosition: Binding<Date>, oldestDate: Date? = nil) -> some View {
         let now = Date()
         // スクロール域: 最古データ（最大1年前）〜現在。これにより確実にスクロール可能になる。
-        let maxLookback = now.addingTimeInterval(-365 * 24 * 3600)
+        let maxLookback = now.addingTimeInterval(-730 * 24 * 3600)
         let domainStart = oldestDate.map { max($0, maxLookback) } ?? now.addingTimeInterval(-TimeInterval(period.domainSeconds))
         let scrollDomain = domainStart...now
 
@@ -323,7 +329,8 @@ struct BpChartView: View {
                 }
                 // 上ライン
                 ForEach(validRecords) { r in
-                    LineMark(x: .value("日時", r.dateTime), y: .value("上", r.nBpHi_mmHg))
+                    LineMark(x: .value("日時", r.dateTime), y: .value("上", r.nBpHi_mmHg),
+                             series: .value("系列", "上"))
                         .foregroundStyle(.red)
                         .lineStyle(StrokeStyle(lineWidth: 2))
                         .interpolationMethod(.catmullRom)
@@ -335,7 +342,8 @@ struct BpChartView: View {
                 }
                 // 下ライン
                 ForEach(validRecords) { r in
-                    LineMark(x: .value("日時", r.dateTime), y: .value("下", r.nBpLo_mmHg))
+                    LineMark(x: .value("日時", r.dateTime), y: .value("下", r.nBpLo_mmHg),
+                             series: .value("系列", "下"))
                         .foregroundStyle(.blue)
                         .lineStyle(StrokeStyle(lineWidth: 2))
                         .interpolationMethod(.catmullRom)
@@ -344,6 +352,15 @@ struct BpChartView: View {
                     PointMark(x: .value("日時", r.dateTime), y: .value("下", r.nBpLo_mmHg))
                         .foregroundStyle(r.dateTime == selectedRecord?.dateTime ? .blue : .blue.opacity(0.5))
                         .symbolSize(r.dateTime == selectedRecord?.dateTime ? 80 : 18)
+                }
+                // 平均血圧ライン (MAP = (上 + 2×下) / 3)
+                ForEach(validRecords) { r in
+                    let map = (r.nBpHi_mmHg + 2 * r.nBpLo_mmHg) / 3
+                    LineMark(x: .value("日時", r.dateTime), y: .value("平均血圧", map),
+                             series: .value("系列", "平均血圧"))
+                        .foregroundStyle(.purple)
+                        .lineStyle(StrokeStyle(lineWidth: 1.5, dash: [4, 2]))
+                        .interpolationMethod(.catmullRom)
                 }
                 // 選択ルール
                 if let sel = selectedRecord {
@@ -379,9 +396,10 @@ struct BpChartView: View {
             // 選択詳細
             if let r = selectedRecord {
                 Divider()
+                let map = (r.nBpHi_mmHg + 2 * r.nBpLo_mmHg) / 3
                 SelectionDetailRow(
                     record: r,
-                    detail: "\(r.nBpHi_mmHg)／\(r.nBpLo_mmHg) mmHg",
+                    detail: "\(r.nBpHi_mmHg)／\(r.nBpLo_mmHg)  平均 \(map) mmHg",
                     color: .red
                 )
             }
