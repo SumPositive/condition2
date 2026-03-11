@@ -32,6 +32,16 @@ final class RecordEditViewModel {
     var nBodyFat_10p: Int
     var nSkMuscle_10p: Int
 
+    // MARK: - 入力有効フラグ
+    var bpHiEnabled:      Bool
+    var bpLoEnabled:      Bool
+    var pulseEnabled:     Bool
+    var weightEnabled:    Bool
+    var tempEnabled:      Bool
+    var pedometerEnabled: Bool
+    var bodyFatEnabled:   Bool
+    var skMuscleEnabled:  Bool
+
     // MARK: - 状態
     var isModified: Bool = false
     var isSaving: Bool = false
@@ -64,6 +74,14 @@ final class RecordEditViewModel {
             nPedometer   = MeasureRange.pedometer.initVal
             nBodyFat_10p  = MeasureRange.bodyFat.initVal
             nSkMuscle_10p = MeasureRange.skMuscle.initVal
+            bpHiEnabled      = true
+            bpLoEnabled      = true
+            pulseEnabled     = true
+            weightEnabled    = true
+            tempEnabled      = true
+            pedometerEnabled = true
+            bodyFatEnabled   = true
+            skMuscleEnabled  = true
 
         case .edit(let record):
             originalRecord = record
@@ -73,14 +91,22 @@ final class RecordEditViewModel {
             sNote1      = record.sNote1
             sNote2      = record.sNote2
             sEquipment  = record.sEquipment
-            nBpHi_mmHg  = record.nBpHi_mmHg
-            nBpLo_mmHg  = record.nBpLo_mmHg
-            nPulse_bpm  = record.nPulse_bpm
-            nTemp_10c   = record.nTemp_10c
-            nWeight_10Kg = record.nWeight_10Kg
-            nPedometer   = record.nPedometer
-            nBodyFat_10p  = record.nBodyFat_10p
-            nSkMuscle_10p = record.nSkMuscle_10p
+            nBpHi_mmHg  = record.nBpHi_mmHg  > 0 ? record.nBpHi_mmHg  : MeasureRange.bpHi.initVal
+            nBpLo_mmHg  = record.nBpLo_mmHg  > 0 ? record.nBpLo_mmHg  : MeasureRange.bpLo.initVal
+            nPulse_bpm  = record.nPulse_bpm   > 0 ? record.nPulse_bpm  : MeasureRange.pulse.initVal
+            nTemp_10c   = record.nTemp_10c    > 0 ? record.nTemp_10c   : MeasureRange.temp.initVal
+            nWeight_10Kg = record.nWeight_10Kg > 0 ? record.nWeight_10Kg : MeasureRange.weight.initVal
+            nPedometer   = record.nPedometer   > 0 ? record.nPedometer  : MeasureRange.pedometer.initVal
+            nBodyFat_10p  = record.nBodyFat_10p  > 0 ? record.nBodyFat_10p  : MeasureRange.bodyFat.initVal
+            nSkMuscle_10p = record.nSkMuscle_10p > 0 ? record.nSkMuscle_10p : MeasureRange.skMuscle.initVal
+            bpHiEnabled      = record.nBpHi_mmHg   > 0
+            bpLoEnabled      = record.nBpLo_mmHg   > 0
+            pulseEnabled     = record.nPulse_bpm    > 0
+            weightEnabled    = record.nWeight_10Kg  > 0
+            tempEnabled      = record.nTemp_10c     > 0
+            pedometerEnabled = record.nPedometer    > 0
+            bodyFatEnabled   = record.nBodyFat_10p  > 0
+            skMuscleEnabled  = record.nSkMuscle_10p > 0
 
         case .goalEdit:
             let settings = AppSettings.shared
@@ -98,6 +124,14 @@ final class RecordEditViewModel {
             nPedometer   = settings.goalPedometer
             nBodyFat_10p  = settings.goalBodyFat
             nSkMuscle_10p = settings.goalSkMuscle
+            bpHiEnabled      = true
+            bpLoEnabled      = true
+            pulseEnabled     = true
+            weightEnabled    = true
+            tempEnabled      = true
+            pedometerEnabled = true
+            bodyFatEnabled   = true
+            skMuscleEnabled  = true
         }
     }
 
@@ -152,6 +186,22 @@ final class RecordEditViewModel {
         }
         if nSkMuscle_10p == MeasureRange.skMuscle.initVal {
             nSkMuscle_10p = allPrev.first { $0.nSkMuscle_10p > 0 }.map { $0.nSkMuscle_10p } ?? MeasureRange.skMuscle.initVal
+        }
+
+        // 直前レコードのスイッチ状態を引き継ぐ
+        let prevBp   = allPrev.filter { $0.nDateOpt == opt }.first ?? allPrev.first
+        let prevBody = allPrev.first
+        if let p = prevBp {
+            bpHiEnabled  = p.nBpHi_mmHg  > 0
+            bpLoEnabled  = p.nBpLo_mmHg  > 0
+            pulseEnabled = p.nPulse_bpm   > 0
+        }
+        if let p = prevBody {
+            weightEnabled    = p.nWeight_10Kg  > 0
+            tempEnabled      = p.nTemp_10c     > 0
+            pedometerEnabled = p.nPedometer    > 0
+            bodyFatEnabled   = p.nBodyFat_10p  > 0
+            skMuscleEnabled  = p.nSkMuscle_10p > 0
         }
     }
 
@@ -214,18 +264,18 @@ final class RecordEditViewModel {
     // MARK: - フィールド適用
 
     private func applyFields(to record: BodyRecord) {
-        record.bCaution     = bCaution
-        record.sNote1       = sNote1
-        record.sNote2       = sNote2
-        record.sEquipment   = sEquipment
-        record.nBpHi_mmHg   = nBpHi_mmHg
-        record.nBpLo_mmHg   = nBpLo_mmHg
-        record.nPulse_bpm   = nPulse_bpm
-        record.nTemp_10c    = nTemp_10c
-        record.nWeight_10Kg = nWeight_10Kg
-        record.nPedometer   = nPedometer
-        record.nBodyFat_10p  = nBodyFat_10p
-        record.nSkMuscle_10p = nSkMuscle_10p
+        record.bCaution      = bCaution
+        record.sNote1        = sNote1
+        record.sNote2        = sNote2
+        record.sEquipment    = sEquipment
+        record.nBpHi_mmHg    = bpHiEnabled      ? nBpHi_mmHg   : 0
+        record.nBpLo_mmHg    = bpLoEnabled      ? nBpLo_mmHg   : 0
+        record.nPulse_bpm    = pulseEnabled     ? nPulse_bpm   : 0
+        record.nTemp_10c     = tempEnabled      ? nTemp_10c    : 0
+        record.nWeight_10Kg  = weightEnabled    ? nWeight_10Kg  : 0
+        record.nPedometer    = pedometerEnabled ? nPedometer   : 0
+        record.nBodyFat_10p  = bodyFatEnabled   ? nBodyFat_10p  : 0
+        record.nSkMuscle_10p = skMuscleEnabled  ? nSkMuscle_10p : 0
     }
 
     // MARK: - カレンダーイベント保存

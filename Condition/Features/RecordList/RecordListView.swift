@@ -146,6 +146,13 @@ private let recordColumns: [(label: String, width: CGFloat)] = [
 // MARK: - カラムヘッダー
 
 struct RecordColumnHeader: View {
+    @Environment(\.verticalSizeClass) private var verticalSizeClass
+
+    private func colWidth(_ index: Int) -> CGFloat {
+        let w = recordColumns[index].width
+        return verticalSizeClass == .compact ? w * 2 : w
+    }
+
     var body: some View {
         HStack(spacing: 4) {
             Text("日時")
@@ -155,16 +162,16 @@ struct RecordColumnHeader: View {
                 .foregroundStyle(.separator)
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 4) {
-                    Text(recordColumns[0].label).frame(width: recordColumns[0].width)
-                    Text(recordColumns[1].label).frame(width: recordColumns[1].width)
-                    Text(recordColumns[2].label).frame(width: recordColumns[2].width)
+                    Text(recordColumns[0].label).frame(width: colWidth(0))
+                    Text(recordColumns[1].label).frame(width: colWidth(1))
+                    Text(recordColumns[2].label).frame(width: colWidth(2))
                     Rectangle().frame(width: 1, height: 14).foregroundStyle(.separator)
-                    Text(recordColumns[3].label).frame(width: recordColumns[3].width)
-                    Text(recordColumns[4].label).frame(width: recordColumns[4].width)
+                    Text(recordColumns[3].label).frame(width: colWidth(3))
+                    Text(recordColumns[4].label).frame(width: colWidth(4))
                     Rectangle().frame(width: 1, height: 14).foregroundStyle(.separator)
-                    Text(recordColumns[5].label).frame(width: recordColumns[5].width)
-                    Text(recordColumns[6].label).frame(width: recordColumns[6].width)
-                    Text(recordColumns[7].label).frame(width: recordColumns[7].width)
+                    Text(recordColumns[5].label).frame(width: colWidth(5))
+                    Text(recordColumns[6].label).frame(width: colWidth(6))
+                    Text(recordColumns[7].label).frame(width: colWidth(7))
                 }
             }
             .fixedSize(horizontal: false, vertical: true)
@@ -178,6 +185,8 @@ struct RecordColumnHeader: View {
 
 struct RecordRowView: View {
     let record: BodyRecord
+
+    @Environment(\.verticalSizeClass) private var verticalSizeClass
 
     private static let dateFormatter: DateFormatter = {
         let f = DateFormatter()
@@ -245,7 +254,7 @@ struct RecordRowView: View {
             .font(.caption.monospacedDigit())
             .foregroundStyle(value.isEmpty ? Color.secondary.opacity(0.4) : .primary)
             .fixedSize(horizontal: true, vertical: false)
-            .scaleEffect(x: 1.0, y: 2.0, anchor: .center)
-            .frame(width: width, height: 32)
+            .scaleEffect(x: verticalSizeClass == .compact ? 2.0 : 1.0, y: 2.0, anchor: .center)
+            .frame(width: verticalSizeClass == .compact ? width * 2 : width, height: 32)
     }
 }
