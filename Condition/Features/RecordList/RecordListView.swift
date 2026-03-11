@@ -74,21 +74,28 @@ struct RecordListView: View {
     // MARK: - リスト
 
     private var listContent: some View {
-        List {
-            ForEach(sections, id: \.yearMonth) { section in
-                Section(header: RecordSectionHeader(yearMonth: section.yearMonth)) {
-                    ForEach(section.records) { record in
-                        RecordRowView(record: record)
-                            .contentShape(Rectangle())
-                            .onTapGesture { editTarget = record }
-                    }
-                    .onDelete { offsets in
-                        deleteRecords(in: section.records, offsets: offsets)
+        VStack(spacing: 0) {
+            RecordColumnHeader()
+                .padding(.horizontal, 16)
+                .padding(.vertical, 3)
+                .background(.bar)
+            Divider()
+            List {
+                ForEach(sections, id: \.yearMonth) { section in
+                    Section(header: RecordSectionHeader(yearMonth: section.yearMonth)) {
+                        ForEach(section.records) { record in
+                            RecordRowView(record: record)
+                                .contentShape(Rectangle())
+                                .onTapGesture { editTarget = record }
+                        }
+                        .onDelete { offsets in
+                            deleteRecords(in: section.records, offsets: offsets)
+                        }
                     }
                 }
             }
+            .listStyle(.plain)
         }
-        .listStyle(.plain)
     }
 
     // MARK: - 削除
@@ -123,6 +130,50 @@ struct RecordSectionHeader: View {
     }
 }
 
+// MARK: - 列幅定義
+
+private let recordColumns: [(label: String, width: CGFloat)] = [
+    ("上",   28),
+    ("下",   28),
+    ("脈拍", 28),
+    ("体重", 44),
+    ("体温", 36),
+    ("歩数", 36),
+    ("体脂肪", 36),
+    ("骨格筋", 36),
+]
+
+// MARK: - カラムヘッダー
+
+struct RecordColumnHeader: View {
+    var body: some View {
+        HStack(spacing: 4) {
+            Text("日時")
+                .frame(width: 44, alignment: .leading)
+            Rectangle()
+                .frame(width: 1, height: 14)
+                .foregroundStyle(.separator)
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 4) {
+                    Text(recordColumns[0].label).frame(width: recordColumns[0].width)
+                    Text(recordColumns[1].label).frame(width: recordColumns[1].width)
+                    Text(recordColumns[2].label).frame(width: recordColumns[2].width)
+                    Rectangle().frame(width: 1, height: 14).foregroundStyle(.separator)
+                    Text(recordColumns[3].label).frame(width: recordColumns[3].width)
+                    Text(recordColumns[4].label).frame(width: recordColumns[4].width)
+                    Rectangle().frame(width: 1, height: 14).foregroundStyle(.separator)
+                    Text(recordColumns[5].label).frame(width: recordColumns[5].width)
+                    Text(recordColumns[6].label).frame(width: recordColumns[6].width)
+                    Text(recordColumns[7].label).frame(width: recordColumns[7].width)
+                }
+            }
+            .fixedSize(horizontal: false, vertical: true)
+        }
+        .font(.caption2)
+        .foregroundStyle(.secondary)
+    }
+}
+
 // MARK: - 行ビュー
 
 struct RecordRowView: View {
@@ -138,56 +189,63 @@ struct RecordRowView: View {
         f.dateFormat = "HH:mm"
         return f
     }()
+    private static let weekdayFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "ja_JP")
+        f.dateFormat = "E"
+        return f
+    }()
 
     var body: some View {
         HStack(spacing: 4) {
             // 日付
             VStack(alignment: .leading, spacing: 0) {
-                Text(Self.dateFormatter.string(from: record.dateTime))
-                    .font(.title3.bold())
-                    .foregroundStyle(record.bCaution ? .red : .primary)
+                HStack(alignment: .firstTextBaseline, spacing: 2) {
+                    Text(Self.dateFormatter.string(from: record.dateTime))
+                        .font(.title3.bold())
+                        .foregroundStyle(record.bCaution ? .red : .primary)
+                    Text(Self.weekdayFormatter.string(from: record.dateTime))
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
                 Text(Self.timeFormatter.string(from: record.dateTime))
                     .font(.caption2)
                     .foregroundStyle(.secondary)
-                Text(record.dateOpt.shortLabel)
+                Text(record.dateOpt.label)
                     .font(.caption2)
                     .foregroundStyle(.secondary)
             }
-            .frame(width: 36, alignment: .leading)
+            .frame(width: 44, alignment: .leading)
 
             Divider()
 
-            // 測定値グリッド
-            Grid(horizontalSpacing: 4, verticalSpacing: 0) {
-                GridRow {
-                    valueCell(record.displayBpHi,   label: "上")
-                    valueCell(record.displayBpLo,   label: "下")
-                    valueCell(record.displayPulse,  label: "脈")
-                    valueCell(record.displayWeight, label: "体重")
-                    valueCell(record.displayTemp,   label: "体温")
-                }
-                GridRow {
-                    valueCell(record.displayPedo,      label: "歩")
-                    valueCell(record.displayBodyFat,   label: "脂")
-                    valueCell(record.displaySkMuscle,  label: "筋")
-                    Color.clear.gridCellColumns(2)
+            // 測定値（1行・横スクロール対応）
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 4) {
+                    valueCell(record.displayBpHi,     width: recordColumns[0].width)
+                    valueCell(record.displayBpLo,     width: recordColumns[1].width)
+                    valueCell(record.displayPulse,    width: recordColumns[2].width)
+                    Divider()
+                    valueCell(record.displayWeight,   width: recordColumns[3].width)
+                    valueCell(record.displayTemp,     width: recordColumns[4].width)
+                    Divider()
+                    valueCell(record.displayPedo,     width: recordColumns[5].width)
+                    valueCell(record.displayBodyFat,  width: recordColumns[6].width)
+                    valueCell(record.displaySkMuscle, width: recordColumns[7].width)
                 }
             }
-            .font(.caption)
         }
-        .padding(.vertical, 2)
+        .font(.caption)
+        .padding(.vertical, 1)
     }
 
     @ViewBuilder
-    private func valueCell(_ value: String, label: String) -> some View {
-        VStack(spacing: 0) {
-            Text(value.isEmpty ? "-" : value)
-                .font(.caption.monospacedDigit())
-                .foregroundStyle(value.isEmpty ? Color.secondary.opacity(0.4) : .primary)
-            Text(label)
-                .font(.system(size: 9))
-                .foregroundStyle(.tertiary)
-        }
-        .frame(minWidth: 30)
+    private func valueCell(_ value: String, width: CGFloat) -> some View {
+        Text(value.isEmpty ? "-" : value)
+            .font(.caption.monospacedDigit())
+            .foregroundStyle(value.isEmpty ? Color.secondary.opacity(0.4) : .primary)
+            .fixedSize(horizontal: true, vertical: false)
+            .scaleEffect(x: 1.0, y: 2.0, anchor: .center)
+            .frame(width: width, height: 32)
     }
 }
