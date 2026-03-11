@@ -22,6 +22,17 @@ enum DateOpt: Int, CaseIterable, Codable {
         }
     }
 
+    var icon: String {
+        switch self {
+        case .wake:         return "sun.horizon.fill"
+        case .rest:         return "heart.fill"
+        case .down:         return "moon.fill"
+        case .sleep:        return "moon.zzz.fill"
+        case .preExercise:  return "figure.run"
+        case .postExercise: return "figure.walk"
+        }
+    }
+
     var shortLabel: String {
         switch self {
         case .wake:         return String(localized: "DateOpt_Wake_Short",         defaultValue: "起")
