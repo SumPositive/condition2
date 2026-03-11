@@ -105,12 +105,11 @@ private struct AZDialScrollArea: View {
                 .onChanged { drag in
                     let delta = drag.translation.width - dragBase
                     // scrollOffset をピクセル単位でリアルタイム更新（滑らかに流れる）
-                    // 右→左ドラッグで値増加（旧実装と同方向）
                     scrollOffset -= delta
                     dragBase = drag.translation.width
 
-                    // pitch ごとに value をスナップ
-                    let targetSteps = Int(scrollOffset / pitch)
+                    // pitch ごとに value をスナップ（符号反転で右ドラッグ＝増加）
+                    let targetSteps = Int(-scrollOffset / pitch)
                     let newValue = Swift.max(min, Swift.min(max, min + targetSteps * step))
                     if newValue != value {
                         value = newValue
@@ -149,7 +148,7 @@ private struct AZDialScrollArea: View {
 
     /// value → スクロールオフセット（px）変換
     private func offsetForValue(_ v: Int) -> CGFloat {
-        CGFloat(v - min) / CGFloat(step) * pitch
+        -CGFloat(v - min) / CGFloat(step) * pitch
     }
 }
 
