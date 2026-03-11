@@ -1,0 +1,56 @@
+name: Condition
+options:
+  bundleIdPrefix: com.azukid
+  deploymentTarget:
+    iOS: "18.0"
+  xcodeVersion: "26.1"
+  swift: "6.0"
+  createIntermediateGroups: true
+
+settings:
+  base:
+    PRODUCT_BUNDLE_IDENTIFIER: com.azukid.AzBodyNote
+    SWIFT_VERSION: 6.0
+    IPHONEOS_DEPLOYMENT_TARGET: 18.0
+    DEVELOPMENT_TEAM: ""
+    SWIFT_STRICT_CONCURRENCY: complete
+    ENABLE_USER_SCRIPT_SANDBOXING: NO
+
+targets:
+  Condition:
+    type: application
+    platform: iOS
+    deploymentTarget: "18.0"
+    sources:
+      - path: Condition
+    resources:
+      - path: Condition/Resources
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.azukid.AzBodyNote
+        INFOPLIST_FILE: Condition/Resources/Info.plist
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        DEVELOPMENT_TEAM: ""
+    entitlements:
+      path: Condition/Resources/Condition.entitlements
+    info:
+      path: Condition/Resources/Info.plist
+      properties:
+        CFBundleName: 健康日記
+        CFBundleDisplayName: 健康日記
+        CFBundleShortVersionString: "2.0.0"
+        CFBundleVersion: "1"
+        UILaunchScreen: {}
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+        NSCalendarsUsageDescription: 健康データをカレンダーに記録するために使用します。
+        NSRemindersUsageDescription: 健康データのリマインダーに使用します。
+
+  ConditionTests:
+    type: bundle.unit-test
+    platform: iOS
+    deploymentTarget: "18.0"
+    sources:
+      - path: ConditionTests
+    dependencies:
+      - target: Condition

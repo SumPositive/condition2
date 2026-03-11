@@ -1,0 +1,51 @@
+// KVSKeys.swift
+// iCloud Key-Value Store キー定数（旧 Global.h の KVS_* 定数群）
+// 既存ユーザーの設定を引き継ぐためキー名は旧コードと完全一致させること
+
+import Foundation
+
+enum KVSKeys {
+    // MARK: - グラフ設定
+    static let settGraphs       = "KVS_SettGraphs"      // グラフパネル順序 (Data: [Int])
+    static let settGraphOneWid  = "KVS_SettGraphOneWid" // 1レコード幅
+    static let settGraphBpMean  = "KVS_SettGraphBpMean" // 平均血圧表示
+    static let settGraphBpPress = "KVS_SettGraphBpPress"// 脈圧表示
+    static let settGraphBMITall = "KVS_SettGraphBMITall"// 身長(cm) for BMI
+
+    // MARK: - 統計設定
+    static let settStatType     = "KVS_SettStatType"    // 統計タイプ (0=Hi-Lo, 1=24H)
+    static let settStatDays     = "KVS_SettStatDays"    // 集計日数
+    static let settStatAvgShow  = "KVS_SettStatAvgShow" // 平均±標準偏差表示
+    static let settStatTimeLine = "KVS_SettStatTimeLine"// 時系列線表示
+    static let settStat24HLine  = "KVS_SettStat24H_Line"// 24H線表示
+
+    // MARK: - 機能切替
+    static let bGoal            = "KVS_bGoal"           // 目標値機能
+    static let bCalender        = "KVS_bCalender"       // カレンダー連携
+
+    // MARK: - 日付オプション時刻（前後2時間で自動判定）
+    static let dateOptWakeHour  = "KVS_DateOptWake_HOUR"
+    static let dateOptRestHour  = "KVS_DateOptRest_HOUR"
+    static let dateOptDownHour  = "KVS_DateOptDown_HOUR"
+    static let dateOptSleepHour = "KVS_DateOptSleep_HOUR"
+
+    // MARK: - 目標値（iCloud KVS 全デバイス共通）
+    static let goalBpHi      = "Goal_nBpHi_mmHg"
+    static let goalBpLo      = "Goal_nBpLo_mmHg"
+    static let goalPulse     = "Goal_nPulse_bpm"
+    static let goalWeight    = "Goal_nWeight_10Kg"
+    static let goalTemp      = "Goal_nTemp_10c"
+    static let goalPedometer = "Goal_nPedometer"
+    static let goalBodyFat   = "Goal_nBodyFat_10p"
+    static let goalSkMuscle  = "Goal_nSkMuscle_10p"
+
+    // MARK: - 購入状態（KVSにも保存）
+    static let unlockProductID = "com.azukid.AzBodyNote.Unlock"
+}
+
+enum UDefKeys {
+    // MARK: - UserDefaults（デバイス個別設定）
+    static let calendarID    = "UDEF_CalendarID"
+    static let calendarTitle = "UDEF_CalendarTitle"
+    static let migrationDone = "MigrationV2Done"    // CoreData→SwiftData移行完了フラグ
+}
