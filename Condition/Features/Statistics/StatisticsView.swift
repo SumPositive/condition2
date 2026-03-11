@@ -69,6 +69,9 @@ struct StatisticsView: View {
                     Bp24HChartView(records: targetRecords)
                 }
 
+                // JSH 血圧分布
+                BpJshView(records: targetRecords)
+
                 // 統計サマリー
                 statSummaryView
             }
@@ -143,6 +146,115 @@ struct StatisticsView: View {
     }
 }
 
+// MARK: - JSH 血圧分布バー＋散布図
+
+struct BpJshView: View {
+    let records: [BodyRecord]
+
+    private var validRecords: [BodyRecord] {
+        records.filter { $0.nBpHi_mmHg > 0 && $0.nBpLo_mmHg > 0 }
+    }
+
+    var body: some View {
+        guard !validRecords.isEmpty else { return AnyView(EmptyView()) }
+        return AnyView(
+            VStack(alignment: .leading, spacing: 10) {
+                Text(String(localized: "Stat_JshDist_Title", defaultValue: "血圧分布（JSH基準）"))
+                    .font(.headline)
+                    .padding(.horizontal)
+
+                // 分布バー（上・下）
+                VStack(spacing: 6) {
+                    BpDistributionBar(label: "上", color: .red,
+                                      values: validRecords.map(\.nBpHi_mmHg),
+                                      zones: bpHiZones, barMin: 80, barMax: 220)
+                    BpDistributionBar(label: "下", color: .blue,
+                                      values: validRecords.map(\.nBpLo_mmHg),
+                                      zones: bpLoZones, barMin: 40, barMax: 140)
+                }
+                .padding(.horizontal)
+
+                // JSH 区分凡例
+                let jshLegend: [(name: String, color: Color)] = [
+                    ("正常血圧",   Color(red: 0.18, green: 0.65, blue: 0.28)),
+                    ("正常高値",   Color(red: 0.45, green: 0.72, blue: 0.28)),
+                    ("高値血圧",   Color(red: 0.85, green: 0.72, blue: 0.10)),
+                    ("高血圧I度",  Color.orange),
+                    ("高血圧II度", Color(red: 0.90, green: 0.30, blue: 0.10)),
+                    ("高血圧III度",Color(red: 0.75, green: 0.10, blue: 0.10)),
+                ]
+                LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())],
+                          spacing: 4) {
+                    ForEach(jshLegend, id: \.name) { item in
+                        HStack(spacing: 5) {
+                            RoundedRectangle(cornerRadius: 3)
+                                .fill(item.color)
+                                .frame(width: 12, height: 12)
+                            Text(item.name)
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                            Spacer()
+                        }
+                    }
+                }
+                .padding(.horizontal)
+
+                // 散布図（上 vs 下、JSHゾーン背景＋カラードット）
+                Chart {
+                    // 上（収縮期）ゾーン帯：横方向
+                    ForEach(bpHiZones, id: \.min) { z in
+                        RectangleMark(
+                            xStart: .value("", 40), xEnd: .value("", 130),
+                            yStart: .value("", max(z.min, 70)),
+                            yEnd:   .value("", min(z.max, 210))
+                        )
+                        .foregroundStyle(z.color)
+                    }
+                    // 下（拡張期）ゾーン帯：縦方向（上ゾーンより薄く重ねる）
+                    ForEach(bpLoZones, id: \.min) { z in
+                        RectangleMark(
+                            xStart: .value("", max(z.min, 40)),
+                            xEnd:   .value("", min(z.max, 130)),
+                            yStart: .value("", 70), yEnd: .value("", 210)
+                        )
+                        .foregroundStyle(z.color.opacity(0.5))
+                    }
+                    // データ点
+                    ForEach(validRecords) { r in
+                        PointMark(
+                            x: .value("下", r.nBpLo_mmHg),
+                            y: .value("上", r.nBpHi_mmHg)
+                        )
+                        .foregroundStyle(jshColor(hi: r.nBpHi_mmHg, lo: r.nBpLo_mmHg))
+                        .symbolSize(32)
+                    }
+                }
+                .chartXScale(domain: 40...130)
+                .chartYScale(domain: 70...210)
+                .chartXAxisLabel(String(localized: "Stat_BpLo", defaultValue: "下（拡張期）mmHg"))
+                .chartYAxisLabel(String(localized: "Stat_BpHi", defaultValue: "上（収縮期）mmHg"))
+                .chartXAxis {
+                    AxisMarks(values: [60, 80, 100, 120]) { value in
+                        AxisGridLine().foregroundStyle(.gray.opacity(0.15))
+                        AxisValueLabel { if let v = value.as(Int.self) { Text("\(v)").font(.caption2) } }
+                    }
+                }
+                .chartYAxis {
+                    AxisMarks(position: .leading, values: [80, 100, 120, 140, 160, 180, 200]) { value in
+                        AxisGridLine().foregroundStyle(.gray.opacity(0.15))
+                        AxisValueLabel { if let v = value.as(Int.self) { Text("\(v)").font(.caption2) } }
+                    }
+                }
+                .frame(height: 220)
+                .padding(.horizontal)
+            }
+            .padding(.vertical, 8)
+            .background(.background.secondary)
+            .clipShape(RoundedRectangle(cornerRadius: 12))
+        )
+    }
+}
+
 // MARK: - 血圧 Hi-Lo 散布図（旧 statDispersalHiLo 相当）
 
 struct BpDispersionChartView: View {
@@ -168,8 +280,8 @@ struct BpDispersionChartView: View {
                     .symbolSize(40)
                 }
             }
-            .chartXAxisLabel(String(localized: "Stat_BpLo", defaultValue: "下（mmHg）"))
-            .chartYAxisLabel(String(localized: "Stat_BpHi", defaultValue: "上（mmHg）"))
+            .chartXAxisLabel(String(localized: "Stat_BpLo", defaultValue: "下（拡張期）mmHg"))
+            .chartYAxisLabel(String(localized: "Stat_BpHi", defaultValue: "上（収縮期）mmHg"))
             .frame(height: 220)
             .padding(.horizontal)
 

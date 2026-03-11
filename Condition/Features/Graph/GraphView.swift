@@ -218,6 +218,104 @@ private struct SelectionDetailRow: View {
     }
 }
 
+// MARK: - JSH 血圧区分
+
+struct BpZone {
+    let min: Int; let max: Int; let color: Color
+}
+
+/// JSH 2019 基準による血圧区分カラー（上・下の高い方で分類）
+func jshColor(hi: Int, lo: Int) -> Color {
+    if hi >= 180 || lo >= 110 { return Color(red: 0.75, green: 0.10, blue: 0.10) }
+    if hi >= 160 || lo >= 100 { return Color(red: 0.90, green: 0.30, blue: 0.10) }
+    if hi >= 140 || lo >= 90  { return .orange }
+    if hi >= 130 || lo >= 80  { return Color(red: 0.85, green: 0.72, blue: 0.10) }
+    if hi >= 120              { return Color(red: 0.45, green: 0.72, blue: 0.28) }
+    return Color(red: 0.18, green: 0.65, blue: 0.28)
+}
+
+let bpHiZones: [BpZone] = [
+    .init(min:  80, max: 120, color: Color(red: 0.18, green: 0.65, blue: 0.28).opacity(0.28)),
+    .init(min: 120, max: 130, color: Color(red: 0.45, green: 0.72, blue: 0.28).opacity(0.30)),
+    .init(min: 130, max: 140, color: Color(red: 0.85, green: 0.72, blue: 0.10).opacity(0.35)),
+    .init(min: 140, max: 160, color: Color.orange.opacity(0.38)),
+    .init(min: 160, max: 180, color: Color(red: 0.90, green: 0.30, blue: 0.10).opacity(0.38)),
+    .init(min: 180, max: 220, color: Color(red: 0.75, green: 0.10, blue: 0.10).opacity(0.42)),
+]
+
+let bpLoZones: [BpZone] = [
+    .init(min:  40, max:  80, color: Color(red: 0.18, green: 0.65, blue: 0.28).opacity(0.28)),
+    .init(min:  80, max:  90, color: Color(red: 0.85, green: 0.72, blue: 0.10).opacity(0.35)),
+    .init(min:  90, max: 100, color: Color.orange.opacity(0.38)),
+    .init(min: 100, max: 110, color: Color(red: 0.90, green: 0.30, blue: 0.10).opacity(0.38)),
+    .init(min: 110, max: 140, color: Color(red: 0.75, green: 0.10, blue: 0.10).opacity(0.42)),
+]
+
+// MARK: - 血圧分布バー
+
+/// JSH ゾーン背景 + 測定範囲カプセル + 平均マーカーを Canvas で描画する横バー
+struct BpDistributionBar: View {
+    let label: String
+    let color: Color
+    let values: [Int]
+    let zones: [BpZone]
+    let barMin: Int
+    let barMax: Int
+
+    private var minVal: Int? { values.min() }
+    private var maxVal: Int? { values.max() }
+    private var avgVal: Int? {
+        guard !values.isEmpty else { return nil }
+        return values.reduce(0, +) / values.count
+    }
+
+    var body: some View {
+        HStack(spacing: 8) {
+            Text(label)
+                .font(.caption2.bold())
+                .foregroundStyle(color)
+                .frame(width: 14, alignment: .center)
+
+            Canvas { ctx, size in
+                let w = size.width; let h = size.height
+                let span = CGFloat(barMax - barMin)
+                func xf(_ v: Int) -> CGFloat { CGFloat(v - barMin) / span * w }
+
+                // カプセル形にクリップ
+                ctx.clip(to: Path(roundedRect: CGRect(origin: .zero, size: size), cornerRadius: h / 2))
+
+                // ゾーン背景
+                for z in zones {
+                    let x0 = xf(max(z.min, barMin))
+                    let x1 = xf(min(z.max, barMax))
+                    guard x1 > x0 else { continue }
+                    ctx.fill(Path(CGRect(x: x0, y: 0, width: x1 - x0, height: h)), with: .color(z.color))
+                }
+
+                // 測定範囲カプセル（min〜max）
+                if let mn = minVal, let mx = maxVal, mx > mn {
+                    let rx = xf(mn); let rw = max(6, xf(mx) - rx)
+                    ctx.fill(
+                        Path(roundedRect: CGRect(x: rx, y: 2, width: rw, height: h - 4), cornerRadius: (h - 4) / 2),
+                        with: .color(color.opacity(0.45))
+                    )
+                }
+
+                // 平均マーカー（白抜き円）
+                if let avg = avgVal {
+                    let cx = xf(avg); let cy = h / 2; let r: CGFloat = 5
+                    ctx.fill(Path(ellipseIn: CGRect(x: cx - r, y: cy - r, width: r * 2, height: r * 2)),
+                             with: .color(.white))
+                    ctx.stroke(Path(ellipseIn: CGRect(x: cx - r + 1, y: cy - r + 1,
+                                                      width: (r - 1) * 2, height: (r - 1) * 2)),
+                               with: .color(color), lineWidth: 1.5)
+                }
+            }
+            .frame(height: 16)
+        }
+    }
+}
+
 // MARK: - 共通 X 軸モディファイア
 
 private extension View {
@@ -403,6 +501,7 @@ struct BpChartView: View {
                     color: .red
                 )
             }
+
         }
     }
 }
