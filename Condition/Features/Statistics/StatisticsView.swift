@@ -190,10 +190,12 @@ struct BpDispersionChartView: View {
 
     private func dateOptColor(_ opt: DateOpt) -> Color {
         switch opt {
-        case .wake:  return .green
-        case .rest:  return .blue
-        case .down:  return .orange
-        case .sleep: return .purple
+        case .wake:         return .green
+        case .rest:         return .blue
+        case .down:         return .orange
+        case .sleep:        return .purple
+        case .preExercise:  return .teal
+        case .postExercise: return .red
         }
     }
 }
