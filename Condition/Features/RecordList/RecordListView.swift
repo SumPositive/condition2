@@ -263,40 +263,40 @@ struct RecordRowView: View {
             Divider()
                 .padding(.vertical, 8)
 
-            // 測定値（利用可能幅に応じた間隔、最小8ptで横スクロール）
+            // 測定値（行全体の高さを使い、縦線を外側と揃える）
             GeometryReader { proxy in
+                let h = proxy.size.height
                 let compact = verticalSizeClass == .compact
                 let cellTotal = recordColumns.reduce(0.0) { $0 + $1.width } * (compact ? 2.0 : 1.0)
                 let spacing = max(-4, (proxy.size.width - 4 - cellTotal - 2) / 9)
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: spacing) {
-                        valueCell(record.displayBpHi,     width: recordColumns[0].width)
-                        valueCell(record.displayBpLo,     width: recordColumns[1].width)
-                        valueCell(record.displayPulse,    width: recordColumns[2].width)
+                        valueCell(record.displayBpHi,     width: recordColumns[0].width, height: h)
+                        valueCell(record.displayBpLo,     width: recordColumns[1].width, height: h)
+                        valueCell(record.displayPulse,    width: recordColumns[2].width, height: h)
                         Divider().padding(.vertical, 8)
-                        valueCell(record.displayWeight,   width: recordColumns[3].width)
-                        valueCell(record.displayTemp,     width: recordColumns[4].width)
+                        valueCell(record.displayWeight,   width: recordColumns[3].width, height: h)
+                        valueCell(record.displayTemp,     width: recordColumns[4].width, height: h)
                         Divider().padding(.vertical, 8)
-                        valueCell(record.displayPedo,     width: recordColumns[5].width)
-                        valueCell(record.displayBodyFat,  width: recordColumns[6].width)
-                        valueCell(record.displaySkMuscle, width: recordColumns[7].width)
+                        valueCell(record.displayPedo,     width: recordColumns[5].width, height: h)
+                        valueCell(record.displayBodyFat,  width: recordColumns[6].width, height: h)
+                        valueCell(record.displaySkMuscle, width: recordColumns[7].width, height: h)
                     }
                     .padding(.leading, 4)
                 }
             }
-            .frame(height: 32)
         }
         .font(.caption)
         .padding(.vertical, 1)
     }
 
     @ViewBuilder
-    private func valueCell(_ value: String, width: CGFloat) -> some View {
+    private func valueCell(_ value: String, width: CGFloat, height: CGFloat = 32) -> some View {
         Text(value.isEmpty ? "-" : value)
             .font(.caption.monospacedDigit())
             .foregroundStyle(value.isEmpty ? Color.secondary.opacity(0.4) : .primary)
             .fixedSize(horizontal: true, vertical: false)
             .scaleEffect(x: verticalSizeClass == .compact ? 2.0 : 1.0, y: 2.0, anchor: .center)
-            .frame(width: verticalSizeClass == .compact ? width * 2 : width, height: 32)
+            .frame(width: verticalSizeClass == .compact ? width * 2 : width, height: height)
     }
 }
