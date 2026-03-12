@@ -27,7 +27,7 @@ struct StatisticsView: View {
     }
 
     private var effectiveDays: Int {
-        settings.isUnlocked ? settings.statDays : min(settings.statDays, GraphConstants.statDaysFree)
+        settings.statDays
     }
 
     var body: some View {

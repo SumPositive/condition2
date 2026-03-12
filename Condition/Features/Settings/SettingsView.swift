@@ -2,19 +2,16 @@
 // 設定メイン画面（旧 SettingTVC 相当）
 
 import SwiftUI
-import StoreKit
 
 struct SettingsView: View {
 
     @State private var settings = AppSettings.shared
-    @State private var purchase = PurchaseService.shared
     @State private var calendar = CalendarService.shared
     @State private var showGraphSettings = false
     @State private var showStatSettings  = false
     @State private var showCalendarSettings = false
     @State private var showGoalSettings  = false
     @State private var showAbout         = false
-    @State private var showPurchaseAlert = false
 
     var body: some View {
         NavigationStack {
@@ -86,37 +83,6 @@ struct SettingsView: View {
                     )
                 }
 
-                // MARK: - プレミアム
-                Section(String(localized: "Settings_Premium", defaultValue: "プレミアム")) {
-                    if settings.isUnlocked {
-                        Label(
-                            String(localized: "Settings_Unlocked", defaultValue: "プレミアム版 購入済み"),
-                            systemImage: "checkmark.seal.fill"
-                        )
-                        .foregroundStyle(.green)
-                    } else {
-                        Button {
-                            Task { await purchase.purchase() }
-                        } label: {
-                            Label(
-                                String(localized: "Settings_Purchase", defaultValue: "プレミアム版を購入"),
-                                systemImage: "lock.open"
-                            )
-                        }
-                        Button {
-                            Task { await purchase.restore() }
-                        } label: {
-                            Text(String(localized: "Settings_Restore", defaultValue: "購入を復元"))
-                                .foregroundStyle(.secondary)
-                        }
-                        if let product = purchase.product {
-                            Text(product.displayPrice)
-                                .font(.caption)
-                                .foregroundStyle(.tertiary)
-                        }
-                    }
-                }
-
                 // MARK: - アプリ情報
                 Section {
                     NavigationLink {
@@ -127,10 +93,6 @@ struct SettingsView: View {
                 }
             }
             .navigationTitle(String(localized: "Tab_Settings", defaultValue: "設定"))
-            .task {
-                await purchase.checkStatus()
-                await purchase.loadProduct()
-            }
         }
     }
 
@@ -198,18 +160,12 @@ struct StatSettingsView: View {
             }
 
             Section(String(localized: "StatSett_Days", defaultValue: "集計期間")) {
-                let max = settings.isUnlocked ? GraphConstants.statDaysMax : GraphConstants.statDaysFree
                 Stepper(
                     "\(settings.statDays) 日間",
                     value: $settings.statDays,
-                    in: 1...max,
+                    in: 1...GraphConstants.statDaysMax,
                     step: 1
                 )
-                if !settings.isUnlocked {
-                    Text(String(localized: "StatSett_FreeLimit", defaultValue: "最大7日（プレミアム版で70日まで）"))
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
             }
 
             Section(String(localized: "StatSett_Options", defaultValue: "表示オプション")) {

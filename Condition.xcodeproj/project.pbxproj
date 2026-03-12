@@ -27,7 +27,6 @@
 		D6C3A1A72F3E9B12734FC1FB /* GraphView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4066E230081BA97894E9514C /* GraphView.swift */; };
 		E88A92888F6AFD1FB7DFFC9F /* ModelContainer+Setup.swift in Sources */ = {isa = PBXBuildFile; fileRef = 86715F6F24A9840913D72CC6 /* ModelContainer+Setup.swift */; };
 		F15A862490DED9463FCB6F26 /* DateOpt.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E16A771447D302CDF593C00 /* DateOpt.swift */; };
-		F4AA1628BBE1627E20F7486E /* PurchaseService.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA88E71FEFA5A368FF87D697 /* PurchaseService.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -60,7 +59,6 @@
 		A14BB534396221BF4A8DD998 /* ValueFormatter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ValueFormatter.swift; sourceTree = "<group>"; };
 		B6FE488F42254CBC37C55F0C /* Condition.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Condition.entitlements; sourceTree = "<group>"; };
 		D11FAFC4E99DE815E66D2AEB /* MigrationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MigrationService.swift; sourceTree = "<group>"; };
-		DA88E71FEFA5A368FF87D697 /* PurchaseService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PurchaseService.swift; sourceTree = "<group>"; };
 		DB9225443B8D3A26F9D99025 /* BodyRecord.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BodyRecord.swift; sourceTree = "<group>"; };
 		E0E6E18224DAB54321E46951 /* AppSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSettings.swift; sourceTree = "<group>"; };
 		E5D0A6B773C8E379750D8D5B /* KVSKeys.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KVSKeys.swift; sourceTree = "<group>"; };
@@ -223,8 +221,7 @@
 			isa = PBXGroup;
 			children = (
 				1A3227D808998C73CE3FEADB /* CalendarService.swift */,
-				DA88E71FEFA5A368FF87D697 /* PurchaseService.swift */,
-			);
+				);
 			path = Services;
 			sourceTree = "<group>";
 		};
@@ -345,8 +342,7 @@
 				2CCB75F6B884B4807D49F2DD /* KVSKeys.swift in Sources */,
 				CC257634A8AF415F5F40872E /* MigrationService.swift in Sources */,
 				E88A92888F6AFD1FB7DFFC9F /* ModelContainer+Setup.swift in Sources */,
-				F4AA1628BBE1627E20F7486E /* PurchaseService.swift in Sources */,
-				B01892399930A51751ED92F1 /* RecordEditView.swift in Sources */,
+					B01892399930A51751ED92F1 /* RecordEditView.swift in Sources */,
 				42832198D0789A3EEE5E6B66 /* RecordEditViewModel.swift in Sources */,
 				1051435A3366B5694C9B71EC /* RecordListView.swift in Sources */,
 				26B161A5280A5687C622C649 /* SettingsView.swift in Sources */,

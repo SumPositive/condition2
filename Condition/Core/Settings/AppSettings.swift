@@ -107,8 +107,8 @@ final class AppSettings {
         set { ud.set(newValue, forKey: UDefKeys.calendarTitle) }
     }
 
-    // MARK: - 購入状態
-    var isUnlocked: Bool = false
+    // MARK: - 購入状態（制限解除済み）
+    let isUnlocked: Bool = true
 
     // MARK: - 初期化
 
@@ -174,7 +174,6 @@ final class AppSettings {
         let gsk = kvs.longLong(forKey: KVSKeys.goalSkMuscle)
         if gsk > 0 { goalSkMuscle = Int(gsk) }
 
-        isUnlocked = kvs.bool(forKey: KVSKeys.unlockProductID)
     }
 
     @objc private func kvsDidChangeExternally(_ notification: Notification) {
