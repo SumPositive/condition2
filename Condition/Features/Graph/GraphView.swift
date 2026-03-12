@@ -356,6 +356,21 @@ private extension View {
     }
 }
 
+// MARK: - 日次集計ヘルパー構造体
+
+private struct DailyBpAvg: Identifiable {
+    let date: Date
+    let mean: Double
+    let pp: Double
+    var id: Date { date }
+}
+
+private struct DailyLineValue: Identifiable {
+    let date: Date
+    let avg: Double
+    var id: Date { date }
+}
+
 // MARK: - 血圧グラフパネル
 
 private struct DailyBp: Identifiable {
@@ -536,23 +551,24 @@ struct BpAverageChartView: View {
     let showMean: Bool
     let showPP: Bool
 
+    private let cal = Calendar.current
     @State private var selectedDate: Date?
     @State private var scrollPosition: Date = Date()
 
-    private var periodStart: Date {
-        Calendar.current.date(byAdding: .day, value: -period.rawValue, to: Date()) ?? Date()
-    }
+    private func dayStart(_ date: Date) -> Date { cal.startOfDay(for: date) }
 
     private var validRecords: [BodyRecord] {
         records.filter { $0.nBpHi_mmHg > 0 && $0.nBpLo_mmHg > 0 }
             .sorted { $0.dateTime < $1.dateTime }
     }
 
-    private var selectedRecord: BodyRecord? {
-        guard let date = selectedDate else { return nil }
-        return validRecords.min(by: {
-            abs($0.dateTime.timeIntervalSince(date)) < abs($1.dateTime.timeIntervalSince(date))
-        })
+    private var dailyBpAvg: [DailyBpAvg] {
+        let grouped = Dictionary(grouping: validRecords) { dayStart($0.dateTime) }
+        return grouped.map { date, recs in
+            let mean = Double(recs.map { ($0.nBpHi_mmHg + $0.nBpLo_mmHg * 2) / 3 }.reduce(0, +)) / Double(recs.count)
+            let pp   = Double(recs.map { $0.nBpHi_mmHg - $0.nBpLo_mmHg }.reduce(0, +)) / Double(recs.count)
+            return DailyBpAvg(date: date, mean: mean, pp: pp)
+        }.sorted { $0.date < $1.date }
     }
 
     private var meanValues: [(record: BodyRecord, value: Int)] {
@@ -562,8 +578,14 @@ struct BpAverageChartView: View {
         validRecords.map { r in (r, r.nBpHi_mmHg - r.nBpLo_mmHg) }
     }
 
-    private var latestMean: Int? { meanValues.last?.value }
-    private var latestPP: Int?   { ppValues.last?.value }
+    private var selectedDayRecords: [BodyRecord] {
+        guard let date = selectedDate else { return [] }
+        let target = dayStart(date)
+        return validRecords.filter { dayStart($0.dateTime) == target }
+    }
+
+    private var latestMean: Int? { dailyBpAvg.last.map { Int($0.mean.rounded()) } }
+    private var latestPP: Int?   { dailyBpAvg.last.map { Int($0.pp.rounded()) } }
 
     var body: some View {
         PanelContainer {
@@ -597,41 +619,41 @@ struct BpAverageChartView: View {
 
             Chart {
                 if showMean {
-                    ForEach(meanValues, id: \.record.dateTime) { item in
-                        AreaMark(x: .value("日時", item.record.dateTime), y: .value("平均血圧", item.value))
+                    ForEach(dailyBpAvg) { d in
+                        AreaMark(x: .value("日時", d.date), y: .value("平均血圧", d.mean))
                             .foregroundStyle(LinearGradient(colors: [.purple.opacity(0.2), .purple.opacity(0)],
                                                             startPoint: .top, endPoint: .bottom))
                             .interpolationMethod(.catmullRom)
                     }
-                    ForEach(meanValues, id: \.record.dateTime) { item in
-                        LineMark(x: .value("日時", item.record.dateTime), y: .value("平均血圧", item.value),
+                    ForEach(dailyBpAvg) { d in
+                        LineMark(x: .value("日時", d.date), y: .value("平均血圧", d.mean),
                                  series: .value("type", "mean"))
                             .foregroundStyle(.purple)
                             .lineStyle(StrokeStyle(lineWidth: 2))
                             .interpolationMethod(.catmullRom)
                     }
                     ForEach(meanValues, id: \.record.dateTime) { item in
-                        PointMark(x: .value("日時", item.record.dateTime), y: .value("平均血圧", item.value))
-                            .foregroundStyle(item.record.dateTime == selectedRecord?.dateTime ? .purple : .purple.opacity(0.5))
-                            .symbolSize(item.record.dateTime == selectedRecord?.dateTime ? 60 : 16)
+                        PointMark(x: .value("日時", dayStart(item.record.dateTime)), y: .value("平均血圧", Double(item.value)))
+                            .foregroundStyle(selectedDayRecords.contains(where: { $0.dateTime == item.record.dateTime }) ? .purple : .purple.opacity(0.5))
+                            .symbolSize(selectedDayRecords.contains(where: { $0.dateTime == item.record.dateTime }) ? 60 : 16)
                     }
                 }
                 if showPP {
-                    ForEach(ppValues, id: \.record.dateTime) { item in
-                        LineMark(x: .value("日時", item.record.dateTime), y: .value("脈圧", item.value),
+                    ForEach(dailyBpAvg) { d in
+                        LineMark(x: .value("日時", d.date), y: .value("脈圧", d.pp),
                                  series: .value("type", "pp"))
                             .foregroundStyle(.orange)
                             .lineStyle(StrokeStyle(lineWidth: 2))
                             .interpolationMethod(.catmullRom)
                     }
                     ForEach(ppValues, id: \.record.dateTime) { item in
-                        PointMark(x: .value("日時", item.record.dateTime), y: .value("脈圧", item.value))
-                            .foregroundStyle(item.record.dateTime == selectedRecord?.dateTime ? .orange : .orange.opacity(0.5))
-                            .symbolSize(item.record.dateTime == selectedRecord?.dateTime ? 60 : 16)
+                        PointMark(x: .value("日時", dayStart(item.record.dateTime)), y: .value("脈圧", Double(item.value)))
+                            .foregroundStyle(selectedDayRecords.contains(where: { $0.dateTime == item.record.dateTime }) ? .orange : .orange.opacity(0.5))
+                            .symbolSize(selectedDayRecords.contains(where: { $0.dateTime == item.record.dateTime }) ? 60 : 16)
                     }
                 }
-                if let sel = selectedRecord {
-                    RuleMark(x: .value("選択", sel.dateTime))
+                if let date = selectedDate {
+                    RuleMark(x: .value("選択", dayStart(date)))
                         .foregroundStyle(.gray.opacity(0.35))
                         .lineStyle(StrokeStyle(lineWidth: 1, dash: [4]))
                 }
@@ -640,7 +662,7 @@ struct BpAverageChartView: View {
             .chartYAxis {
                 AxisMarks(position: .leading) { value in
                     AxisGridLine().foregroundStyle(.gray.opacity(0.2))
-                    AxisValueLabel { if let v = value.as(Int.self) { Text("\(v)").font(.caption2) } }
+                    AxisValueLabel { if let v = value.as(Double.self) { Text(String(Int(v.rounded()))).font(.caption2) } }
                 }
             }
             .chartXSelection(value: $selectedDate)
@@ -649,17 +671,19 @@ struct BpAverageChartView: View {
             .padding(.horizontal, 8)
             .padding(.bottom, 4)
 
-            if let r = selectedRecord {
+            if !selectedDayRecords.isEmpty {
                 Divider()
-                let mean = (r.nBpHi_mmHg + r.nBpLo_mmHg * 2) / 3
-                let pp   = r.nBpHi_mmHg - r.nBpLo_mmHg
-                var detail: String {
-                    var parts: [String] = []
-                    if showMean { parts.append("平均 \(mean)") }
-                    if showPP   { parts.append("脈圧 \(pp)") }
-                    return parts.joined(separator: "  ") + " mmHg"
+                ForEach(selectedDayRecords) { r in
+                    let mean = (r.nBpHi_mmHg + r.nBpLo_mmHg * 2) / 3
+                    let pp   = r.nBpHi_mmHg - r.nBpLo_mmHg
+                    let detail: String = {
+                        var parts: [String] = []
+                        if showMean { parts.append("平均 \(mean)") }
+                        if showPP   { parts.append("脈圧 \(pp)") }
+                        return parts.joined(separator: "  ") + " mmHg"
+                    }()
+                    SelectionDetailRow(record: r, detail: detail, color: .primary)
                 }
-                SelectionDetailRow(record: r, detail: detail, color: .primary)
             }
         }
     }
@@ -677,24 +701,34 @@ struct LineChartView: View {
     var decimals: Int = 0
     let period: GraphPeriod
 
+    private let cal = Calendar.current
     @State private var selectedDate: Date?
     @State private var scrollPosition: Date = Date()
 
-    private var selectedRecord: BodyRecord? {
-        guard let date = selectedDate else { return nil }
-        return validRecords.min(by: {
-            abs($0.dateTime.timeIntervalSince(date)) < abs($1.dateTime.timeIntervalSince(date))
-        })
-    }
+    private func dayStart(_ date: Date) -> Date { cal.startOfDay(for: date) }
 
     private var validRecords: [BodyRecord] {
         records.filter { $0[keyPath: keyPath] > 0 }
             .sorted { $0.dateTime < $1.dateTime }
     }
     private var periodStart: Date {
-        Calendar.current.date(byAdding: .day, value: -period.rawValue, to: Date()) ?? Date()
+        cal.date(byAdding: .day, value: -period.rawValue, to: Date()) ?? Date()
     }
     private var periodRecords: [BodyRecord] { validRecords.filter { $0.dateTime >= periodStart } }
+
+    private var dailyValues: [DailyLineValue] {
+        let grouped = Dictionary(grouping: validRecords) { dayStart($0.dateTime) }
+        return grouped.map { date, recs in
+            let avg = Double(recs.map { $0[keyPath: keyPath] }.reduce(0, +)) / Double(recs.count)
+            return DailyLineValue(date: date, avg: avg)
+        }.sorted { $0.date < $1.date }
+    }
+
+    private var selectedDayRecords: [BodyRecord] {
+        guard let date = selectedDate else { return [] }
+        let target = dayStart(date)
+        return validRecords.filter { dayStart($0.dateTime) == target }
+    }
 
     private var avgValue: Int? {
         let v = periodRecords.map { $0[keyPath: keyPath] }
@@ -726,11 +760,11 @@ struct LineChartView: View {
 
             // チャート
             Chart {
-                // エリア
-                ForEach(validRecords) { r in
+                // エリア（日次平均）
+                ForEach(dailyValues) { d in
                     AreaMark(
-                        x: .value("日時", r.dateTime),
-                        y: .value(unit, r[keyPath: keyPath])
+                        x: .value("日時", d.date),
+                        y: .value(unit, d.avg)
                     )
                     .foregroundStyle(
                         LinearGradient(colors: [color.opacity(0.25), color.opacity(0.0)],
@@ -738,28 +772,28 @@ struct LineChartView: View {
                     )
                     .interpolationMethod(.catmullRom)
                 }
-                // ライン
-                ForEach(validRecords) { r in
+                // ライン（日次平均を経由）
+                ForEach(dailyValues) { d in
                     LineMark(
-                        x: .value("日時", r.dateTime),
-                        y: .value(unit, r[keyPath: keyPath])
+                        x: .value("日時", d.date),
+                        y: .value(unit, d.avg)
                     )
                     .foregroundStyle(color)
                     .lineStyle(StrokeStyle(lineWidth: 2))
                     .interpolationMethod(.catmullRom)
                 }
-                // ポイント
+                // ポイント（個別レコード、同日は同X）
                 ForEach(validRecords) { r in
                     PointMark(
-                        x: .value("日時", r.dateTime),
-                        y: .value(unit, r[keyPath: keyPath])
+                        x: .value("日時", dayStart(r.dateTime)),
+                        y: .value(unit, Double(r[keyPath: keyPath]))
                     )
-                    .foregroundStyle(r.dateTime == selectedRecord?.dateTime ? color : color.opacity(0.5))
-                    .symbolSize(r.dateTime == selectedRecord?.dateTime ? 70 : 16)
+                    .foregroundStyle(selectedDayRecords.contains(where: { $0.dateTime == r.dateTime }) ? color : color.opacity(0.5))
+                    .symbolSize(selectedDayRecords.contains(where: { $0.dateTime == r.dateTime }) ? 70 : 16)
                 }
                 // 選択ルール
-                if let sel = selectedRecord {
-                    RuleMark(x: .value("選択", sel.dateTime))
+                if let date = selectedDate {
+                    RuleMark(x: .value("選択", dayStart(date)))
                         .foregroundStyle(.gray.opacity(0.35))
                         .lineStyle(StrokeStyle(lineWidth: 1, dash: [4]))
                 }
@@ -781,8 +815,8 @@ struct LineChartView: View {
                 AxisMarks(position: .leading) { value in
                     AxisGridLine().foregroundStyle(.gray.opacity(0.2))
                     AxisValueLabel {
-                        if let v = value.as(Int.self) {
-                            Text(fmt(v)).font(.caption2)
+                        if let v = value.as(Double.self) {
+                            Text(fmt(Int(v.rounded()))).font(.caption2)
                         }
                     }
                 }
@@ -793,14 +827,16 @@ struct LineChartView: View {
             .padding(.horizontal, 8)
             .padding(.bottom, 4)
 
-            // 選択詳細
-            if let r = selectedRecord {
+            // 選択詳細（同日複数レコードも全表示）
+            if !selectedDayRecords.isEmpty {
                 Divider()
-                SelectionDetailRow(
-                    record: r,
-                    detail: "\(fmt(r[keyPath: keyPath])) \(unit)",
-                    color: color
-                )
+                ForEach(selectedDayRecords) { r in
+                    SelectionDetailRow(
+                        record: r,
+                        detail: "\(fmt(r[keyPath: keyPath])) \(unit)",
+                        color: color
+                    )
+                }
             }
         }
     }
