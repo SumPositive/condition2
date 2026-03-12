@@ -62,18 +62,8 @@ struct StatisticsView: View {
                 // 期間表示
                 periodLabel
 
-                // 統計タイプに応じたグラフ
-                if settings.statType == 0 {
-                    BpDispersionChartView(records: targetRecords)
-                } else {
-                    Bp24HChartView(records: targetRecords)
-                }
-
                 // JSH 血圧分布
                 BpJshView(records: targetRecords)
-
-                // 統計サマリー
-                statSummaryView
             }
             .padding()
         }
@@ -163,25 +153,14 @@ struct BpJshView: View {
                     .font(.headline)
                     .padding(.horizontal)
 
-                // 分布バー（上・下）
-                VStack(spacing: 6) {
-                    BpDistributionBar(label: "上", color: .red,
-                                      values: validRecords.map(\.nBpHi_mmHg),
-                                      zones: bpHiZones, barMin: 80, barMax: 220)
-                    BpDistributionBar(label: "下", color: .blue,
-                                      values: validRecords.map(\.nBpLo_mmHg),
-                                      zones: bpLoZones, barMin: 40, barMax: 140)
-                }
-                .padding(.horizontal)
-
                 // JSH 区分凡例
                 let jshLegend: [(name: String, color: Color)] = [
-                    ("正常血圧",   Color(red: 0.18, green: 0.65, blue: 0.28)),
-                    ("正常高値",   Color(red: 0.45, green: 0.72, blue: 0.28)),
-                    ("高値血圧",   Color(red: 0.85, green: 0.72, blue: 0.10)),
-                    ("高血圧I度",  Color.orange),
-                    ("高血圧II度", Color(red: 0.90, green: 0.30, blue: 0.10)),
-                    ("高血圧III度",Color(red: 0.75, green: 0.10, blue: 0.10)),
+                    ("正常血圧",   Color(red: 0.05, green: 0.60, blue: 0.20)),
+                    ("正常高値",   Color(red: 0.30, green: 0.75, blue: 0.20)),
+                    ("高値血圧",   Color(red: 0.90, green: 0.78, blue: 0.00)),
+                    ("高血圧I度",  Color(red: 1.00, green: 0.55, blue: 0.00)),
+                    ("高血圧II度", Color(red: 0.95, green: 0.25, blue: 0.00)),
+                    ("高血圧III度",Color(red: 0.80, green: 0.00, blue: 0.00)),
                 ]
                 LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())],
                           spacing: 4) {
@@ -247,57 +226,28 @@ struct BpJshView: View {
                 }
                 .frame(height: 220)
                 .padding(.horizontal)
+
+                // 区分（DateOpt）凡例
+                LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())],
+                          spacing: 4) {
+                    ForEach(DateOpt.allCases, id: \.self) { opt in
+                        HStack(spacing: 5) {
+                            Circle()
+                                .fill(dateOptColor(opt))
+                                .frame(width: 10, height: 10)
+                            Text(opt.label)
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                            Spacer()
+                        }
+                    }
+                }
+                .padding(.horizontal)
             }
             .padding(.vertical, 8)
             .background(.background.secondary)
             .clipShape(RoundedRectangle(cornerRadius: 12))
         )
-    }
-}
-
-// MARK: - 血圧 Hi-Lo 散布図（旧 statDispersalHiLo 相当）
-
-struct BpDispersionChartView: View {
-    let records: [BodyRecord]
-
-    private var validRecords: [BodyRecord] {
-        records.filter { $0.nBpHi_mmHg > 0 && $0.nBpLo_mmHg > 0 }
-    }
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text(String(localized: "Stat_HiLo_Title", defaultValue: "血圧分散（上/下）"))
-                .font(.headline)
-                .padding(.horizontal)
-
-            Chart {
-                ForEach(validRecords) { r in
-                    PointMark(
-                        x: .value("下血圧", r.nBpLo_mmHg),
-                        y: .value("上血圧", r.nBpHi_mmHg)
-                    )
-                    .foregroundStyle(dateOptColor(r.dateOpt))
-                    .symbolSize(40)
-                }
-            }
-            .chartXAxisLabel(String(localized: "Stat_BpLo", defaultValue: "下（拡張期）mmHg"))
-            .chartYAxisLabel(String(localized: "Stat_BpHi", defaultValue: "上（収縮期）mmHg"))
-            .frame(height: 220)
-            .padding(.horizontal)
-
-            // 凡例
-            HStack(spacing: 12) {
-                ForEach(DateOpt.allCases, id: \.self) { opt in
-                    Label(opt.label, systemImage: "circle.fill")
-                        .font(.caption2)
-                        .foregroundStyle(dateOptColor(opt))
-                }
-            }
-            .padding(.horizontal)
-        }
-        .padding(.vertical, 8)
-        .background(.background.secondary)
-        .clipShape(RoundedRectangle(cornerRadius: 12))
     }
 
     private func dateOptColor(_ opt: DateOpt) -> Color {

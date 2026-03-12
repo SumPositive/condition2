@@ -226,29 +226,29 @@ struct BpZone {
 
 /// JSH 2019 基準による血圧区分カラー（上・下の高い方で分類）
 func jshColor(hi: Int, lo: Int) -> Color {
-    if hi >= 180 || lo >= 110 { return Color(red: 0.75, green: 0.10, blue: 0.10) }
-    if hi >= 160 || lo >= 100 { return Color(red: 0.90, green: 0.30, blue: 0.10) }
-    if hi >= 140 || lo >= 90  { return .orange }
-    if hi >= 130 || lo >= 80  { return Color(red: 0.85, green: 0.72, blue: 0.10) }
-    if hi >= 120              { return Color(red: 0.45, green: 0.72, blue: 0.28) }
-    return Color(red: 0.18, green: 0.65, blue: 0.28)
+    if hi >= 180 || lo >= 110 { return Color(red: 0.80, green: 0.00, blue: 0.00) }
+    if hi >= 160 || lo >= 100 { return Color(red: 0.95, green: 0.25, blue: 0.00) }
+    if hi >= 140 || lo >= 90  { return Color(red: 1.00, green: 0.55, blue: 0.00) }
+    if hi >= 130 || lo >= 80  { return Color(red: 0.90, green: 0.78, blue: 0.00) }
+    if hi >= 120              { return Color(red: 0.30, green: 0.75, blue: 0.20) }
+    return Color(red: 0.05, green: 0.60, blue: 0.20)
 }
 
 let bpHiZones: [BpZone] = [
-    .init(min:  80, max: 120, color: Color(red: 0.18, green: 0.65, blue: 0.28).opacity(0.28)),
-    .init(min: 120, max: 130, color: Color(red: 0.45, green: 0.72, blue: 0.28).opacity(0.30)),
-    .init(min: 130, max: 140, color: Color(red: 0.85, green: 0.72, blue: 0.10).opacity(0.35)),
-    .init(min: 140, max: 160, color: Color.orange.opacity(0.38)),
-    .init(min: 160, max: 180, color: Color(red: 0.90, green: 0.30, blue: 0.10).opacity(0.38)),
-    .init(min: 180, max: 220, color: Color(red: 0.75, green: 0.10, blue: 0.10).opacity(0.42)),
+    .init(min:  80, max: 120, color: Color(red: 0.18, green: 0.65, blue: 0.28).opacity(0.08)),
+    .init(min: 120, max: 130, color: Color(red: 0.45, green: 0.72, blue: 0.28).opacity(0.09)),
+    .init(min: 130, max: 140, color: Color(red: 0.85, green: 0.72, blue: 0.10).opacity(0.10)),
+    .init(min: 140, max: 160, color: Color.orange.opacity(0.11)),
+    .init(min: 160, max: 180, color: Color(red: 0.90, green: 0.30, blue: 0.10).opacity(0.12)),
+    .init(min: 180, max: 220, color: Color(red: 0.75, green: 0.10, blue: 0.10).opacity(0.14)),
 ]
 
 let bpLoZones: [BpZone] = [
-    .init(min:  40, max:  80, color: Color(red: 0.18, green: 0.65, blue: 0.28).opacity(0.28)),
-    .init(min:  80, max:  90, color: Color(red: 0.85, green: 0.72, blue: 0.10).opacity(0.35)),
-    .init(min:  90, max: 100, color: Color.orange.opacity(0.38)),
-    .init(min: 100, max: 110, color: Color(red: 0.90, green: 0.30, blue: 0.10).opacity(0.38)),
-    .init(min: 110, max: 140, color: Color(red: 0.75, green: 0.10, blue: 0.10).opacity(0.42)),
+    .init(min:  40, max:  80, color: Color(red: 0.18, green: 0.65, blue: 0.28).opacity(0.08)),
+    .init(min:  80, max:  90, color: Color(red: 0.85, green: 0.72, blue: 0.10).opacity(0.10)),
+    .init(min:  90, max: 100, color: Color.orange.opacity(0.11)),
+    .init(min: 100, max: 110, color: Color(red: 0.90, green: 0.30, blue: 0.10).opacity(0.12)),
+    .init(min: 110, max: 140, color: Color(red: 0.75, green: 0.10, blue: 0.10).opacity(0.14)),
 ]
 
 // MARK: - 血圧分布バー
