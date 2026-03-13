@@ -146,6 +146,13 @@ struct GraphSettingsView: View {
 struct StatSettingsView: View {
     @State private var settings = AppSettings.shared
 
+    private var periodBinding: Binding<GraphPeriod> {
+        Binding(
+            get: { GraphPeriod(rawValue: settings.statDays) ?? .threeMonths },
+            set: { settings.statDays = $0.rawValue }
+        )
+    }
+
     var body: some View {
         Form {
             Section(String(localized: "StatSett_Type", defaultValue: "グラフ種類")) {
@@ -160,12 +167,12 @@ struct StatSettingsView: View {
             }
 
             Section(String(localized: "StatSett_Days", defaultValue: "集計期間")) {
-                Stepper(
-                    "\(settings.statDays) 日間",
-                    value: $settings.statDays,
-                    in: 1...GraphConstants.statDaysMax,
-                    step: 1
-                )
+                Picker("期間", selection: periodBinding) {
+                    ForEach(GraphPeriod.allCases, id: \.self) { p in
+                        Text(p.label).tag(p)
+                    }
+                }
+                .pickerStyle(.segmented)
             }
 
             Section(String(localized: "StatSett_Options", defaultValue: "表示オプション")) {

@@ -17,17 +17,24 @@ struct StatisticsView: View {
     private var settings: AppSettings { AppSettings.shared }
     @State private var showSettings = false
 
+    private var periodBinding: Binding<GraphPeriod> {
+        Binding(
+            get: { GraphPeriod(rawValue: settings.statDays) ?? .threeMonths },
+            set: { settings.statDays = $0.rawValue }
+        )
+    }
+
+    private var currentPeriod: GraphPeriod {
+        GraphPeriod(rawValue: settings.statDays) ?? .threeMonths
+    }
+
     private var targetRecords: [BodyRecord] {
         let cutoff = Calendar.current.date(
             byAdding: .day,
-            value: -effectiveDays,
+            value: -currentPeriod.rawValue,
             to: Date()
         ) ?? Date()
         return allRecords.filter { $0.dateTime >= cutoff }
-    }
-
-    private var effectiveDays: Int {
-        settings.statDays
     }
 
     var body: some View {
@@ -59,8 +66,14 @@ struct StatisticsView: View {
     private var scrollContent: some View {
         ScrollView {
             VStack(spacing: 16) {
-                // 期間表示
-                periodLabel
+                // 期間ピッカー
+                Picker("期間", selection: periodBinding) {
+                    ForEach(GraphPeriod.allCases, id: \.self) { p in
+                        Text(p.label).tag(p)
+                    }
+                }
+                .pickerStyle(.segmented)
+                .padding(.horizontal)
 
                 // JSH 血圧分布
                 BpJshView(records: targetRecords)
@@ -69,18 +82,6 @@ struct StatisticsView: View {
         }
     }
 
-    private var periodLabel: some View {
-        HStack {
-            Image(systemName: "calendar")
-            Text("過去 \(effectiveDays) 日間")
-                .font(.subheadline)
-            Spacer()
-            Text("\(targetRecords.count) 件")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-        }
-        .padding(.horizontal)
-    }
 
     private var statSummaryView: some View {
         let validBpRecords = targetRecords.filter { $0.nBpHi_mmHg > 0 && $0.nBpLo_mmHg > 0 }
