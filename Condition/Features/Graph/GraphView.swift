@@ -170,7 +170,7 @@ private struct PanelContainer<Content: View>: View {
 
 /// 統計ラベル（ラベル: 値 の横1行）
 private struct StatCell: View {
-    let label: String
+    let label: LocalizedStringKey
     let value: String
 
     var body: some View {

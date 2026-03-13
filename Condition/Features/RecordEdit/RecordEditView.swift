@@ -15,8 +15,7 @@ struct RecordEditView: View {
 
     private static let dateTimeFormatter: DateFormatter = {
         let f = DateFormatter()
-        f.locale = Locale(identifier: "ja_JP")
-        f.dateFormat = "yyyy年M月d日（E）HH:mm"
+        f.setLocalizedDateFormatFromTemplate("yMdEjmm")
         return f
     }()
 
@@ -200,11 +199,11 @@ struct RecordEditView: View {
 
     @ViewBuilder
     private func dialRow(
-        title: String,
+        title: LocalizedStringKey,
         value: Binding<Int>,
         enabled: Binding<Bool>,
         spec: MeasureSpec,
-        unit: String,
+        unit: LocalizedStringKey,
         stepperStep: Int,
         decimals: Int = 0,
         color: Color = .primary
@@ -284,7 +283,6 @@ struct DatePickerSheet: View {
             )
             .datePickerStyle(.graphical)
             .labelsHidden()
-            .environment(\.locale, Locale(identifier: "ja_JP"))
             .padding()
             .navigationTitle(String(localized: "DatePicker_Title", defaultValue: "日時を選択"))
             .navigationBarTitleDisplayMode(.inline)

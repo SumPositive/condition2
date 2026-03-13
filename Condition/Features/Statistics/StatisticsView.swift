@@ -177,7 +177,7 @@ struct BpJshView: View {
                             RoundedRectangle(cornerRadius: 3)
                                 .fill(item.color)
                                 .frame(width: 12, height: 12)
-                            Text(item.name)
+                            Text(LocalizedStringKey(item.name))
                                 .font(.caption2)
                                 .foregroundStyle(.secondary)
                             Spacer()
@@ -326,7 +326,7 @@ struct BpJshRatioView: View {
                             RoundedRectangle(cornerRadius: 3)
                                 .fill(cat.color)
                                 .frame(width: 10, height: 10)
-                            Text(cat.name).font(.caption2).foregroundStyle(.secondary)
+                            Text(LocalizedStringKey(cat.name)).font(.caption2).foregroundStyle(.secondary)
                             Spacer()
                             Text(c[i] > 0
                                  ? String(format: "%.0f%%", Double(c[i]) / Double(total) * 100)

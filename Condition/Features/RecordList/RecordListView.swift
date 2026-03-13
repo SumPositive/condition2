@@ -121,7 +121,15 @@ struct RecordSectionHeader: View {
     private var text: String {
         let year  = yearMonth / 100
         let month = yearMonth % 100
-        return String(format: "%d年%d月", year, month)
+        var comps = DateComponents()
+        comps.year = year
+        comps.month = month
+        guard let date = Calendar.current.date(from: comps) else {
+            return String(format: "%d/%02d", year, month)
+        }
+        let fmt = DateFormatter()
+        fmt.dateFormat = DateFormatter.dateFormat(fromTemplate: "yMMMM", options: 0, locale: Locale.current)
+        return fmt.string(from: date)
     }
 
     var body: some View {
@@ -136,7 +144,7 @@ struct RecordSectionHeader: View {
 /// 日付列の固定幅（ヘッダーと明細で共通。title3.bold "31" + spacing + icon 24pt + trailing 4pt）
 private let dateColumnWidth: CGFloat = 64
 
-private let recordColumns: [(label: String, width: CGFloat)] = [
+nonisolated(unsafe) private let recordColumns: [(label: LocalizedStringKey, width: CGFloat)] = [
     ("上",   28),
     ("下",   28),
     ("脈拍", 28),
