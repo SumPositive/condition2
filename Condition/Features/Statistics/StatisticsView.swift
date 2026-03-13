@@ -77,7 +77,14 @@ struct StatisticsView: View {
 
                 // JSH 血圧分布
                 BpJshView(records: targetRecords)
-            }
+
+                // JSH区分の割合バー
+                BpJshRatioView(records: targetRecords)
+
+                // 区分別（DateOpt）平均値
+                BpDateOptAverageView(records: targetRecords)
+
+}
             .padding()
         }
     }
@@ -260,6 +267,189 @@ struct BpJshView: View {
         case .preExercise:  return .teal
         case .postExercise: return .red
         }
+    }
+}
+
+// MARK: - JSH区分の割合バー
+
+struct BpJshRatioView: View {
+    let records: [BodyRecord]
+
+    private static let jshCategories: [(name: String, color: Color)] = [
+        ("正常血圧",    Color(red: 0.05, green: 0.60, blue: 0.20)),
+        ("正常高値",    Color(red: 0.30, green: 0.75, blue: 0.20)),
+        ("高値血圧",    Color(red: 0.90, green: 0.78, blue: 0.00)),
+        ("高血圧I度",   Color(red: 1.00, green: 0.55, blue: 0.00)),
+        ("高血圧II度",  Color(red: 0.95, green: 0.25, blue: 0.00)),
+        ("高血圧III度", Color(red: 0.80, green: 0.00, blue: 0.00)),
+    ]
+
+    private func jshIndex(hi: Int, lo: Int) -> Int {
+        if hi >= 180 || lo >= 110 { return 5 }
+        if hi >= 160 || lo >= 100 { return 4 }
+        if hi >= 140 || lo >= 90  { return 3 }
+        if hi >= 130 || lo >= 80  { return 2 }
+        if hi >= 120              { return 1 }
+        return 0
+    }
+
+    private var counts: [Int] {
+        let valid = records.filter { $0.nBpHi_mmHg > 0 && $0.nBpLo_mmHg > 0 }
+        var c = [Int](repeating: 0, count: 6)
+        for r in valid { c[jshIndex(hi: r.nBpHi_mmHg, lo: r.nBpLo_mmHg)] += 1 }
+        return c
+    }
+
+    var body: some View {
+        let c = counts
+        let total = c.reduce(0, +)
+        guard total > 0 else { return AnyView(EmptyView()) }
+
+        return AnyView(
+            VStack(alignment: .leading, spacing: 10) {
+                Text(String(localized: "Stat_JshRatio_Title", defaultValue: "JSH区分の割合"))
+                    .font(.headline)
+                    .padding(.horizontal)
+
+                GeometryReader { geo in
+                    HStack(spacing: 0) {
+                        ForEach(Array(Self.jshCategories.enumerated()), id: \.offset) { i, cat in
+                            if c[i] > 0 {
+                                Rectangle()
+                                    .fill(cat.color)
+                                    .frame(width: geo.size.width * CGFloat(c[i]) / CGFloat(total))
+                            }
+                        }
+                    }
+                    .clipShape(RoundedRectangle(cornerRadius: 6))
+                }
+                .frame(height: 28)
+                .padding(.horizontal)
+
+                LazyVGrid(
+                    columns: [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())],
+                    spacing: 4
+                ) {
+                    ForEach(Array(Self.jshCategories.enumerated()), id: \.offset) { i, cat in
+                        HStack(spacing: 4) {
+                            RoundedRectangle(cornerRadius: 3)
+                                .fill(cat.color)
+                                .frame(width: 10, height: 10)
+                            Text(cat.name).font(.caption2).foregroundStyle(.secondary)
+                            Spacer()
+                            Text(c[i] > 0
+                                 ? String(format: "%.0f%%", Double(c[i]) / Double(total) * 100)
+                                 : "-")
+                                .font(.caption2.monospacedDigit())
+                                .foregroundStyle(c[i] > 0 ? .primary : .tertiary)
+                        }
+                    }
+                }
+                .padding(.horizontal)
+            }
+            .padding(.vertical, 8)
+            .background(.background.secondary)
+            .clipShape(RoundedRectangle(cornerRadius: 12))
+        )
+    }
+}
+
+// MARK: - 区分別（DateOpt）平均値
+
+struct BpDateOptAverageView: View {
+    let records: [BodyRecord]
+
+    private struct OptAvg {
+        let opt: DateOpt
+        let hiAvg: Double
+        let loAvg: Double
+    }
+
+    private let barMin = 40.0
+    private let barMax = 200.0
+
+    private var data: [OptAvg] {
+        DateOpt.allCases.compactMap { opt in
+            let filtered = records.filter {
+                $0.nDateOpt == opt.rawValue && $0.nBpHi_mmHg > 0 && $0.nBpLo_mmHg > 0
+            }
+            guard !filtered.isEmpty else { return nil }
+            let hiAvg = Double(filtered.map { $0.nBpHi_mmHg }.reduce(0, +)) / Double(filtered.count)
+            let loAvg = Double(filtered.map { $0.nBpLo_mmHg }.reduce(0, +)) / Double(filtered.count)
+            return OptAvg(opt: opt, hiAvg: hiAvg, loAvg: loAvg)
+        }
+    }
+
+    var body: some View {
+        guard !data.isEmpty else { return AnyView(EmptyView()) }
+
+        return AnyView(
+            VStack(alignment: .leading, spacing: 10) {
+                HStack {
+                    Text(String(localized: "Stat_DateOptAvg_Title", defaultValue: "区分別平均血圧"))
+                        .font(.headline)
+                    Spacer()
+                    HStack(spacing: 10) {
+                        HStack(spacing: 4) {
+                            RoundedRectangle(cornerRadius: 2).fill(Color.red.opacity(0.8)).frame(width: 10, height: 10)
+                            Text("上").font(.caption2).foregroundStyle(.secondary)
+                        }
+                        HStack(spacing: 4) {
+                            RoundedRectangle(cornerRadius: 2).fill(Color.blue.opacity(0.8)).frame(width: 10, height: 10)
+                            Text("下").font(.caption2).foregroundStyle(.secondary)
+                        }
+                    }
+                }
+                .padding(.horizontal)
+
+                VStack(spacing: 8) {
+                    ForEach(data, id: \.opt) { item in
+                        HStack(alignment: .center, spacing: 8) {
+                            Label(item.opt.label, systemImage: item.opt.icon)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                                .frame(width: 72, alignment: .leading)
+                                .lineLimit(1)
+
+                            VStack(spacing: 3) {
+                                barView(value: item.hiAvg, color: .red)
+                                barView(value: item.loAvg, color: .blue)
+                            }
+
+                            VStack(spacing: 3) {
+                                Text(String(format: "%.0f", item.hiAvg))
+                                    .font(.caption2.monospacedDigit())
+                                    .foregroundStyle(.red)
+                                    .frame(height: 14)
+                                Text(String(format: "%.0f", item.loAvg))
+                                    .font(.caption2.monospacedDigit())
+                                    .foregroundStyle(.blue)
+                                    .frame(height: 14)
+                            }
+                            .frame(width: 28, alignment: .trailing)
+                        }
+                    }
+                }
+                .padding(.horizontal)
+            }
+            .padding(.vertical, 8)
+            .background(.background.secondary)
+            .clipShape(RoundedRectangle(cornerRadius: 12))
+        )
+    }
+
+    private func barView(value: Double, color: Color) -> some View {
+        let ratio = CGFloat((value - barMin) / (barMax - barMin))
+        return Color.secondary.opacity(0.1)
+            .frame(height: 14)
+            .clipShape(RoundedRectangle(cornerRadius: 3))
+            .overlay(alignment: .leading) {
+                GeometryReader { geo in
+                    RoundedRectangle(cornerRadius: 3)
+                        .fill(color.opacity(0.8))
+                        .frame(width: max(4, geo.size.width * ratio))
+                }
+            }
     }
 }
 
