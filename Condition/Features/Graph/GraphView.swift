@@ -194,9 +194,7 @@ private struct SelectionDetailRow: View {
     var body: some View {
         HStack(spacing: 6) {
             Image(systemName: record.dateOpt.icon)
-                .foregroundStyle(.secondary)
             Text(record.dateOpt.label)
-                .foregroundStyle(.secondary)
             Text({
                 let c = Calendar.current
                 let m  = c.component(.month,  from: record.dateTime)
@@ -206,12 +204,12 @@ private struct SelectionDetailRow: View {
                 let y  = c.component(.year,   from: record.dateTime)
                 return String(format: "%d/%d/%d %d:%02d", y, m, d, h, mn)
             }())
-            .foregroundStyle(.secondary)
+            .foregroundStyle(color.opacity(0.7))
             Spacer()
             Text(detail)
                 .bold()
-                .foregroundStyle(color)
         }
+        .foregroundStyle(color)
         .font(.caption)
         .padding(.horizontal, 16)
         .padding(.vertical, 8)
@@ -319,6 +317,27 @@ struct BpDistributionBar: View {
 // MARK: - 共通 X 軸モディファイア
 
 private extension View {
+    /// タップのみで日付を選択／解除する（ドラッグは横スクロールへ通過させる）
+    func tapToSelectDay(_ selectedDate: Binding<Date?>, validDays: Set<Date>) -> some View {
+        chartGesture { proxy in
+            SpatialTapGesture()
+                .onEnded { tap in
+                    guard let tapped: Date = proxy.value(atX: tap.location.x) else { return }
+                    let day = Calendar.current.startOfDay(for: tapped)
+                    guard validDays.contains(day) else {
+                        selectedDate.wrappedValue = nil   // データ無し → 選択解除
+                        return
+                    }
+                    if let sel = selectedDate.wrappedValue,
+                       Calendar.current.isDate(sel, inSameDayAs: day) {
+                        selectedDate.wrappedValue = nil   // 同じ日を再タップ → 解除
+                    } else {
+                        selectedDate.wrappedValue = day
+                    }
+                }
+        }
+    }
+
     /// 横スクロール可能なX軸。初期表示・期間変更時に最新日が右端になるよう設定する。
     /// - Parameters:
     ///   - oldestDate: データの最古日時。スクロール域の左端に使用。nil の場合は期間分のみ。
@@ -470,8 +489,8 @@ struct BpChartView: View {
                 // 上ポイント（個別レコード、同日は同X）
                 ForEach(validRecords) { r in
                     PointMark(x: .value("日時", dayStart(r.dateTime)), y: .value("上", Double(r.nBpHi_mmHg)))
-                        .foregroundStyle(selectedDayRecords.contains(where: { $0.dateTime == r.dateTime }) ? .red : .red.opacity(0.5))
-                        .symbolSize(selectedDayRecords.contains(where: { $0.dateTime == r.dateTime }) ? 80 : 18)
+                        .foregroundStyle(r.dateOpt.color)
+                        .symbolSize(18)
                 }
                 // 下ライン（日次平均を経由）
                 ForEach(dailyAverages) { d in
@@ -484,8 +503,8 @@ struct BpChartView: View {
                 // 下ポイント（個別レコード、同日は同X）
                 ForEach(validRecords) { r in
                     PointMark(x: .value("日時", dayStart(r.dateTime)), y: .value("下", Double(r.nBpLo_mmHg)))
-                        .foregroundStyle(selectedDayRecords.contains(where: { $0.dateTime == r.dateTime }) ? .blue : .blue.opacity(0.5))
-                        .symbolSize(selectedDayRecords.contains(where: { $0.dateTime == r.dateTime }) ? 80 : 18)
+                        .foregroundStyle(r.dateOpt.color)
+                        .symbolSize(18)
                 }
                 // 平均血圧ライン（日次平均を経由）
                 ForEach(dailyAverages) { d in
@@ -520,7 +539,7 @@ struct BpChartView: View {
                     AxisValueLabel { if let v = value.as(Double.self) { Text(String(Int(v.rounded()))).font(.caption2) } }
                 }
             }
-            .chartXSelection(value: $selectedDate)
+            .tapToSelectDay($selectedDate, validDays: Set(validRecords.map { dayStart($0.dateTime) }))
             .standardXAxis(period: period, scrollPosition: $scrollPosition, oldestDate: validRecords.first?.dateTime)
             .frame(height: 150)
             .padding(.horizontal, 8)
@@ -534,7 +553,7 @@ struct BpChartView: View {
                     SelectionDetailRow(
                         record: r,
                         detail: "\(r.nBpHi_mmHg)／\(r.nBpLo_mmHg)  平均 \(map) mmHg",
-                        color: .red
+                        color: r.dateOpt.color
                     )
                 }
             }
@@ -634,8 +653,8 @@ struct BpAverageChartView: View {
                     }
                     ForEach(meanValues, id: \.record.dateTime) { item in
                         PointMark(x: .value("日時", dayStart(item.record.dateTime)), y: .value("平均血圧", Double(item.value)))
-                            .foregroundStyle(selectedDayRecords.contains(where: { $0.dateTime == item.record.dateTime }) ? .purple : .purple.opacity(0.5))
-                            .symbolSize(selectedDayRecords.contains(where: { $0.dateTime == item.record.dateTime }) ? 60 : 16)
+                            .foregroundStyle(item.record.dateOpt.color)
+                            .symbolSize(16)
                     }
                 }
                 if showPP {
@@ -648,8 +667,8 @@ struct BpAverageChartView: View {
                     }
                     ForEach(ppValues, id: \.record.dateTime) { item in
                         PointMark(x: .value("日時", dayStart(item.record.dateTime)), y: .value("脈圧", Double(item.value)))
-                            .foregroundStyle(selectedDayRecords.contains(where: { $0.dateTime == item.record.dateTime }) ? .orange : .orange.opacity(0.5))
-                            .symbolSize(selectedDayRecords.contains(where: { $0.dateTime == item.record.dateTime }) ? 60 : 16)
+                            .foregroundStyle(item.record.dateOpt.color)
+                            .symbolSize(16)
                     }
                 }
                 if let date = selectedDate {
@@ -665,7 +684,7 @@ struct BpAverageChartView: View {
                     AxisValueLabel { if let v = value.as(Double.self) { Text(String(Int(v.rounded()))).font(.caption2) } }
                 }
             }
-            .chartXSelection(value: $selectedDate)
+            .tapToSelectDay($selectedDate, validDays: Set(validRecords.map { dayStart($0.dateTime) }))
             .standardXAxis(period: period, scrollPosition: $scrollPosition, oldestDate: validRecords.first?.dateTime)
             .frame(height: 120)
             .padding(.horizontal, 8)
@@ -682,7 +701,7 @@ struct BpAverageChartView: View {
                         if showPP   { parts.append("脈圧 \(pp)") }
                         return parts.joined(separator: "  ") + " mmHg"
                     }()
-                    SelectionDetailRow(record: r, detail: detail, color: .primary)
+                    SelectionDetailRow(record: r, detail: detail, color: r.dateOpt.color)
                 }
             }
         }
@@ -788,8 +807,8 @@ struct LineChartView: View {
                         x: .value("日時", dayStart(r.dateTime)),
                         y: .value(unit, Double(r[keyPath: keyPath]))
                     )
-                    .foregroundStyle(selectedDayRecords.contains(where: { $0.dateTime == r.dateTime }) ? color : color.opacity(0.5))
-                    .symbolSize(selectedDayRecords.contains(where: { $0.dateTime == r.dateTime }) ? 70 : 16)
+                    .foregroundStyle(r.dateOpt.color)
+                    .symbolSize(16)
                 }
                 // 選択ルール
                 if let date = selectedDate {
@@ -821,7 +840,7 @@ struct LineChartView: View {
                     }
                 }
             }
-            .chartXSelection(value: $selectedDate)
+            .tapToSelectDay($selectedDate, validDays: Set(validRecords.map { dayStart($0.dateTime) }))
             .standardXAxis(period: period, scrollPosition: $scrollPosition, oldestDate: validRecords.first?.dateTime)
             .frame(height: 120)
             .padding(.horizontal, 8)
@@ -834,7 +853,7 @@ struct LineChartView: View {
                     SelectionDetailRow(
                         record: r,
                         detail: "\(fmt(r[keyPath: keyPath])) \(unit)",
-                        color: color
+                        color: r.dateOpt.color
                     )
                 }
             }

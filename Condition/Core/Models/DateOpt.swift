@@ -2,6 +2,7 @@
 // 測定時の状況区分（旧 MocEntity.h の DateOpt enum 相当）
 
 import Foundation
+import SwiftUI
 
 enum DateOpt: Int, CaseIterable, Codable {
     case wake        = 0  // 起床時
@@ -30,6 +31,17 @@ enum DateOpt: Int, CaseIterable, Codable {
         case .sleep:        return "moon.zzz.fill"
         case .preExercise:  return "figure.run"
         case .postExercise: return "figure.walk"
+        }
+    }
+
+    var color: Color {
+        switch self {
+        case .wake:         return .green
+        case .rest:         return .blue
+        case .down:         return .orange
+        case .sleep:        return .purple
+        case .preExercise:  return .teal
+        case .postExercise: return .red
         }
     }
 
