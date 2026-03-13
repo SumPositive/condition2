@@ -146,26 +146,26 @@ struct RecordEditView: View {
     @ViewBuilder
     private var bpSection: some View {
         Section(String(localized: "Section_BP", defaultValue: "血圧")) {
-            dialRow(title: "上（最大血圧）", value: $vm.nBpHi_mmHg,  enabled: $vm.bpHiEnabled,      spec: MeasureRange.bpHi,   unit: "mmHg", stepperStep: 10)
-            dialRow(title: "下（最小血圧）", value: $vm.nBpLo_mmHg,  enabled: $vm.bpLoEnabled,      spec: MeasureRange.bpLo,   unit: "mmHg", stepperStep: 5)
-            dialRow(title: "脈拍",           value: $vm.nPulse_bpm,   enabled: $vm.pulseEnabled,     spec: MeasureRange.pulse,  unit: "bpm",  stepperStep: 5)
+            dialRow(title: "上（収縮期血圧）", value: $vm.nBpHi_mmHg,  enabled: $vm.bpHiEnabled,      spec: MeasureRange.bpHi,   unit: "mmHg", stepperStep: 10, color: .red)
+            dialRow(title: "下（拡張期血圧）", value: $vm.nBpLo_mmHg,  enabled: $vm.bpLoEnabled,      spec: MeasureRange.bpLo,   unit: "mmHg", stepperStep: 5,  color: .blue)
+            dialRow(title: "脈拍",           value: $vm.nPulse_bpm,   enabled: $vm.pulseEnabled,     spec: MeasureRange.pulse,  unit: "bpm",  stepperStep: 5,  color: .orange)
         }
     }
 
     @ViewBuilder
     private var bodySection: some View {
         Section(String(localized: "Section_Body", defaultValue: "体重・体温")) {
-            dialRow(title: "体重", value: $vm.nWeight_10Kg, enabled: $vm.weightEnabled,    spec: MeasureRange.weight, unit: "kg", stepperStep: 10, decimals: 1)
-            dialRow(title: "体温", value: $vm.nTemp_10c,    enabled: $vm.tempEnabled,      spec: MeasureRange.temp,   unit: "℃", stepperStep: 1,  decimals: 1)
+            dialRow(title: "体重", value: $vm.nWeight_10Kg, enabled: $vm.weightEnabled,    spec: MeasureRange.weight, unit: "kg", stepperStep: 10, decimals: 1, color: .indigo)
+            dialRow(title: "体温", value: $vm.nTemp_10c,    enabled: $vm.tempEnabled,      spec: MeasureRange.temp,   unit: "℃", stepperStep: 1,  decimals: 1, color: .pink)
         }
     }
 
     @ViewBuilder
     private var activitySection: some View {
         Section(String(localized: "Section_Activity", defaultValue: "活動・体組成")) {
-            dialRow(title: "歩数",     value: $vm.nPedometer,    enabled: $vm.pedometerEnabled, spec: MeasureRange.pedometer, unit: "歩", stepperStep: 1000)
-            dialRow(title: "体脂肪率", value: $vm.nBodyFat_10p,  enabled: $vm.bodyFatEnabled,   spec: MeasureRange.bodyFat,   unit: "%",  stepperStep: 5, decimals: 1)
-            dialRow(title: "骨格筋率", value: $vm.nSkMuscle_10p, enabled: $vm.skMuscleEnabled,  spec: MeasureRange.skMuscle,  unit: "%",  stepperStep: 5, decimals: 1)
+            dialRow(title: "歩数",     value: $vm.nPedometer,    enabled: $vm.pedometerEnabled, spec: MeasureRange.pedometer, unit: "歩", stepperStep: 1000,           color: .green)
+            dialRow(title: "体脂肪率", value: $vm.nBodyFat_10p,  enabled: $vm.bodyFatEnabled,   spec: MeasureRange.bodyFat,   unit: "%",  stepperStep: 5, decimals: 1, color: .purple)
+            dialRow(title: "骨格筋率", value: $vm.nSkMuscle_10p, enabled: $vm.skMuscleEnabled,  spec: MeasureRange.skMuscle,  unit: "%",  stepperStep: 5, decimals: 1, color: .teal)
         }
     }
 
@@ -186,13 +186,12 @@ struct RecordEditView: View {
     }
 
     private var dateOptRow: some View {
-        Picker(
-            String(localized: "Field_DateOpt", defaultValue: "区分"),
-            selection: $vm.dateOpt
-        ) {
+        Picker(selection: $vm.dateOpt) {
             ForEach(DateOpt.allCases, id: \.self) { opt in
-                Text(opt.label).tag(opt)
+                Label(opt.label, systemImage: opt.icon).tag(opt)
             }
+        } label: {
+            Text(String(localized: "Field_DateOpt", defaultValue: "区分"))
         }
         .onChange(of: vm.dateOpt) { _, _ in vm.isModified = true }
     }
@@ -207,7 +206,8 @@ struct RecordEditView: View {
         spec: MeasureSpec,
         unit: String,
         stepperStep: Int,
-        decimals: Int = 0
+        decimals: Int = 0,
+        color: Color = .primary
     ) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             HStack {
@@ -216,14 +216,14 @@ struct RecordEditView: View {
                 Spacer()
                 if enabled.wrappedValue {
                     Text(ValueFormatter.format(value.wrappedValue, decimals: decimals))
-                        .font(.subheadline.monospacedDigit())
-                        .foregroundStyle(.primary)
+                        .font(.title2.bold().monospacedDigit())
+                        .foregroundStyle(color)
                     Text(unit)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(color.opacity(0.7))
                 } else {
                     Text("－")
-                        .font(.subheadline)
+                        .font(.title2)
                         .foregroundStyle(.tertiary)
                 }
                 Toggle("", isOn: enabled)
