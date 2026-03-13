@@ -300,7 +300,7 @@ final class RecordEditViewModel {
     }
 
     private func buildEventTitle() -> String {
-        var parts: [String] = [String(localized: "EventTitle_Base", defaultValue: "健康日記")]
+        var parts: [String] = [String(localized: "EventTitle_Base", defaultValue: "体調メモ")]
         if nBpHi_mmHg > 0 || nBpLo_mmHg > 0 {
             parts.append(dateOpt.label)
         }

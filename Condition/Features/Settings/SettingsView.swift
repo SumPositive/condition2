@@ -352,7 +352,7 @@ struct AboutView: View {
                         Image(systemName: "heart.text.square.fill")
                             .font(.system(size: 60))
                             .foregroundStyle(Color.azuki)
-                        Text(String(localized: "App_Name", defaultValue: "健康日記"))
+                        Text(String(localized: "App_Name", defaultValue: "体調メモ"))
                             .font(.title2.bold())
                         Text(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "")
                             .font(.caption)
