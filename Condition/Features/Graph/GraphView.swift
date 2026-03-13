@@ -345,7 +345,8 @@ private extension View {
         let now = Date()
         // スクロール域: 最古データ（最大1年前）〜現在。これにより確実にスクロール可能になる。
         let maxLookback = now.addingTimeInterval(-730 * 24 * 3600)
-        let domainStart = oldestDate.map { max($0, maxLookback) } ?? now.addingTimeInterval(-TimeInterval(period.domainSeconds))
+        let rawStart = oldestDate.map { max($0, maxLookback) } ?? now.addingTimeInterval(-TimeInterval(period.domainSeconds))
+        let domainStart = rawStart.addingTimeInterval(-2 * 24 * 3600)
         let scrollDomain = domainStart...now
 
         return self
