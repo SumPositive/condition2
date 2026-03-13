@@ -239,10 +239,14 @@ struct BpJshView: View {
                 LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())],
                           spacing: 4) {
                     ForEach(DateOpt.allCases, id: \.self) { opt in
-                        HStack(spacing: 5) {
+                        HStack(spacing: 4) {
                             Circle()
-                                .fill(dateOptColor(opt))
-                                .frame(width: 10, height: 10)
+                                .fill(opt.color)
+                                .frame(width: 8, height: 8)
+                            Image(systemName: opt.icon)
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                                .frame(width: 12)
                             Text(opt.label)
                                 .font(.caption2)
                                 .foregroundStyle(.secondary)
