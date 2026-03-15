@@ -6,9 +6,8 @@ import SwiftUI
 struct SettingsView: View {
 
     @State private var settings = AppSettings.shared
-@State private var healthKit = HealthKitService.shared
-    @Environment(\.openURL) private var openURL
-    @State private var showHKGuideAlert  = false
+    @State private var healthKit = HealthKitService.shared
+    @State private var showHKSettings = false
 
     var body: some View {
         NavigationStack {
@@ -26,58 +25,26 @@ struct SettingsView: View {
 
                     // ヘルスケア
                     if healthKit.isAvailable {
-                        Toggle(
-                            String(localized: "Settings_HealthKit", defaultValue: "ヘルスケア連携"),
-                            isOn: $settings.hkEnabled
-                        )
-                        .onChange(of: settings.hkEnabled) { _, enabled in
-                            if enabled { Task { await healthKit.requestAuthorization() } }
-                            updateNeedsAutoImport()
-                        }
-                        if settings.hkEnabled {
-                            HStack {
-                                Text(String(localized: "HKSett_Status", defaultValue: "ステータス"))
-                                Spacer()
-                                Text(healthKit.isAuthorized
-                                     ? String(localized: "HKSett_Authorized", defaultValue: "許可済み")
-                                     : String(localized: "HKSett_NotAuthorized", defaultValue: "未許可"))
-                                    .foregroundStyle(healthKit.isAuthorized ? Color.secondary : Color.orange)
-                                Button(String(localized: "HKSett_ChangePermission", defaultValue: "許可を変更")) {
-                                    if healthKit.isAuthorized {
-                                        showHKGuideAlert = true
-                                    } else {
-                                        Task { await healthKit.requestAuthorization() }
-                                    }
+                        NavigationLink {
+                            HealthKitSettingsView()
+                        } label: {
+                            Toggle(
+                                String(localized: "Settings_HealthKit", defaultValue: "ヘルスケア連携"),
+                                isOn: $settings.hkEnabled
+                            )
+                            .onChange(of: settings.hkEnabled) { _, enabled in
+                                if enabled {
+                                    Task { await healthKit.requestAuthorization() }
+                                    showHKSettings = true
                                 }
-                                .font(.caption)
-                                .buttonStyle(.bordered)
-                                .buttonBorderShape(.capsule)
                             }
-                            Picker(String(localized: "HKSett_Direction", defaultValue: "同期方向"),
-                                   selection: Binding(
-                                    get: { HKSyncDirection(rawValue: settings.hkDirection) ?? .writeOnly },
-                                    set: { settings.hkDirection = $0.rawValue }
-                                   )) {
-                                Text(String(localized: "HKDir_Read",  defaultValue: "読み込みのみ")).tag(HKSyncDirection.readOnly)
-                                Text(String(localized: "HKDir_Write", defaultValue: "書き込みのみ")).tag(HKSyncDirection.writeOnly)
-                                Text(String(localized: "HKDir_Both",  defaultValue: "双方向")).tag(HKSyncDirection.both)
-                            }
-                            .pickerStyle(.segmented)
-                            Picker(String(localized: "HKSett_Timing", defaultValue: "タイミング"),
-                                   selection: Binding(
-                                    get: { HKSyncTiming(rawValue: settings.hkTiming) ?? .automatic },
-                                    set: { settings.hkTiming = $0.rawValue }
-                                   )) {
-                                Text(String(localized: "HKTiming_Manual", defaultValue: "手動")).tag(HKSyncTiming.manual)
-                                Text(String(localized: "HKTiming_Auto",   defaultValue: "自動")).tag(HKSyncTiming.automatic)
-                            }
-                            .pickerStyle(.segmented)
                         }
                     }
                 }
                 .onAppear { if healthKit.isAvailable { healthKit.checkAuthorization() } }
-                .onChange(of: settings.hkDirection) { _, _ in updateNeedsAutoImport() }
-                .onChange(of: settings.hkTiming)    { _, _ in updateNeedsAutoImport() }
+                .navigationDestination(isPresented: $showHKSettings) {
+                    HealthKitSettingsView()
+                }
 
                 // MARK: - カスタマイズ
                 Section(String(localized: "Settings_Graph", defaultValue: "カスタマイズ")) {
@@ -99,28 +66,7 @@ struct SettingsView: View {
                 }
             }
             .navigationTitle(String(localized: "Tab_Settings", defaultValue: "設定"))
-            .alert(
-                String(localized: "HKGuide_Title", defaultValue: "ヘルスケアの許可を変更"),
-                isPresented: $showHKGuideAlert
-            ) {
-                Button(String(localized: "HKGuide_Open", defaultValue: "ヘルスケアを開く")) {
-                    if let url = URL(string: "x-apple-health://") {
-                        openURL(url)
-                    }
-                }
-                Button(String(localized: "Cancel", defaultValue: "キャンセル"), role: .cancel) {}
-            } message: {
-                Text(String(localized: "HKGuide_Message",
-                            defaultValue: "ヘルスケア右上のアイコンをタップ → プライバシー → アプリ → 体調メモ を表示し、許可スイッチを操作してください"))
-            }
         }
-    }
-
-    private func updateNeedsAutoImport() {
-        let canImport = settings.hkEnabled &&
-            (HKSyncDirection(rawValue: settings.hkDirection)?.canRead == true) &&
-            HKSyncTiming(rawValue: settings.hkTiming) == .automatic
-        if canImport { healthKit.needsAutoImport = true }
     }
 
 }
@@ -440,6 +386,8 @@ struct GoalSettingsView: View {
 struct HealthKitSettingsView: View {
     @State private var settings = AppSettings.shared
     @State private var hkService = HealthKitService.shared
+    @Environment(\.openURL) private var openURL
+    @State private var showGuideAlert = false
 
     private var directionBinding: Binding<HKSyncDirection> {
         Binding(
@@ -464,11 +412,16 @@ struct HealthKitSettingsView: View {
                          ? String(localized: "HKSett_Authorized", defaultValue: "許可済み")
                          : String(localized: "HKSett_NotAuthorized", defaultValue: "未許可"))
                         .foregroundStyle(hkService.isAuthorized ? Color.secondary : Color.orange)
-                }
-                if !hkService.isAuthorized {
-                    Button(String(localized: "HKSett_Request", defaultValue: "アクセスを許可")) {
-                        Task { await hkService.requestAuthorization() }
+                    Button(String(localized: "HKSett_ChangePermission", defaultValue: "許可を変更")) {
+                        if hkService.isAuthorized {
+                            showGuideAlert = true
+                        } else {
+                            Task { await hkService.requestAuthorization() }
+                        }
                     }
+                    .font(.caption)
+                    .buttonStyle(.bordered)
+                    .buttonBorderShape(.capsule)
                 }
             }
 
@@ -503,11 +456,36 @@ struct HealthKitSettingsView: View {
                             defaultValue: "連携対象：上・下血圧、心拍数、体重、体温、歩数、体脂肪率"))
                     .font(.caption)
                     .foregroundStyle(.secondary)
+                Text(String(localized: "HKSett_Note2",
+                            defaultValue: "こちらからヘルスケアのデータは変更・削除できません。常に追加されるだけです。不要なデータがあればヘルスケア側で項目毎に「すべてのデータを表示」し、編集で削除してください"))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
         }
-        .navigationTitle(String(localized: "HKSett_Title", defaultValue: "ヘルスケア設定"))
+        .navigationTitle(String(localized: "HKSett_Title", defaultValue: "ヘルスケア連携"))
         .navigationBarTitleDisplayMode(.inline)
         .onAppear { hkService.checkAuthorization() }
+        .onChange(of: settings.hkDirection) { _, _ in updateNeedsAutoImport() }
+        .onChange(of: settings.hkTiming)    { _, _ in updateNeedsAutoImport() }
+        .alert(
+            String(localized: "HKGuide_Title", defaultValue: "ヘルスケアの許可を変更"),
+            isPresented: $showGuideAlert
+        ) {
+            Button(String(localized: "HKGuide_Open", defaultValue: "ヘルスケアを開く")) {
+                if let url = URL(string: "x-apple-health://") { openURL(url) }
+            }
+            Button(String(localized: "Cancel", defaultValue: "キャンセル"), role: .cancel) {}
+        } message: {
+            Text(String(localized: "HKGuide_Message",
+                        defaultValue: "ヘルスケア右上のアイコンをタップ → プライバシー → アプリ → 体調メモ を表示し、許可スイッチを操作してください"))
+        }
+    }
+
+    private func updateNeedsAutoImport() {
+        let canImport = settings.hkEnabled &&
+            (HKSyncDirection(rawValue: settings.hkDirection)?.canRead == true) &&
+            HKSyncTiming(rawValue: settings.hkTiming) == .automatic
+        if canImport { hkService.needsAutoImport = true }
     }
 }
 
