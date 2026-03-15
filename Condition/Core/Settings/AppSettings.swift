@@ -19,9 +19,9 @@ final class AppSettings {
     var graphPanelOrder: [Int] = [
         GraphKind.bp.rawValue,       // 0
         GraphKind.pulse.rawValue,    // 2
+        GraphKind.weight.rawValue,   // 4
         GraphKind.temp.rawValue,     // 3
         GraphKind.bpAvg.rawValue,    // 1
-        GraphKind.weight.rawValue,   // 4
         GraphKind.pedo.rawValue,     // 5
         GraphKind.bodyFat.rawValue,  // 6
         GraphKind.skMuscle.rawValue, // 7
@@ -29,7 +29,12 @@ final class AppSettings {
         didSet { kvs.set(graphPanelOrder, forKey: KVSKeys.settGraphs) }
     }
     /// 非表示フィールドの GraphKind.rawValue 集合（グラフ・記録入力の両方に適用）
-    var hiddenFields: [Int] = [] {
+    var hiddenFields: [Int] = [
+        GraphKind.temp.rawValue,     // 3
+        GraphKind.pedo.rawValue,     // 5
+        GraphKind.bodyFat.rawValue,  // 6
+        GraphKind.skMuscle.rawValue, // 7
+    ] {
         didSet { kvs.set(hiddenFields, forKey: KVSKeys.settFieldHidden) }
     }
     var graphOneWidth: Int = 45 {
@@ -70,7 +75,7 @@ final class AppSettings {
         didSet { kvs.set(calendarEnabled, forKey: KVSKeys.bCalender) }
     }
 
-    // MARK: - DateOpt 自動判定時刻
+    // MARK: - DateOpt 自動判定時刻（旧設定、マイグレーション用に保持）
     var wakeHour: Int = 6 {
         didSet { kvs.set(wakeHour, forKey: KVSKeys.dateOptWakeHour) }
     }
@@ -82,6 +87,39 @@ final class AppSettings {
     }
     var sleepHour: Int = 23 {
         didSet { kvs.set(sleepHour, forKey: KVSKeys.dateOptSleepHour) }
+    }
+
+    // MARK: - DateOpt 時刻マトリックス（24要素、-1=未割当→.restにフォールバック）
+    var dateOptHourMap: [Int] = AppSettings.factoryDefaultHourMap {
+        didSet { kvs.set(dateOptHourMap, forKey: KVSKeys.settDateOptHourMap) }
+    }
+
+    /// 出荷時初期値（画像定義）
+    static let factoryDefaultHourMap: [Int] = [
+        3, 3, 3,       // 0-2:   就寝時
+        0, 0, 0, 0, 0, // 3-7:   起床時
+        1, 1, 1,       // 8-10:  安静時
+        4, 4, 4,       // 11-13: 運動前
+        5, 5, 5,       // 14-16: 運動後
+        1, 1, 1,       // 17-19: 安静時
+        2, 2,          // 20-21: 就寝前
+        3, 3,          // 22-23: 就寝時
+    ]
+
+    /// 旧設定（wakeHour/downHour/sleepHour）からのマイグレーション用
+    static func makeDefaultHourMap(wake: Int, down: Int, sleep: Int) -> [Int] {
+        var map = Array(repeating: -1, count: 24)
+        let around = DateOptConstants.aroundHour
+        for offset in -around..<around {
+            map[(down  + offset + 24) % 24] = DateOpt.down.rawValue
+        }
+        for offset in -around..<around {
+            map[(sleep + offset + 24) % 24] = DateOpt.sleep.rawValue
+        }
+        for offset in -around..<around {
+            map[(wake  + offset + 24) % 24] = DateOpt.wake.rawValue
+        }
+        return map
     }
 
     // MARK: - 目標値
@@ -192,6 +230,14 @@ final class AppSettings {
         if dh > 0 { downHour = Int(dh) }
         let sh = kvs.longLong(forKey: KVSKeys.dateOptSleepHour)
         if sh > 0 { sleepHour = Int(sh) }
+        // 時刻マトリックス（保存済みを優先、旧設定があればマイグレーション、なければ出荷時初期値）
+        if let arr = kvs.array(forKey: KVSKeys.settDateOptHourMap) as? [Int], arr.count == 24 {
+            dateOptHourMap = arr
+        } else if wh > 0 || dh > 0 || sh > 0 {
+            dateOptHourMap = AppSettings.makeDefaultHourMap(wake: wakeHour, down: downHour, sleep: sleepHour)
+        } else {
+            dateOptHourMap = AppSettings.factoryDefaultHourMap
+        }
 
         let gbh = kvs.longLong(forKey: KVSKeys.goalBpHi)
         if gbh > 0 { goalBpHi = Int(gbh) }
@@ -218,22 +264,9 @@ final class AppSettings {
         }
     }
 
-    // MARK: - DateOpt 自動判定（旧 integerDateOpt: 相当）
+    // MARK: - DateOpt 自動判定
     func autoDateOpt(for date: Date) -> DateOpt {
-        let cal = Calendar(identifier: .gregorian)
-        let hour = cal.component(.hour, from: date)
-        let around = DateOptConstants.aroundHour
-
-        func inRange(_ center: Int, _ h: Int) -> Bool {
-            var c = center
-            var hh = h
-            if c - around < 0 { c += around; hh += around }
-            return (c - around) <= hh && hh < (c + around)
-        }
-
-        if inRange(wakeHour, hour)  { return .wake }
-        if inRange(sleepHour, hour) { return .sleep }
-        if inRange(downHour, hour)  { return .down }
-        return .rest
+        let hour = Calendar(identifier: .gregorian).component(.hour, from: date)
+        return DateOpt(rawValue: dateOptHourMap[hour]) ?? .rest
     }
 }

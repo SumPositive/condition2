@@ -44,7 +44,7 @@ enum MeasureRange {
     static let bpHi = MeasureSpec(min: 30,  initVal: 120, max: 300, decimals: 0)
     // 血圧（下）mmHg
     static let bpLo = MeasureSpec(min: 20,  initVal: 80,  max: 200, decimals: 0)
-    // 脈拍 bpm
+    // 心拍数 bpm
     static let pulse = MeasureSpec(min: 10,  initVal: 65,  max: 200, decimals: 0)
     // 体重 x10 kg  (650 = 65.0 kg)
     static let weight = MeasureSpec(min: 0,   initVal: 650, max: 2000, decimals: 1)
@@ -109,7 +109,7 @@ enum GraphKind: Int, CaseIterable, Identifiable, Codable {
         switch self {
         case .bp:       return String(localized: "Graph_Bp",       defaultValue: "血圧")
         case .bpAvg:    return String(localized: "Graph_BpAvg",    defaultValue: "平均血圧")
-        case .pulse:    return String(localized: "Graph_Pulse",    defaultValue: "脈拍")
+        case .pulse:    return String(localized: "Graph_Pulse",    defaultValue: "心拍数")
         case .temp:     return String(localized: "Graph_Temp",     defaultValue: "体温")
         case .weight:   return String(localized: "Graph_Weight",   defaultValue: "体重")
         case .pedo:     return String(localized: "Graph_Pedo",     defaultValue: "歩数")

@@ -9,53 +9,24 @@ struct SettingsView: View {
     @State private var calendar = CalendarService.shared
     @State private var healthKit = HealthKitService.shared
     @Environment(\.openURL) private var openURL
-    @State private var showGraphSettings = false
-    @State private var showStatSettings  = false
-    @State private var showCalendarSettings = false
-    @State private var showGoalSettings  = false
-    @State private var showAbout         = false
     @State private var showHKGuideAlert  = false
 
     var body: some View {
         NavigationStack {
             Form {
-                // MARK: - 機能
-                Section(String(localized: "Settings_Features", defaultValue: "機能")) {
-                    Toggle(
-                        String(localized: "Settings_Goal", defaultValue: "目標値を表示"),
-                        isOn: $settings.goalEnabled
-                    )
-                }
-
-                // MARK: - 目標値
-                if settings.goalEnabled {
-                    Section {
-                        NavigationLink(String(localized: "Settings_GoalDetail", defaultValue: "目標値を設定")) {
-                            GoalSettingsView()
-                        }
-                    }
-                }
-
-                // MARK: - 記録項目
-                Section {
-                    NavigationLink(String(localized: "Settings_FieldOrder", defaultValue: "記録項目の有無と順序")) {
+                // MARK: - 記録
+                Section(String(localized: "Settings_Record", defaultValue: "記録")) {
+                    NavigationLink(String(localized: "Settings_FieldOrder", defaultValue: "項目の表示と順序")) {
                         FieldOrderSettingsView()
                     }
-                }
-
-                // MARK: - グラフ・統計
-                Section(String(localized: "Settings_Graph", defaultValue: "グラフ・統計")) {
-                    NavigationLink(String(localized: "Settings_GraphDetail", defaultValue: "グラフ設定")) {
-                        GraphSettingsView()
+                    NavigationLink {
+                        DateOptMatrixView()
+                    } label: {
+                        Text(String(localized: "Settings_DateOpt", defaultValue: "計測時刻設定"))
                     }
-                    NavigationLink(String(localized: "Settings_StatDetail", defaultValue: "統計設定")) {
-                        StatSettingsView()
-                    }
-                }
 
-                // MARK: - ヘルスケア
-                if healthKit.isAvailable {
-                    Section(String(localized: "Settings_HKSection", defaultValue: "ヘルスケア")) {
+                    // ヘルスケア
+                    if healthKit.isAvailable {
                         Toggle(
                             String(localized: "Settings_HealthKit", defaultValue: "ヘルスケア連携"),
                             isOn: $settings.hkEnabled
@@ -65,7 +36,6 @@ struct SettingsView: View {
                             updateNeedsAutoImport()
                         }
                         if settings.hkEnabled {
-                            // 認証状態
                             HStack {
                                 Text(String(localized: "HKSett_Status", defaultValue: "ステータス"))
                                 Spacer()
@@ -75,10 +45,8 @@ struct SettingsView: View {
                                     .foregroundStyle(healthKit.isAuthorized ? Color.secondary : Color.orange)
                                 Button(String(localized: "HKSett_ChangePermission", defaultValue: "許可を変更")) {
                                     if healthKit.isAuthorized {
-                                        // 許可済み → 操作案内アラートを表示してからヘルスケアアプリへ
                                         showHKGuideAlert = true
                                     } else {
-                                        // 未許可 → システムダイアログを表示
                                         Task { await healthKit.requestAuthorization() }
                                     }
                                 }
@@ -86,7 +54,6 @@ struct SettingsView: View {
                                 .buttonStyle(.bordered)
                                 .buttonBorderShape(.capsule)
                             }
-                            // 同期方向
                             Picker(String(localized: "HKSett_Direction", defaultValue: "同期方向"),
                                    selection: Binding(
                                     get: { HKSyncDirection(rawValue: settings.hkDirection) ?? .writeOnly },
@@ -97,7 +64,6 @@ struct SettingsView: View {
                                 Text(String(localized: "HKDir_Both",  defaultValue: "双方向")).tag(HKSyncDirection.both)
                             }
                             .pickerStyle(.segmented)
-                            // 同期タイミング
                             Picker(String(localized: "HKSett_Timing", defaultValue: "タイミング"),
                                    selection: Binding(
                                     get: { HKSyncTiming(rawValue: settings.hkTiming) ?? .automatic },
@@ -109,13 +75,8 @@ struct SettingsView: View {
                             .pickerStyle(.segmented)
                         }
                     }
-                    .onAppear { healthKit.checkAuthorization() }
-                    .onChange(of: settings.hkDirection) { _, _ in updateNeedsAutoImport() }
-                    .onChange(of: settings.hkTiming)    { _, _ in updateNeedsAutoImport() }
-                }
 
-                // MARK: - カレンダー
-                Section(String(localized: "Settings_CalendarSection", defaultValue: "カレンダー連携")) {
+                    // カレンダー
                     Toggle(
                         String(localized: "Settings_Calendar", defaultValue: "カレンダー連携"),
                         isOn: $settings.calendarEnabled
@@ -150,21 +111,18 @@ struct SettingsView: View {
                         }
                     }
                 }
+                .onAppear { if healthKit.isAvailable { healthKit.checkAuthorization() } }
+                .onChange(of: settings.hkDirection) { _, _ in updateNeedsAutoImport() }
+                .onChange(of: settings.hkTiming)    { _, _ in updateNeedsAutoImport() }
 
-                // MARK: - 時刻設定（DateOpt 自動判定）
-                Section(String(localized: "Settings_DateOpt", defaultValue: "測定時刻設定")) {
-                    hourPicker(
-                        label: String(localized: "DateOpt_Wake", defaultValue: "起床時"),
-                        value: $settings.wakeHour
-                    )
-                    hourPicker(
-                        label: String(localized: "DateOpt_Down", defaultValue: "就寝前"),
-                        value: $settings.downHour
-                    )
-                    hourPicker(
-                        label: String(localized: "DateOpt_Sleep", defaultValue: "就寝時"),
-                        value: $settings.sleepHour
-                    )
+                // MARK: - カスタマイズ
+                Section(String(localized: "Settings_Graph", defaultValue: "カスタマイズ")) {
+                    NavigationLink(String(localized: "Settings_GraphDetail", defaultValue: "グラフ設定")) {
+                        GraphSettingsView()
+                    }
+                    NavigationLink(String(localized: "Settings_StatDetail", defaultValue: "統計設定")) {
+                        StatSettingsView()
+                    }
                 }
 
                 // MARK: - アプリ情報
@@ -201,12 +159,75 @@ struct SettingsView: View {
         if canImport { healthKit.needsAutoImport = true }
     }
 
-    private func hourPicker(label: String, value: Binding<Int>) -> some View {
-        Picker(label, selection: value) {
-            ForEach(0..<24, id: \.self) { h in
-                Text(String(format: "%d時", h)).tag(h)
+}
+
+// MARK: - 計測時刻設定マトリックス
+
+struct DateOptMatrixView: View {
+    @State private var settings = AppSettings.shared
+
+    private let kinds = DateOpt.allCases
+
+    var body: some View {
+        ScrollView {
+            VStack(spacing: 0) {
+                // ヘッダー行
+                HStack(spacing: 1) {
+                    Spacer().frame(width: 28)
+                    ForEach(kinds, id: \.rawValue) { kind in
+                        VStack(spacing: 1) {
+                            Image(systemName: kind.icon)
+                                .font(.caption2)
+                                .foregroundStyle(kind.color)
+                            Text(kind.label)
+                                .font(.system(size: 9))
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.5)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 4)
+                    }
+                }
+                .background(Color(.secondarySystemGroupedBackground))
+
+                Divider()
+
+                // 時間行（0〜23時）
+                ForEach(0..<24, id: \.self) { hour in
+                    HStack(spacing: 1) {
+                        Text(String(format: "%d", hour))
+                            .font(.system(size: 11).monospacedDigit())
+                            .foregroundStyle(.secondary)
+                            .frame(width: 28, alignment: .trailing)
+                            .padding(.trailing, 2)
+                        ForEach(kinds, id: \.rawValue) { kind in
+                            let isOn = settings.dateOptHourMap[hour] == kind.rawValue
+                            ZStack {
+                                RoundedRectangle(cornerRadius: 3)
+                                    .fill(isOn ? kind.color : Color(.systemFill))
+                                if isOn {
+                                    Image(systemName: kind.icon)
+                                        .font(.system(size: 9))
+                                        .foregroundStyle(.white)
+                                }
+                            }
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 22)
+                            .onTapGesture {
+                                guard !isOn else { return }
+                                settings.dateOptHourMap[hour] = kind.rawValue
+                            }
+                        }
+                    }
+                    .padding(.vertical, 1)
+                }
             }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 4)
         }
+        .background(Color(.systemGroupedBackground))
+        .navigationTitle(String(localized: "Settings_DateOpt", defaultValue: "計測時刻設定"))
+        .navigationBarTitleDisplayMode(.inline)
     }
 }
 
@@ -227,6 +248,15 @@ struct GraphSettingsView: View {
                     String(localized: "GraphSett_BpPress", defaultValue: "脈圧"),
                     isOn: $settings.graphBpPress
                 )
+                Toggle(
+                    String(localized: "Settings_Goal", defaultValue: "目標値を表示"),
+                    isOn: $settings.goalEnabled
+                )
+                if settings.goalEnabled {
+                    NavigationLink(String(localized: "Settings_GoalDetail", defaultValue: "目標値を設定")) {
+                        GoalSettingsView()
+                    }
+                }
             }
 
             Section(String(localized: "GraphSett_BMI", defaultValue: "BMI計算（身長）")) {
@@ -240,19 +270,13 @@ struct GraphSettingsView: View {
                     Text("cm").foregroundStyle(.secondary)
                 }
             }
-
-            Section {
-                NavigationLink(String(localized: "Settings_FieldOrder", defaultValue: "記録項目の有無と順序")) {
-                    FieldOrderSettingsView()
-                }
-            }
         }
         .navigationTitle(String(localized: "GraphSett_Title", defaultValue: "グラフ設定"))
         .navigationBarTitleDisplayMode(.inline)
     }
 }
 
-// MARK: - 記録項目の有無と順序
+// MARK: - 項目の表示と順序
 
 struct FieldOrderSettingsView: View {
     @State private var settings = AppSettings.shared
@@ -288,7 +312,7 @@ struct FieldOrderSettingsView: View {
             }
         }
         .environment(\.editMode, .constant(.active))
-        .navigationTitle(String(localized: "Settings_FieldOrder", defaultValue: "記録項目の有無と順序"))
+        .navigationTitle(String(localized: "Settings_FieldOrder", defaultValue: "項目の表示と順序"))
         .navigationBarTitleDisplayMode(.inline)
     }
 }
@@ -356,7 +380,7 @@ struct GoalSettingsView: View {
     var body: some View {
         NavigationStack {
             Form {
-                Section(String(localized: "Goal_BP", defaultValue: "血圧・脈拍")) {
+                Section(String(localized: "Goal_BP", defaultValue: "血圧・心拍数")) {
                     goalDialRow(
                         label: String(localized: "Field_BpHi", defaultValue: "上血圧"),
                         value: $settings.goalBpHi,
@@ -370,7 +394,7 @@ struct GoalSettingsView: View {
                         unit: "mmHg"
                     )
                     goalDialRow(
-                        label: String(localized: "Field_Pulse", defaultValue: "脈拍"),
+                        label: String(localized: "Field_Pulse", defaultValue: "心拍数"),
                         value: $settings.goalPulse,
                         spec: MeasureRange.pulse,
                         unit: "bpm"
@@ -512,7 +536,7 @@ struct HealthKitSettingsView: View {
 
             Section {
                 Text(String(localized: "HKSett_Note",
-                            defaultValue: "連携対象：上・下血圧、脈拍、体重、体温、歩数、体脂肪率"))
+                            defaultValue: "連携対象：上・下血圧、心拍数、体重、体温、歩数、体脂肪率"))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }

@@ -73,7 +73,7 @@ struct RecordEditView: View {
                         text: $vm.sNote2
                     )
                     noteRow(
-                        title: String(localized: "Field_Equipment", defaultValue: "測定機器"),
+                        title: String(localized: "Field_Equipment", defaultValue: "計測機器"),
                         text: $vm.sEquipment
                     )
                 }
@@ -165,7 +165,7 @@ struct RecordEditView: View {
             dialRow(title: "上（収縮期血圧）", value: $vm.nBpHi_mmHg, enabled: $vm.bpHiEnabled, spec: MeasureRange.bpHi, unit: "mmHg", stepperStep: 10, color: .red)
             dialRow(title: "下（拡張期血圧）", value: $vm.nBpLo_mmHg, enabled: $vm.bpLoEnabled, spec: MeasureRange.bpLo, unit: "mmHg", stepperStep: 5,  color: .blue)
         case .pulse:
-            dialRow(title: "脈拍", value: $vm.nPulse_bpm, enabled: $vm.pulseEnabled, spec: MeasureRange.pulse, unit: "bpm", stepperStep: 5, color: .orange)
+            dialRow(title: "心拍数", value: $vm.nPulse_bpm, enabled: $vm.pulseEnabled, spec: MeasureRange.pulse, unit: "bpm", stepperStep: 5, color: .orange)
         case .weight:
             dialRow(title: "体重", value: $vm.nWeight_10Kg, enabled: $vm.weightEnabled, spec: MeasureRange.weight, unit: "kg", stepperStep: 10, decimals: 1, color: .indigo)
         case .temp:

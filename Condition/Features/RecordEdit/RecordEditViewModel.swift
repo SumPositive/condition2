@@ -152,7 +152,7 @@ final class RecordEditViewModel {
 
         guard let allPrev = try? context.fetch(descriptor) else { return }
 
-        // 血圧・脈拍は DateOpt 一致優先
+        // 血圧・心拍数は DateOpt 一致優先
         if nBpHi_mmHg == MeasureRange.bpHi.initVal {
             nBpHi_mmHg = allPrev
                 .filter { $0.nDateOpt == opt && $0.nBpHi_mmHg > 0 }

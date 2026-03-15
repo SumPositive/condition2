@@ -273,7 +273,7 @@ private let dateColumnWidth: CGFloat = 80
 nonisolated(unsafe) private let recordColumns: [(label: LocalizedStringKey, width: CGFloat)] = [
     ("上",   28),
     ("下",   28),
-    ("脈拍", 28),
+    ("心拍数", 28),
     ("体重", 44),
     ("体温", 36),
     ("歩数", 36),

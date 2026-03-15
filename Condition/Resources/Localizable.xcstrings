@@ -747,7 +747,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "測定機器"
+            "value" : "計測機器"
           }
         }
       }
@@ -815,7 +815,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "脈拍"
+            "value" : "心拍数"
           }
         }
       }
@@ -934,7 +934,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "血圧・脈拍"
+            "value" : "血圧・心拍数"
           }
         }
       }
@@ -1070,7 +1070,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "脈拍"
+            "value" : "心拍数"
           }
         }
       }
@@ -1647,7 +1647,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "測定時刻設定"
+            "value" : "計測時刻設定"
           }
         }
       }
@@ -1715,7 +1715,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "グラフ・統計"
+            "value" : "カスタマイズ"
           }
         }
       }
@@ -2508,7 +2508,7 @@
         }
       }
     },
-    "脈拍" : {
+    "心拍数" : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -2520,7 +2520,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "脈拍"
+            "value" : "心拍数"
           }
         }
       }

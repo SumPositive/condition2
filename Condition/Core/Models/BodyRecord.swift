@@ -22,7 +22,7 @@ final class BodyRecord {
     // 血圧（単位: mmHg）
     var nBpHi_mmHg: Int = 0
     var nBpLo_mmHg: Int = 0
-    // 脈拍（単位: bpm）
+    // 心拍数（単位: bpm）
     var nPulse_bpm: Int = 0
     // 体温（x10 ℃ 例: 365 = 36.5℃）
     var nTemp_10c: Int = 0

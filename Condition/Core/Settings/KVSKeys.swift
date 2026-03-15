@@ -29,6 +29,8 @@ enum KVSKeys {
     static let dateOptRestHour  = "KVS_DateOptRest_HOUR"
     static let dateOptDownHour  = "KVS_DateOptDown_HOUR"
     static let dateOptSleepHour = "KVS_DateOptSleep_HOUR"
+    /// 時刻→区分マトリックス ([Int] 24要素, -1=未割当=.restにフォールバック)
+    static let settDateOptHourMap = "KVS_SettDateOptHourMap"
 
     // MARK: - 目標値（iCloud KVS 全デバイス共通）
     static let goalBpHi      = "Goal_nBpHi_mmHg"

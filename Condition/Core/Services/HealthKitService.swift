@@ -125,7 +125,7 @@ final class HealthKitService {
             samples.append(bp)
         }
 
-        // 脈拍
+        // 心拍数
         if values.pulse > 0 {
             samples.append(HKQuantitySample(
                 type: HKQuantityType(.heartRate),
@@ -191,7 +191,7 @@ final class HealthKitService {
             v.bpLo = bp.1
         }
 
-        // 脈拍
+        // 心拍数
         if !hiddenFields.contains(GraphKind.pulse.rawValue),
            let s = await mostRecentQuantity(.heartRate, before: date) {
             v.pulse = Int(s.quantity.doubleValue(for: HKUnit(from: "count/min")))
@@ -353,11 +353,11 @@ final class HealthKitService {
             }
         }
 
-        // 脈拍
+        // 心拍数
         if !hiddenFields.contains(GraphKind.pulse.rawValue) {
-            importProgress = "脈拍を取得中..."
+            importProgress = "心拍数を取得中..."
             let hrSamples = await allQtySamples(.heartRate, from: startDate, to: endDate, unit: HKUnit(from: "count/min"))
-            logger.info("脈拍サンプル数: \(hrSamples.count)")
+            logger.info("心拍数サンプル数: \(hrSamples.count)")
             for (date, val) in hrSamples {
                 let k = minuteKey(date); var v = byMinute[k] ?? HealthKitValues(date: date)
                 if v.pulse == 0 { v.pulse = Int(val) }
