@@ -297,7 +297,10 @@ final class RecordEditViewModel {
         isLoadingFromHK = true
         defer { isLoadingFromHK = false }
 
-        let values = await HealthKitService.shared.readLatest(before: dateTime)
+        let values = await HealthKitService.shared.readLatest(
+            before: dateTime,
+            hiddenFields: Set(AppSettings.shared.hiddenFields)
+        )
         applyHealthKitValues(values)
     }
 
@@ -311,15 +314,17 @@ final class RecordEditViewModel {
     }
 
     private func currentHealthKitValues() -> HealthKitValues {
-        HealthKitValues(
+        let hidden = Set(AppSettings.shared.hiddenFields)
+        func active(_ kind: GraphKind, _ flag: Bool) -> Bool { flag && !hidden.contains(kind.rawValue) }
+        return HealthKitValues(
             date:    dateTime,
-            bpHi:    bpHiEnabled      ? nBpHi_mmHg   : 0,
-            bpLo:    bpLoEnabled      ? nBpLo_mmHg   : 0,
-            pulse:   pulseEnabled     ? nPulse_bpm   : 0,
-            temp:    tempEnabled      ? nTemp_10c    : 0,
-            weight:  weightEnabled    ? nWeight_10Kg  : 0,
-            steps:   pedometerEnabled ? nPedometer   : 0,
-            bodyFat: bodyFatEnabled   ? nBodyFat_10p  : 0
+            bpHi:    active(.bp,      bpHiEnabled)      ? nBpHi_mmHg   : 0,
+            bpLo:    active(.bp,      bpLoEnabled)      ? nBpLo_mmHg   : 0,
+            pulse:   active(.pulse,   pulseEnabled)     ? nPulse_bpm   : 0,
+            temp:    active(.temp,    tempEnabled)      ? nTemp_10c    : 0,
+            weight:  active(.weight,  weightEnabled)    ? nWeight_10Kg  : 0,
+            steps:   active(.pedo,    pedometerEnabled) ? nPedometer   : 0,
+            bodyFat: active(.bodyFat, bodyFatEnabled)   ? nBodyFat_10p  : 0
         )
     }
 

@@ -36,6 +36,13 @@ struct SettingsView: View {
                     }
                 }
 
+                // MARK: - 記録項目
+                Section {
+                    NavigationLink(String(localized: "Settings_FieldOrder", defaultValue: "記録項目の有無と順序")) {
+                        FieldOrderSettingsView()
+                    }
+                }
+
                 // MARK: - グラフ・統計
                 Section(String(localized: "Settings_Graph", defaultValue: "グラフ・統計")) {
                     NavigationLink(String(localized: "Settings_GraphDetail", defaultValue: "グラフ設定")) {
@@ -234,21 +241,55 @@ struct GraphSettingsView: View {
                 }
             }
 
-            Section(String(localized: "GraphSett_Order", defaultValue: "パネル順序")) {
-                ForEach(settings.graphPanelOrder, id: \.self) { raw in
-                    if let kind = GraphKind(rawValue: raw) {
-                        Label(kind.title, systemImage: "line.3.horizontal")
-                            .foregroundStyle(.primary)
-                    }
-                }
-                .onMove { from, to in
-                    settings.graphPanelOrder.move(fromOffsets: from, toOffset: to)
+            Section {
+                NavigationLink(String(localized: "Settings_FieldOrder", defaultValue: "記録項目の有無と順序")) {
+                    FieldOrderSettingsView()
                 }
             }
         }
         .navigationTitle(String(localized: "GraphSett_Title", defaultValue: "グラフ設定"))
         .navigationBarTitleDisplayMode(.inline)
-        .toolbar { EditButton() }
+    }
+}
+
+// MARK: - 記録項目の有無と順序
+
+struct FieldOrderSettingsView: View {
+    @State private var settings = AppSettings.shared
+
+    private var hiddenSet: Set<Int> { Set(settings.hiddenFields) }
+
+    var body: some View {
+        List {
+            Section {
+                ForEach(settings.graphPanelOrder, id: \.self) { raw in
+                    if let kind = GraphKind(rawValue: raw), kind != .bpAvg {
+                        Toggle(isOn: Binding(
+                            get: { !hiddenSet.contains(raw) },
+                            set: { visible in
+                                if visible {
+                                    settings.hiddenFields.removeAll { $0 == raw }
+                                } else {
+                                    if !settings.hiddenFields.contains(raw) {
+                                        settings.hiddenFields.append(raw)
+                                    }
+                                }
+                            }
+                        )) {
+                            Text(kind.title)
+                        }
+                    }
+                }
+                .onMove { from, to in
+                    settings.graphPanelOrder.move(fromOffsets: from, toOffset: to)
+                }
+            } footer: {
+                Text(String(localized: "FieldOrder_Footer", defaultValue: "並び順はグラフと記録入力の両方に反映されます"))
+            }
+        }
+        .environment(\.editMode, .constant(.active))
+        .navigationTitle(String(localized: "Settings_FieldOrder", defaultValue: "記録項目の有無と順序"))
+        .navigationBarTitleDisplayMode(.inline)
     }
 }
 

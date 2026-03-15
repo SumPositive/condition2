@@ -55,9 +55,11 @@ struct RecordEditView: View {
             Form {
                 hkImportSection
                 dateSection
-                bpSection
-                bodySection
-                activitySection
+                Section(String(localized: "Section_Measure", defaultValue: "計測値")) {
+                    ForEach(orderedRecordFields, id: \.rawValue) { kind in
+                        fieldRow(for: kind)
+                    }
+                }
                 healthKitSection
 
                 // メモセクション
@@ -148,6 +150,37 @@ struct RecordEditView: View {
 
     // MARK: - セクション分割ヘルパー
 
+    /// 設定の順序と非表示設定に従った表示フィールド一覧
+    private var orderedRecordFields: [GraphKind] {
+        let hidden = Set(settings.hiddenFields)
+        return settings.graphPanelOrder
+            .compactMap { GraphKind(rawValue: $0) }
+            .filter { $0.isRecordField && !hidden.contains($0.rawValue) }
+    }
+
+    @ViewBuilder
+    private func fieldRow(for kind: GraphKind) -> some View {
+        switch kind {
+        case .bp:
+            dialRow(title: "上（収縮期血圧）", value: $vm.nBpHi_mmHg, enabled: $vm.bpHiEnabled, spec: MeasureRange.bpHi, unit: "mmHg", stepperStep: 10, color: .red)
+            dialRow(title: "下（拡張期血圧）", value: $vm.nBpLo_mmHg, enabled: $vm.bpLoEnabled, spec: MeasureRange.bpLo, unit: "mmHg", stepperStep: 5,  color: .blue)
+        case .pulse:
+            dialRow(title: "脈拍", value: $vm.nPulse_bpm, enabled: $vm.pulseEnabled, spec: MeasureRange.pulse, unit: "bpm", stepperStep: 5, color: .orange)
+        case .weight:
+            dialRow(title: "体重", value: $vm.nWeight_10Kg, enabled: $vm.weightEnabled, spec: MeasureRange.weight, unit: "kg", stepperStep: 10, decimals: 1, color: .indigo)
+        case .temp:
+            dialRow(title: "体温", value: $vm.nTemp_10c, enabled: $vm.tempEnabled, spec: MeasureRange.temp, unit: "℃", stepperStep: 1, decimals: 1, color: .pink)
+        case .pedo:
+            dialRow(title: "歩数", value: $vm.nPedometer, enabled: $vm.pedometerEnabled, spec: MeasureRange.pedometer, unit: "歩", stepperStep: 1000, color: .green)
+        case .bodyFat:
+            dialRow(title: "体脂肪率", value: $vm.nBodyFat_10p, enabled: $vm.bodyFatEnabled, spec: MeasureRange.bodyFat, unit: "%", stepperStep: 5, decimals: 1, color: .purple)
+        case .skMuscle:
+            dialRow(title: "骨格筋率", value: $vm.nSkMuscle_10p, enabled: $vm.skMuscleEnabled, spec: MeasureRange.skMuscle, unit: "%", stepperStep: 5, decimals: 1, color: .teal)
+        case .bpAvg:
+            EmptyView()
+        }
+    }
+
     @ViewBuilder
     private var dateSection: some View {
         if case .goalEdit = vm.mode { } else {
@@ -155,32 +188,6 @@ struct RecordEditView: View {
                 dateRow
                 dateOptRow
             }
-        }
-    }
-
-    @ViewBuilder
-    private var bpSection: some View {
-        Section(String(localized: "Section_BP", defaultValue: "血圧")) {
-            dialRow(title: "上（収縮期血圧）", value: $vm.nBpHi_mmHg,  enabled: $vm.bpHiEnabled,      spec: MeasureRange.bpHi,   unit: "mmHg", stepperStep: 10, color: .red)
-            dialRow(title: "下（拡張期血圧）", value: $vm.nBpLo_mmHg,  enabled: $vm.bpLoEnabled,      spec: MeasureRange.bpLo,   unit: "mmHg", stepperStep: 5,  color: .blue)
-            dialRow(title: "脈拍",           value: $vm.nPulse_bpm,   enabled: $vm.pulseEnabled,     spec: MeasureRange.pulse,  unit: "bpm",  stepperStep: 5,  color: .orange)
-        }
-    }
-
-    @ViewBuilder
-    private var bodySection: some View {
-        Section(String(localized: "Section_Body", defaultValue: "体重・体温")) {
-            dialRow(title: "体重", value: $vm.nWeight_10Kg, enabled: $vm.weightEnabled,    spec: MeasureRange.weight, unit: "kg", stepperStep: 10, decimals: 1, color: .indigo)
-            dialRow(title: "体温", value: $vm.nTemp_10c,    enabled: $vm.tempEnabled,      spec: MeasureRange.temp,   unit: "℃", stepperStep: 1,  decimals: 1, color: .pink)
-        }
-    }
-
-    @ViewBuilder
-    private var activitySection: some View {
-        Section(String(localized: "Section_Activity", defaultValue: "活動・体組成")) {
-            dialRow(title: "歩数",     value: $vm.nPedometer,    enabled: $vm.pedometerEnabled, spec: MeasureRange.pedometer, unit: "歩", stepperStep: 1000,           color: .green)
-            dialRow(title: "体脂肪率", value: $vm.nBodyFat_10p,  enabled: $vm.bodyFatEnabled,   spec: MeasureRange.bodyFat,   unit: "%",  stepperStep: 5, decimals: 1, color: .purple)
-            dialRow(title: "骨格筋率", value: $vm.nSkMuscle_10p, enabled: $vm.skMuscleEnabled,  spec: MeasureRange.skMuscle,  unit: "%",  stepperStep: 5, decimals: 1, color: .teal)
         }
     }
 
@@ -223,7 +230,11 @@ struct RecordEditView: View {
             let now = Date()
             let oneYearAgo = cal.date(byAdding: .year, value: -1, to: now) ?? now.addingTimeInterval(-365 * 24 * 3600)
 
-            let hkValues = await HealthKitService.shared.readSamples(from: oneYearAgo, to: now)
+            let appSettings = AppSettings.shared
+            let hkValues = await HealthKitService.shared.readSamples(
+                from: oneYearAgo, to: now,
+                hiddenFields: Set(appSettings.hiddenFields)
+            )
 
             // 既存レコードの時刻セット（過去1年、分単位）
             let descriptor = FetchDescriptor<BodyRecord>(
@@ -235,8 +246,6 @@ struct RecordEditView: View {
                 return Date(timeIntervalSinceReferenceDate: (secs / 60).rounded(.down) * 60)
             }
             let existingTimes = Set(existing.map { roundToMinute($0.dateTime) })
-
-            let appSettings = AppSettings.shared
             var addedCount = 0
             for v in hkValues {
                 guard !existingTimes.contains(roundToMinute(v.date)) else { continue }

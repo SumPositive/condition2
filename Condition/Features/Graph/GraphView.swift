@@ -95,7 +95,8 @@ struct GraphView: View {
                 }
                 .pickerStyle(.segmented)
 
-                ForEach(settings.graphPanelOrder, id: \.self) { kindRaw in
+                let hidden = Set(settings.hiddenFields)
+                ForEach(settings.graphPanelOrder.filter { !hidden.contains($0) }, id: \.self) { kindRaw in
                     if let kind = GraphKind(rawValue: kindRaw) {
                         graphPanel(kind: kind)
                     }

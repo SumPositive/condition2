@@ -7,6 +7,7 @@ import Foundation
 enum KVSKeys {
     // MARK: - グラフ設定
     static let settGraphs       = "KVS_SettGraphs"      // グラフパネル順序 (Data: [Int])
+    static let settFieldHidden  = "KVS_SettFieldHidden" // 非表示フィールド rawValue 配列 ([Int])
     static let settGraphOneWid  = "KVS_SettGraphOneWid" // 1レコード幅
     static let settGraphBpMean  = "KVS_SettGraphBpMean" // 平均血圧表示
     static let settGraphBpPress = "KVS_SettGraphBpPress"// 脈圧表示

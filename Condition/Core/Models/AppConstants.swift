@@ -117,4 +117,7 @@ enum GraphKind: Int, CaseIterable, Identifiable, Codable {
         case .skMuscle: return String(localized: "Graph_SkMuscle", defaultValue: "骨格筋率")
         }
     }
+
+    /// 記録入力画面にも対応するフィールドかどうか（bpAvg はグラフ専用）
+    var isRecordField: Bool { self != .bpAvg }
 }

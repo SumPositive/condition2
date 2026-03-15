@@ -28,6 +28,10 @@ final class AppSettings {
     ] {
         didSet { kvs.set(graphPanelOrder, forKey: KVSKeys.settGraphs) }
     }
+    /// 非表示フィールドの GraphKind.rawValue 集合（グラフ・記録入力の両方に適用）
+    var hiddenFields: [Int] = [] {
+        didSet { kvs.set(hiddenFields, forKey: KVSKeys.settFieldHidden) }
+    }
     var graphOneWidth: Int = 45 {
         didSet { kvs.set(graphOneWidth, forKey: KVSKeys.settGraphOneWid) }
     }
@@ -158,6 +162,9 @@ final class AppSettings {
     func loadFromKVS() {
         if let arr = kvs.array(forKey: KVSKeys.settGraphs) as? [Int], !arr.isEmpty {
             graphPanelOrder = arr
+        }
+        if let arr = kvs.array(forKey: KVSKeys.settFieldHidden) as? [Int] {
+            hiddenFields = arr
         }
         let ow = kvs.longLong(forKey: KVSKeys.settGraphOneWid)
         if ow > 0 { graphOneWidth = Int(ow) }

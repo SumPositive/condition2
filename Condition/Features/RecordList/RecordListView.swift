@@ -145,7 +145,10 @@ struct RecordListView: View {
         let now = Date()
         let oneYearAgo = cal.date(byAdding: .year, value: -1, to: now) ?? now.addingTimeInterval(-365 * 24 * 3600)
 
-        let hkValues = await hkService.readSamples(from: oneYearAgo, to: now)
+        let hkValues = await hkService.readSamples(
+            from: oneYearAgo, to: now,
+            hiddenFields: Set(settings.hiddenFields)
+        )
         guard !hkValues.isEmpty else { return }
 
         let descriptor = FetchDescriptor<BodyRecord>(

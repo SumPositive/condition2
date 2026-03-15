@@ -178,39 +178,46 @@ final class HealthKitService {
     // MARK: - 読み込み
 
     /// 指定日時より前の最新サンプルを取得（歩数は当日合計）
-    func readLatest(before date: Date) async -> HealthKitValues {
+    /// - Parameter hiddenFields: 非表示フィールドの GraphKind.rawValue 集合。含まれる種別は取得をスキップする。
+    func readLatest(before date: Date, hiddenFields: Set<Int> = []) async -> HealthKitValues {
         guard isAvailable else { return HealthKitValues(date: date) }
 
         var v = HealthKitValues(date: date)
 
         // 血圧
-        if let bp = await mostRecentBloodPressure(before: date) {
+        if !hiddenFields.contains(GraphKind.bp.rawValue),
+           let bp = await mostRecentBloodPressure(before: date) {
             v.bpHi = bp.0
             v.bpLo = bp.1
         }
 
         // 脈拍
-        if let s = await mostRecentQuantity(.heartRate, before: date) {
+        if !hiddenFields.contains(GraphKind.pulse.rawValue),
+           let s = await mostRecentQuantity(.heartRate, before: date) {
             v.pulse = Int(s.quantity.doubleValue(for: HKUnit(from: "count/min")))
         }
 
         // 体温
-        if let s = await mostRecentQuantity(.bodyTemperature, before: date) {
+        if !hiddenFields.contains(GraphKind.temp.rawValue),
+           let s = await mostRecentQuantity(.bodyTemperature, before: date) {
             v.temp = Int(s.quantity.doubleValue(for: .degreeCelsius()) * 10.0)
         }
 
         // 体重
-        if let s = await mostRecentQuantity(.bodyMass, before: date) {
+        if !hiddenFields.contains(GraphKind.weight.rawValue),
+           let s = await mostRecentQuantity(.bodyMass, before: date) {
             v.weight = Int(s.quantity.doubleValue(for: .gramUnit(with: .kilo)) * 10.0)
         }
 
         // 歩数（当日合計）
-        if let steps = await stepCountForDay(of: date) {
+        if !hiddenFields.contains(GraphKind.pedo.rawValue),
+           let steps = await stepCountForDay(of: date) {
             v.steps = steps
         }
 
         // 体脂肪率
-        if let s = await mostRecentQuantity(.bodyFatPercentage, before: date) {
+        if !hiddenFields.contains(GraphKind.bodyFat.rawValue),
+           let s = await mostRecentQuantity(.bodyFatPercentage, before: date) {
             // percent() は内部的に fraction (0–1) で格納されるため ×100×10
             v.bodyFat = Int(s.quantity.doubleValue(for: .percent()) * 100.0 * 10.0)
         }
@@ -318,7 +325,8 @@ final class HealthKitService {
     // MARK: - 期間一括読み込み
 
     /// 指定期間の全サンプルを返す（分単位でグループ化、歩数は同日の全レコードに付与）
-    func readSamples(from startDate: Date, to endDate: Date) async -> [HealthKitValues] {
+    /// - Parameter hiddenFields: 非表示フィールドの GraphKind.rawValue 集合。含まれる種別は取得をスキップする。
+    func readSamples(from startDate: Date, to endDate: Date, hiddenFields: Set<Int> = []) async -> [HealthKitValues] {
         guard isAvailable else {
             logger.error("readSamples: HealthKit 利用不可")
             return []
@@ -334,71 +342,89 @@ final class HealthKitService {
         var byMinute: [Date: HealthKitValues] = [:]
 
         // 血圧
-        importProgress = "血圧を取得中..."
-        let bpSamples = await allBPSamples(from: startDate, to: endDate)
-        logger.info("血圧サンプル数: \(bpSamples.count)")
-        for (date, hi, lo) in bpSamples {
-            let k = minuteKey(date); var v = byMinute[k] ?? HealthKitValues(date: date)
-            if v.bpHi == 0 { v.bpHi = hi; v.bpLo = lo; v.date = date }
-            byMinute[k] = v
+        if !hiddenFields.contains(GraphKind.bp.rawValue) {
+            importProgress = "血圧を取得中..."
+            let bpSamples = await allBPSamples(from: startDate, to: endDate)
+            logger.info("血圧サンプル数: \(bpSamples.count)")
+            for (date, hi, lo) in bpSamples {
+                let k = minuteKey(date); var v = byMinute[k] ?? HealthKitValues(date: date)
+                if v.bpHi == 0 { v.bpHi = hi; v.bpLo = lo; v.date = date }
+                byMinute[k] = v
+            }
         }
 
         // 脈拍
-        importProgress = "脈拍を取得中..."
-        let hrSamples = await allQtySamples(.heartRate, from: startDate, to: endDate, unit: HKUnit(from: "count/min"))
-        logger.info("脈拍サンプル数: \(hrSamples.count)")
-        for (date, val) in hrSamples {
-            let k = minuteKey(date); var v = byMinute[k] ?? HealthKitValues(date: date)
-            if v.pulse == 0 { v.pulse = Int(val) }
-            byMinute[k] = v
+        if !hiddenFields.contains(GraphKind.pulse.rawValue) {
+            importProgress = "脈拍を取得中..."
+            let hrSamples = await allQtySamples(.heartRate, from: startDate, to: endDate, unit: HKUnit(from: "count/min"))
+            logger.info("脈拍サンプル数: \(hrSamples.count)")
+            for (date, val) in hrSamples {
+                let k = minuteKey(date); var v = byMinute[k] ?? HealthKitValues(date: date)
+                if v.pulse == 0 { v.pulse = Int(val) }
+                byMinute[k] = v
+            }
         }
 
         // 体温
-        importProgress = "体温を取得中..."
-        let tempSamples = await allQtySamples(.bodyTemperature, from: startDate, to: endDate, unit: .degreeCelsius())
-        logger.info("体温サンプル数: \(tempSamples.count)")
-        for (date, val) in tempSamples {
-            let k = minuteKey(date); var v = byMinute[k] ?? HealthKitValues(date: date)
-            if v.temp == 0 { v.temp = Int(val * 10) }
-            byMinute[k] = v
+        if !hiddenFields.contains(GraphKind.temp.rawValue) {
+            importProgress = "体温を取得中..."
+            let tempSamples = await allQtySamples(.bodyTemperature, from: startDate, to: endDate, unit: .degreeCelsius())
+            logger.info("体温サンプル数: \(tempSamples.count)")
+            for (date, val) in tempSamples {
+                let k = minuteKey(date); var v = byMinute[k] ?? HealthKitValues(date: date)
+                if v.temp == 0 { v.temp = Int(val * 10) }
+                byMinute[k] = v
+            }
         }
 
         // 体重
-        importProgress = "体重を取得中..."
-        let weightSamples = await allQtySamples(.bodyMass, from: startDate, to: endDate, unit: .gramUnit(with: .kilo))
-        logger.info("体重サンプル数: \(weightSamples.count)")
-        for (date, val) in weightSamples {
-            let k = minuteKey(date); var v = byMinute[k] ?? HealthKitValues(date: date)
-            if v.weight == 0 { v.weight = Int(val * 10) }
-            byMinute[k] = v
+        if !hiddenFields.contains(GraphKind.weight.rawValue) {
+            importProgress = "体重を取得中..."
+            let weightSamples = await allQtySamples(.bodyMass, from: startDate, to: endDate, unit: .gramUnit(with: .kilo))
+            logger.info("体重サンプル数: \(weightSamples.count)")
+            for (date, val) in weightSamples {
+                let k = minuteKey(date); var v = byMinute[k] ?? HealthKitValues(date: date)
+                if v.weight == 0 { v.weight = Int(val * 10) }
+                byMinute[k] = v
+            }
         }
 
         // 体脂肪率
-        importProgress = "体脂肪率を取得中..."
-        let fatSamples = await allQtySamples(.bodyFatPercentage, from: startDate, to: endDate, unit: .percent())
-        logger.info("体脂肪率サンプル数: \(fatSamples.count)")
-        for (date, val) in fatSamples {
-            let k = minuteKey(date); var v = byMinute[k] ?? HealthKitValues(date: date)
-            if v.bodyFat == 0 { v.bodyFat = Int(val * 100 * 10) }
-            byMinute[k] = v
+        if !hiddenFields.contains(GraphKind.bodyFat.rawValue) {
+            importProgress = "体脂肪率を取得中..."
+            let fatSamples = await allQtySamples(.bodyFatPercentage, from: startDate, to: endDate, unit: .percent())
+            logger.info("体脂肪率サンプル数: \(fatSamples.count)")
+            for (date, val) in fatSamples {
+                let k = minuteKey(date); var v = byMinute[k] ?? HealthKitValues(date: date)
+                if v.bodyFat == 0 { v.bodyFat = Int(val * 100 * 10) }
+                byMinute[k] = v
+            }
         }
 
         // 歩数（日別合計）同日の最終時刻レコードにのみ付与、レコードがない日は startOfDay に作成
-        importProgress = "歩数を取得中..."
-        let stepSamples = await allStepsByDay(from: startDate, to: endDate)
-        logger.info("歩数サンプル日数: \(stepSamples.count)")
-        for (dayDate, steps) in stepSamples {
-            let day = cal.startOfDay(for: dayDate)
-            let keysForDay = byMinute.keys.filter { cal.startOfDay(for: $0) == day }
-            if let lastKey = keysForDay.max() {
-                byMinute[lastKey]!.steps = steps
+        if !hiddenFields.contains(GraphKind.pedo.rawValue) {
+            importProgress = "歩数を取得中..."
+            let stepSamples = await allStepsByDay(from: startDate, to: endDate)
+            logger.info("歩数サンプル日数: \(stepSamples.count)")
+            for (dayDate, steps) in stepSamples {
+                let day = cal.startOfDay(for: dayDate)
+                let keysForDay = byMinute.keys.filter { cal.startOfDay(for: $0) == day }
+                if let lastKey = keysForDay.max() {
+                    byMinute[lastKey]!.steps = steps
+                }
+                // keysForDay が空の場合（歩数のみの日）はレコードを作成しない
             }
-            // keysForDay が空の場合（歩数のみの日）はレコードを作成しない
         }
 
         importProgress = ""
+        // 非表示でないバイタル項目のうち少なくとも1つが入力されているレコードのみ残す
         let result = byMinute.values
-            .filter { $0.bpHi > 0 || $0.pulse > 0 || $0.temp > 0 || $0.weight > 0 }
+            .filter { v in
+                (!hiddenFields.contains(GraphKind.bp.rawValue)     && v.bpHi > 0)   ||
+                (!hiddenFields.contains(GraphKind.pulse.rawValue)  && v.pulse > 0)  ||
+                (!hiddenFields.contains(GraphKind.temp.rawValue)   && v.temp > 0)   ||
+                (!hiddenFields.contains(GraphKind.weight.rawValue) && v.weight > 0)
+            }
             .sorted { $0.date < $1.date }
         logger.info("readSamples 完了: \(result.count) 件")
         return result
