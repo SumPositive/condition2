@@ -107,18 +107,15 @@ final class AppSettings {
         set { ud.set(newValue, forKey: UDefKeys.calendarTitle) }
     }
 
-    // MARK: - HealthKit（UserDefaults: デバイス個別）
-    var hkEnabled: Bool {
-        get { ud.bool(forKey: UDefKeys.hkEnabled) }
-        set { ud.set(newValue, forKey: UDefKeys.hkEnabled) }
+    // MARK: - HealthKit（UserDefaults: デバイス個別・@Observable 追跡対象にするため stored property）
+    var hkEnabled: Bool = false {
+        didSet { ud.set(hkEnabled, forKey: UDefKeys.hkEnabled) }
     }
-    var hkDirection: Int {
-        get { ud.integer(forKey: UDefKeys.hkDirection) }
-        set { ud.set(newValue, forKey: UDefKeys.hkDirection) }
+    var hkDirection: Int = HKSyncDirection.readOnly.rawValue {
+        didSet { ud.set(hkDirection, forKey: UDefKeys.hkDirection) }
     }
-    var hkTiming: Int {
-        get { ud.integer(forKey: UDefKeys.hkTiming) }
-        set { ud.set(newValue, forKey: UDefKeys.hkTiming) }
+    var hkTiming: Int = HKSyncTiming.manual.rawValue {
+        didSet { ud.set(hkTiming, forKey: UDefKeys.hkTiming) }
     }
 
     // MARK: - 購入状態（制限解除済み）
@@ -128,6 +125,10 @@ final class AppSettings {
 
     private init() {
         loadFromKVS()
+        // UserDefaults（デバイス個別）読み込み
+        hkEnabled   = ud.bool(forKey: UDefKeys.hkEnabled)
+        hkDirection = ud.integer(forKey: UDefKeys.hkDirection)
+        hkTiming    = ud.integer(forKey: UDefKeys.hkTiming)
         // iCloud KVS 外部変更通知
         NotificationCenter.default.addObserver(
             self,
@@ -190,8 +191,8 @@ final class AppSettings {
 
     }
 
-    @objc private func kvsDidChangeExternally(_ notification: Notification) {
-        Task { @MainActor in
+    @objc nonisolated private func kvsDidChangeExternally(_ notification: Notification) {
+        Task { @MainActor [self] in
             self.loadFromKVS()
         }
     }

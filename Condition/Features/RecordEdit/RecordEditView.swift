@@ -49,6 +49,7 @@ struct RecordEditView: View {
     var body: some View {
         NavigationStack {
             Form {
+                hkImportSection
                 dateSection
                 bpSection
                 bodySection
@@ -185,40 +186,48 @@ struct RecordEditView: View {
         }
     }
 
-    // MARK: - HealthKit セクション（手動タイミングのみ表示）
+    // MARK: - HealthKit 取得ボタン（先頭・新規追加かつ手動のみ）
+
+    @ViewBuilder
+    private var hkImportSection: some View {
+        if isNewRecord && settings.hkEnabled && hkDirection.canRead && hkTiming == .manual {
+            Section {
+                Button {
+                    Task {
+                        await vm.loadFromHealthKit()
+                        saveAndDismiss()
+                    }
+                } label: {
+                    HStack {
+                        Label(
+                            String(localized: "HK_Import", defaultValue: "ヘルスケアから取得"),
+                            systemImage: "arrow.down.heart"
+                        )
+                        Spacer()
+                        if vm.isLoadingFromHK {
+                            ProgressView()
+                        }
+                    }
+                }
+                .disabled(vm.isLoadingFromHK)
+            }
+        }
+    }
+
+    // MARK: - HealthKit セクション（書き込み手動のみ）
 
     @ViewBuilder
     private var healthKitSection: some View {
-        let showRead  = settings.hkEnabled && hkDirection.canRead  && hkTiming == .manual
         let showWrite = settings.hkEnabled && hkDirection.canWrite && hkTiming == .manual
-        if showRead || showWrite {
+        if showWrite {
             Section(String(localized: "HK_Section", defaultValue: "ヘルスケア")) {
-                if showRead {
-                    Button {
-                        Task { await vm.loadFromHealthKit() }
-                    } label: {
-                        HStack {
-                            Label(
-                                String(localized: "HK_Import", defaultValue: "ヘルスケアから取得"),
-                                systemImage: "arrow.down.heart"
-                            )
-                            Spacer()
-                            if vm.isLoadingFromHK {
-                                ProgressView()
-                            }
-                        }
-                    }
-                    .disabled(vm.isLoadingFromHK)
-                }
-                if showWrite {
-                    Button {
-                        vm.writeToHealthKit()
-                    } label: {
-                        Label(
-                            String(localized: "HK_Export", defaultValue: "ヘルスケアへ書き込み"),
-                            systemImage: "arrow.up.heart"
-                        )
-                    }
+                Button {
+                    vm.writeToHealthKit()
+                } label: {
+                    Label(
+                        String(localized: "HK_Export", defaultValue: "ヘルスケアへ書き込み"),
+                        systemImage: "arrow.up.heart"
+                    )
                 }
             }
         }

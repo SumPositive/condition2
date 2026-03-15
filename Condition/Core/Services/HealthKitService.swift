@@ -51,7 +51,6 @@ final class HealthKitService {
     private static let shareTypes: Set<HKSampleType> = [
         HKQuantityType(.bloodPressureSystolic),
         HKQuantityType(.bloodPressureDiastolic),
-        HKCorrelationType(.bloodPressure),
         HKQuantityType(.heartRate),
         HKQuantityType(.bodyTemperature),
         HKQuantityType(.bodyMass),
@@ -62,7 +61,6 @@ final class HealthKitService {
     private static let readTypes: Set<HKObjectType> = [
         HKQuantityType(.bloodPressureSystolic),
         HKQuantityType(.bloodPressureDiastolic),
-        HKCorrelationType(.bloodPressure),
         HKQuantityType(.heartRate),
         HKQuantityType(.bodyTemperature),
         HKQuantityType(.bodyMass),

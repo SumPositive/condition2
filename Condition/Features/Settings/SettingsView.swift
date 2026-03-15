@@ -23,20 +23,13 @@ struct SettingsView: View {
                         String(localized: "Settings_Goal", defaultValue: "目標値を表示"),
                         isOn: $settings.goalEnabled
                     )
-                    Toggle(
-                        String(localized: "Settings_Calendar", defaultValue: "カレンダー連携"),
-                        isOn: $settings.calendarEnabled
-                    )
-                    .onChange(of: settings.calendarEnabled) { _, enabled in
-                        if enabled { Task { await calendar.requestAccess() } }
-                    }
-                    if healthKit.isAvailable {
-                        Toggle(
-                            String(localized: "Settings_HealthKit", defaultValue: "ヘルスケア連携"),
-                            isOn: $settings.hkEnabled
-                        )
-                        .onChange(of: settings.hkEnabled) { _, enabled in
-                            if enabled { Task { await healthKit.requestAuthorization() } }
+                }
+
+                // MARK: - 目標値
+                if settings.goalEnabled {
+                    Section {
+                        NavigationLink(String(localized: "Settings_GoalDetail", defaultValue: "目標値を設定")) {
+                            GoalSettingsView()
                         }
                     }
                 }
@@ -51,36 +44,89 @@ struct SettingsView: View {
                     }
                 }
 
-                // MARK: - 目標値
-                if settings.goalEnabled {
-                    Section {
-                        NavigationLink(String(localized: "Settings_GoalDetail", defaultValue: "目標値を設定")) {
-                            GoalSettingsView()
-                        }
-                    }
-                }
-
-                // MARK: - HealthKit
-                if settings.hkEnabled && healthKit.isAvailable {
+                // MARK: - ヘルスケア
+                if healthKit.isAvailable {
                     Section(String(localized: "Settings_HKSection", defaultValue: "ヘルスケア")) {
-                        NavigationLink(String(localized: "Settings_HKDetail", defaultValue: "ヘルスケア設定")) {
-                            HealthKitSettingsView()
+                        Toggle(
+                            String(localized: "Settings_HealthKit", defaultValue: "ヘルスケア連携"),
+                            isOn: $settings.hkEnabled
+                        )
+                        .onChange(of: settings.hkEnabled) { _, enabled in
+                            if enabled { Task { await healthKit.requestAuthorization() } }
+                        }
+                        if settings.hkEnabled {
+                            // 認証状態
+                            HStack {
+                                Text(String(localized: "HKSett_Status", defaultValue: "ステータス"))
+                                Spacer()
+                                Text(healthKit.isAuthorized
+                                     ? String(localized: "HKSett_Authorized", defaultValue: "許可済み")
+                                     : String(localized: "HKSett_NotAuthorized", defaultValue: "未許可"))
+                                    .foregroundStyle(healthKit.isAuthorized ? Color.secondary : Color.orange)
+                            }
+                            if !healthKit.isAuthorized {
+                                Button(String(localized: "HKSett_Request", defaultValue: "アクセスを許可")) {
+                                    Task { await healthKit.requestAuthorization() }
+                                }
+                            }
+                            // 同期方向
+                            Picker(String(localized: "HKSett_Direction", defaultValue: "同期方向"),
+                                   selection: Binding(
+                                    get: { HKSyncDirection(rawValue: settings.hkDirection) ?? .writeOnly },
+                                    set: { settings.hkDirection = $0.rawValue }
+                                   )) {
+                                Text(String(localized: "HKDir_Read",  defaultValue: "読み込みのみ")).tag(HKSyncDirection.readOnly)
+                                Text(String(localized: "HKDir_Write", defaultValue: "書き込みのみ")).tag(HKSyncDirection.writeOnly)
+                                Text(String(localized: "HKDir_Both",  defaultValue: "双方向")).tag(HKSyncDirection.both)
+                            }
+                            .pickerStyle(.segmented)
+                            // 同期タイミング
+                            Picker(String(localized: "HKSett_Timing", defaultValue: "タイミング"),
+                                   selection: Binding(
+                                    get: { HKSyncTiming(rawValue: settings.hkTiming) ?? .automatic },
+                                    set: { settings.hkTiming = $0.rawValue }
+                                   )) {
+                                Text(String(localized: "HKTiming_Manual", defaultValue: "手動")).tag(HKSyncTiming.manual)
+                                Text(String(localized: "HKTiming_Auto",   defaultValue: "自動")).tag(HKSyncTiming.automatic)
+                            }
+                            .pickerStyle(.segmented)
                         }
                     }
+                    .onAppear { healthKit.checkAuthorization() }
                 }
 
                 // MARK: - カレンダー
-                if settings.calendarEnabled {
-                    Section(String(localized: "Settings_CalendarSection", defaultValue: "カレンダー")) {
-                        NavigationLink(String(localized: "Settings_CalendarDetail", defaultValue: "カレンダーを選択")) {
-                            CalendarSettingsView()
-                        }
-                        if !settings.calendarTitle.isEmpty {
-                            HStack {
-                                Text(String(localized: "Settings_CalendarSelected", defaultValue: "選択中"))
-                                    .foregroundStyle(.secondary)
-                                Spacer()
-                                Text(settings.calendarTitle)
+                Section(String(localized: "Settings_CalendarSection", defaultValue: "カレンダー連携")) {
+                    Toggle(
+                        String(localized: "Settings_Calendar", defaultValue: "カレンダー連携"),
+                        isOn: $settings.calendarEnabled
+                    )
+                    .onChange(of: settings.calendarEnabled) { _, enabled in
+                        if enabled { Task { await calendar.requestAccess() } }
+                    }
+                    if settings.calendarEnabled {
+                        if calendar.availableCalendars.isEmpty {
+                            Button(String(localized: "Calendar_Request", defaultValue: "アクセスを許可")) {
+                                Task { await calendar.requestAccess() }
+                            }
+                        } else {
+                            ForEach(calendar.availableCalendars, id: \.calendarIdentifier) { cal in
+                                HStack {
+                                    Circle()
+                                        .fill(Color(cgColor: cal.cgColor))
+                                        .frame(width: 12, height: 12)
+                                    Text(cal.title)
+                                    Spacer()
+                                    if settings.calendarID == cal.calendarIdentifier {
+                                        Image(systemName: "checkmark")
+                                            .foregroundStyle(.blue)
+                                    }
+                                }
+                                .contentShape(Rectangle())
+                                .onTapGesture {
+                                    settings.calendarID    = cal.calendarIdentifier
+                                    settings.calendarTitle = cal.title
+                                }
                             }
                         }
                     }
