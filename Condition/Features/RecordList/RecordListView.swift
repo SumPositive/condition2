@@ -247,69 +247,97 @@ struct RecordRowView: View {
     }
 
     var body: some View {
-        HStack(spacing: 0) {
-            // 日付＋区分
-            HStack(alignment: .bottom, spacing: 2) {
-                // 左：日付・時刻
-                VStack(alignment: .leading, spacing: 0) {
-                    HStack(alignment: .firstTextBaseline, spacing: 2) {
-                        Text(dayString)
-                            .font(.title3.bold().monospacedDigit())
-                            .foregroundStyle(record.bCaution ? .red : .primary)
-                            .lineLimit(1)
-                            .fixedSize(horizontal: true, vertical: false)
-                        Text(Self.weekdayFormatter.string(from: record.dateTime))
+        let notes = [record.sNote1, record.sNote2].filter { !$0.isEmpty }.joined(separator: "  ")
+        VStack(alignment: .leading, spacing: 2) {
+            HStack(spacing: 0) {
+                // 日付＋区分
+                HStack(alignment: .bottom, spacing: 2) {
+
+                    // 左：日付・時刻
+                    VStack(alignment: .leading, spacing: 0) {
+                        HStack(alignment: .firstTextBaseline, spacing: 2) {
+                            Text(dayString)
+                                .font(.title3.bold().monospacedDigit())
+                                .foregroundStyle(record.bCaution ? .red : .primary)
+                                .lineLimit(1)
+                                .fixedSize(horizontal: true, vertical: false)
+                            Text(Self.weekdayFormatter.string(from: record.dateTime))
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                                .fixedSize(horizontal: true, vertical: false)
+                        }
+                        Text(Self.timeFormatter.string(from: record.dateTime))
                             .font(.caption2)
                             .foregroundStyle(.secondary)
-                            .fixedSize(horizontal: true, vertical: false)
                     }
-                    Text(Self.timeFormatter.string(from: record.dateTime))
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
+                    // 右：アイコン＋区分ラベル
+                    VStack(spacing: 1) {
+                        Image(systemName: record.dateOpt.icon)
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                        Text(record.dateOpt.label)
+                            .font(.system(size: 9))
+                            .minimumScaleFactor(0.6)
+                            .lineLimit(1)
+                            .foregroundStyle(.secondary)
+                    }
+                    .frame(width: 36, alignment: .center)
                 }
-                // 右：アイコン＋区分ラベル
-                VStack(spacing: 1) {
-                    Image(systemName: record.dateOpt.icon)
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                    Text(record.dateOpt.label)
-                        .font(.system(size: 9))
-                        .minimumScaleFactor(0.6)
-                        .lineLimit(1)
-                        .foregroundStyle(.secondary)
-                }
-                .frame(width: 36, alignment: .center)
-            }
-            .frame(width: dateColumnWidth, alignment: .leading)
-            .padding(.trailing, 4)
+                .frame(width: dateColumnWidth, alignment: .leading)
+                .padding(.trailing, 4)
 
-            Divider()
-                .padding(.vertical, 8)
+                // 最初の縦線の幅を確保（実線は overlay で描画）
+                Color.clear.frame(width: 1)
 
-            // 測定値（行全体の高さを使い、縦線を外側と揃える）
-            GeometryReader { proxy in
-                let h = proxy.size.height
-                // 縦向き時: proxy.size.width = 計測エリア幅（日付列・縦線除く）
-                // 固定幅: 上28+下28+脈28+内縦線1+体重44+体温36=165, leading4, 5ギャップ
-                let compact = verticalSizeClass == .compact
-                let spacing: CGFloat = compact ? 4 : max(4, (proxy.size.width - 4 - 165) / 5)
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: spacing) {
-                        valueCell(record.displayBpHi,     width: recordColumns[0].width, height: h)
-                        valueCell(record.displayBpLo,     width: recordColumns[1].width, height: h)
-                        valueCell(record.displayPulse,    width: recordColumns[2].width, height: h)
-                        Divider().padding(.vertical, 8)
-                        valueCell(record.displayWeight,   width: recordColumns[3].width, height: h)
-                        valueCell(record.displayTemp,     width: recordColumns[4].width, height: h)
-                        if showActivity {
+                // 測定値（計測行の高さのみ）
+                // h = 計測行のみ → 2・3本目縦線はメモ行に入らない
+                GeometryReader { proxy in
+                    let h = proxy.size.height
+                    // 縦向き時: proxy.size.width = 計測エリア幅（日付列・縦線除く）
+                    // 固定幅: 上28+下28+脈28+内縦線1+体重44+体温36=165, leading4, 5ギャップ
+                    let compact = verticalSizeClass == .compact
+                    let spacing: CGFloat = compact ? 4 : max(4, (proxy.size.width - 4 - 165) / 5)
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: spacing) {
+                            valueCell(record.displayBpHi,     width: recordColumns[0].width, height: h)
+                            valueCell(record.displayBpLo,     width: recordColumns[1].width, height: h)
+                            valueCell(record.displayPulse,    width: recordColumns[2].width, height: h)
                             Divider().padding(.vertical, 8)
-                            valueCell(record.displayPedo,     width: recordColumns[5].width, height: h)
-                            valueCell(record.displayBodyFat,  width: recordColumns[6].width, height: h)
-                            valueCell(record.displaySkMuscle, width: recordColumns[7].width, height: h)
+                            valueCell(record.displayWeight,   width: recordColumns[3].width, height: h)
+                            valueCell(record.displayTemp,     width: recordColumns[4].width, height: h)
+                            if showActivity {
+                                Divider().padding(.vertical, 8)
+                                valueCell(record.displayPedo,     width: recordColumns[5].width, height: h)
+                                valueCell(record.displayBodyFat,  width: recordColumns[6].width, height: h)
+                                valueCell(record.displaySkMuscle, width: recordColumns[7].width, height: h)
+                            }
                         }
+                        .padding(.leading, 4)
                     }
-                    .padding(.leading, 4)
                 }
+            }
+            .fixedSize(horizontal: false, vertical: true)
+            // メモ（あるときのみ）日時・区分列を避けて計測エリア側から表示
+            if !notes.isEmpty {
+                HStack(spacing: 0) {
+                    Color.clear.frame(width: dateColumnWidth + 5)
+                    Text(notes)
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
+                        .lineLimit(1)
+                        .padding(.leading, 4)
+                }
+            }
+        }
+        // 最初の縦線のみ VStack 全高（メモ行含む）に渡って描画
+        .overlay(alignment: .leading) {
+            HStack(spacing: 0) {
+                Color.clear.frame(width: dateColumnWidth + 4)
+                Rectangle()
+                    .frame(width: 1)
+                    .foregroundStyle(.separator)
+                    .padding(.vertical, 8)
+                Spacer()
             }
         }
         .font(.caption)
