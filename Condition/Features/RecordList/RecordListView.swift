@@ -141,8 +141,8 @@ struct RecordSectionHeader: View {
 
 // MARK: - 列幅定義
 
-/// 日付列の固定幅（ヘッダーと明細で共通。title3.bold "31" + spacing + icon 24pt + trailing 4pt）
-private let dateColumnWidth: CGFloat = 64
+/// 日付列の固定幅（ヘッダーと明細で共通。title3.bold "31" + spacing + icon 36pt + trailing 4pt）
+private let dateColumnWidth: CGFloat = 80
 
 nonisolated(unsafe) private let recordColumns: [(label: LocalizedStringKey, width: CGFloat)] = [
     ("上",   28),
@@ -158,6 +158,7 @@ nonisolated(unsafe) private let recordColumns: [(label: LocalizedStringKey, widt
 // MARK: - カラムヘッダー
 
 struct RecordColumnHeader: View {
+    var showActivity: Bool = true
     @Environment(\.verticalSizeClass) private var verticalSizeClass
 
     private func colWidth(_ index: Int) -> CGFloat {
@@ -166,42 +167,50 @@ struct RecordColumnHeader: View {
     }
 
     var body: some View {
-        HStack(spacing: 0) {
-            // 日時＋区分ヘッダー（明細と同じ固定幅）
-            HStack(spacing: 2) {
-                Text("日時")
-                    .fixedSize()
-                Text("区分")
-                    .frame(width: 24, alignment: .center)
-            }
-            .frame(width: dateColumnWidth, alignment: .leading)
-            .padding(.trailing, 4)
-            Rectangle()
-                .frame(width: 1, height: 14)
-                .foregroundStyle(.separator)
-            // 明細と同じ動的スペーシング
-            GeometryReader { proxy in
-                let compact = verticalSizeClass == .compact
-                let cellTotal = recordColumns.reduce(0.0) { $0 + $1.width } * (compact ? 2.0 : 1.0)
-                let spacing = max(-4, (proxy.size.width - 4 - cellTotal - 2) / 9)
+        GeometryReader { geo in
+            // 縦向き時: 体温までで画面幅をちょうど使い切るスペーシングを計算
+            // measureAreaWidth = 全体幅 - 日付列(68) - trailing(4) - 縦線(1)
+            let compact = verticalSizeClass == .compact
+            let measureWidth = geo.size.width - dateColumnWidth - 5
+            // 固定幅: 上28+下28+脈28+内縦線1+体重44+体温36=165, leading4, 5ギャップ
+            let spacing: CGFloat = compact ? 4 : max(4, (measureWidth - 4 - 165) / 5)
+            HStack(spacing: 0) {
+                // 日時＋区分ヘッダー（明細と同じ固定幅）
+                HStack(spacing: 0) {
+                    Text("日時")
+                        .font(.caption2)
+                    Spacer()
+                    Text("区分")
+                        .minimumScaleFactor(0.6)
+                        .lineLimit(1)
+                        .frame(width: 36, alignment: .center)
+                }
+                .frame(width: dateColumnWidth, alignment: .leading)
+                .padding(.trailing, 4)
+                Rectangle()
+                    .frame(width: 1, height: 14)
+                    .foregroundStyle(.separator)
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: spacing) {
-                        Text(recordColumns[0].label).frame(width: colWidth(0))
-                        Text(recordColumns[1].label).frame(width: colWidth(1))
-                        Text(recordColumns[2].label).frame(width: colWidth(2))
+                        Text(recordColumns[0].label).minimumScaleFactor(0.6).lineLimit(1).frame(width: colWidth(0))
+                        Text(recordColumns[1].label).minimumScaleFactor(0.6).lineLimit(1).frame(width: colWidth(1))
+                        Text(recordColumns[2].label).minimumScaleFactor(0.6).lineLimit(1).frame(width: colWidth(2))
                         Rectangle().frame(width: 1, height: 14).foregroundStyle(.separator)
-                        Text(recordColumns[3].label).frame(width: colWidth(3))
-                        Text(recordColumns[4].label).frame(width: colWidth(4))
-                        Rectangle().frame(width: 1, height: 14).foregroundStyle(.separator)
-                        Text(recordColumns[5].label).frame(width: colWidth(5))
-                        Text(recordColumns[6].label).frame(width: colWidth(6))
-                        Text(recordColumns[7].label).frame(width: colWidth(7))
+                        Text(recordColumns[3].label).minimumScaleFactor(0.6).lineLimit(1).frame(width: colWidth(3))
+                        Text(recordColumns[4].label).minimumScaleFactor(0.6).lineLimit(1).frame(width: colWidth(4))
+                        if showActivity {
+                            Rectangle().frame(width: 1, height: 14).foregroundStyle(.separator)
+                            Text(recordColumns[5].label).minimumScaleFactor(0.6).lineLimit(1).frame(width: colWidth(5))
+                            Text(recordColumns[6].label).minimumScaleFactor(0.6).lineLimit(1).frame(width: colWidth(6))
+                            Text(recordColumns[7].label).minimumScaleFactor(0.6).lineLimit(1).frame(width: colWidth(7))
+                        }
                     }
                     .padding(.leading, 4)
                 }
+                .frame(height: 14)
             }
-            .frame(height: 14)
         }
+        .frame(height: 14)
         .font(.caption2)
         .foregroundStyle(.secondary)
     }
@@ -211,6 +220,7 @@ struct RecordColumnHeader: View {
 
 struct RecordRowView: View {
     let record: BodyRecord
+    var showActivity: Bool = true
 
     @Environment(\.verticalSizeClass) private var verticalSizeClass
 
@@ -246,24 +256,29 @@ struct RecordRowView: View {
                         Text(dayString)
                             .font(.title3.bold().monospacedDigit())
                             .foregroundStyle(record.bCaution ? .red : .primary)
+                            .lineLimit(1)
+                            .fixedSize(horizontal: true, vertical: false)
                         Text(Self.weekdayFormatter.string(from: record.dateTime))
                             .font(.caption2)
                             .foregroundStyle(.secondary)
+                            .fixedSize(horizontal: true, vertical: false)
                     }
                     Text(Self.timeFormatter.string(from: record.dateTime))
                         .font(.caption2)
                         .foregroundStyle(.secondary)
                 }
-                // 右：アイコン＋区分ラベル（ラベルを時刻行と揃える）
+                // 右：アイコン＋区分ラベル
                 VStack(spacing: 1) {
                     Image(systemName: record.dateOpt.icon)
                         .font(.caption2)
                         .foregroundStyle(.secondary)
                     Text(record.dateOpt.label)
-                        .font(.system(size: 8))
+                        .font(.system(size: 9))
+                        .minimumScaleFactor(0.6)
+                        .lineLimit(1)
                         .foregroundStyle(.secondary)
                 }
-                .frame(width: 24, alignment: .center)
+                .frame(width: 36, alignment: .center)
             }
             .frame(width: dateColumnWidth, alignment: .leading)
             .padding(.trailing, 4)
@@ -274,9 +289,10 @@ struct RecordRowView: View {
             // 測定値（行全体の高さを使い、縦線を外側と揃える）
             GeometryReader { proxy in
                 let h = proxy.size.height
+                // 縦向き時: proxy.size.width = 計測エリア幅（日付列・縦線除く）
+                // 固定幅: 上28+下28+脈28+内縦線1+体重44+体温36=165, leading4, 5ギャップ
                 let compact = verticalSizeClass == .compact
-                let cellTotal = recordColumns.reduce(0.0) { $0 + $1.width } * (compact ? 2.0 : 1.0)
-                let spacing = max(-4, (proxy.size.width - 4 - cellTotal - 2) / 9)
+                let spacing: CGFloat = compact ? 4 : max(4, (proxy.size.width - 4 - 165) / 5)
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: spacing) {
                         valueCell(record.displayBpHi,     width: recordColumns[0].width, height: h)
@@ -285,10 +301,12 @@ struct RecordRowView: View {
                         Divider().padding(.vertical, 8)
                         valueCell(record.displayWeight,   width: recordColumns[3].width, height: h)
                         valueCell(record.displayTemp,     width: recordColumns[4].width, height: h)
-                        Divider().padding(.vertical, 8)
-                        valueCell(record.displayPedo,     width: recordColumns[5].width, height: h)
-                        valueCell(record.displayBodyFat,  width: recordColumns[6].width, height: h)
-                        valueCell(record.displaySkMuscle, width: recordColumns[7].width, height: h)
+                        if showActivity {
+                            Divider().padding(.vertical, 8)
+                            valueCell(record.displayPedo,     width: recordColumns[5].width, height: h)
+                            valueCell(record.displayBodyFat,  width: recordColumns[6].width, height: h)
+                            valueCell(record.displaySkMuscle, width: recordColumns[7].width, height: h)
+                        }
                     }
                     .padding(.leading, 4)
                 }

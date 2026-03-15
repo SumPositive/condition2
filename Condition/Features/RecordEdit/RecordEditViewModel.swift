@@ -76,12 +76,12 @@ final class RecordEditViewModel {
             nSkMuscle_10p = MeasureRange.skMuscle.initVal
             bpHiEnabled      = true
             bpLoEnabled      = true
-            pulseEnabled     = true
-            weightEnabled    = true
-            tempEnabled      = true
-            pedometerEnabled = true
-            bodyFatEnabled   = true
-            skMuscleEnabled  = true
+            pulseEnabled     = false
+            weightEnabled    = false
+            tempEnabled      = false
+            pedometerEnabled = false
+            bodyFatEnabled   = false
+            skMuscleEnabled  = false
 
         case .edit(let record):
             originalRecord = record
