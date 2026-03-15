@@ -72,6 +72,12 @@ struct RecordListView: View {
                     Task { await autoImportFromHealthKitIfNeeded() }
                 }
             }
+            .onAppear {
+                if hkService.needsAutoImport {
+                    hkService.needsAutoImport = false
+                    Task { await autoImportFromHealthKitIfNeeded() }
+                }
+            }
             .sheet(item: $editTarget) { record in
                 RecordEditView(mode: .edit(record))
             }
@@ -139,19 +145,22 @@ struct RecordListView: View {
         let now = Date()
         let oneYearAgo = cal.date(byAdding: .year, value: -1, to: now) ?? now.addingTimeInterval(-365 * 24 * 3600)
 
-        let hkValues = await hkService.readDailySamples(from: oneYearAgo, to: now)
+        let hkValues = await hkService.readSamples(from: oneYearAgo, to: now)
         guard !hkValues.isEmpty else { return }
 
         let descriptor = FetchDescriptor<BodyRecord>(
             predicate: #Predicate { $0.dateTime >= oneYearAgo && $0.dateTime < now }
         )
         let existing = (try? context.fetch(descriptor)) ?? []
-        let existingDays = Set(existing.map { cal.startOfDay(for: $0.dateTime) })
+        func roundToMinute(_ d: Date) -> Date {
+            let secs = d.timeIntervalSinceReferenceDate
+            return Date(timeIntervalSinceReferenceDate: (secs / 60).rounded(.down) * 60)
+        }
+        let existingTimes = Set(existing.map { roundToMinute($0.dateTime) })
 
         var addedCount = 0
         for v in hkValues {
-            let day = cal.startOfDay(for: v.date)
-            guard !existingDays.contains(day) else { continue }
+            guard !existingTimes.contains(roundToMinute(v.date)) else { continue }
             let record = BodyRecord(dateTime: v.date, dateOpt: settings.autoDateOpt(for: v.date))
             record.nBpHi_mmHg   = v.bpHi
             record.nBpLo_mmHg   = v.bpLo

@@ -223,20 +223,23 @@ struct RecordEditView: View {
             let now = Date()
             let oneYearAgo = cal.date(byAdding: .year, value: -1, to: now) ?? now.addingTimeInterval(-365 * 24 * 3600)
 
-            let hkValues = await HealthKitService.shared.readDailySamples(from: oneYearAgo, to: now)
+            let hkValues = await HealthKitService.shared.readSamples(from: oneYearAgo, to: now)
 
-            // 既存レコードの日付セット（過去1年）
+            // 既存レコードの時刻セット（過去1年、分単位）
             let descriptor = FetchDescriptor<BodyRecord>(
                 predicate: #Predicate { $0.dateTime >= oneYearAgo && $0.dateTime < now }
             )
             let existing = (try? context.fetch(descriptor)) ?? []
-            let existingDays = Set(existing.map { cal.startOfDay(for: $0.dateTime) })
+            func roundToMinute(_ d: Date) -> Date {
+                let secs = d.timeIntervalSinceReferenceDate
+                return Date(timeIntervalSinceReferenceDate: (secs / 60).rounded(.down) * 60)
+            }
+            let existingTimes = Set(existing.map { roundToMinute($0.dateTime) })
 
             let appSettings = AppSettings.shared
             var addedCount = 0
             for v in hkValues {
-                let day = cal.startOfDay(for: v.date)
-                guard !existingDays.contains(day) else { continue }
+                guard !existingTimes.contains(roundToMinute(v.date)) else { continue }
                 let record = BodyRecord(dateTime: v.date, dateOpt: appSettings.autoDateOpt(for: v.date))
                 record.nBpHi_mmHg   = v.bpHi
                 record.nBpLo_mmHg   = v.bpLo

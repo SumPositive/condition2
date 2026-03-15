@@ -55,6 +55,7 @@ struct SettingsView: View {
                         )
                         .onChange(of: settings.hkEnabled) { _, enabled in
                             if enabled { Task { await healthKit.requestAuthorization() } }
+                            updateNeedsAutoImport()
                         }
                         if settings.hkEnabled {
                             // 認証状態
@@ -102,6 +103,8 @@ struct SettingsView: View {
                         }
                     }
                     .onAppear { healthKit.checkAuthorization() }
+                    .onChange(of: settings.hkDirection) { _, _ in updateNeedsAutoImport() }
+                    .onChange(of: settings.hkTiming)    { _, _ in updateNeedsAutoImport() }
                 }
 
                 // MARK: - カレンダー
@@ -182,6 +185,13 @@ struct SettingsView: View {
                             defaultValue: "ヘルスケア右上のアイコンをタップ → プライバシー → アプリ → 体調メモ を表示し、許可スイッチを操作してください"))
             }
         }
+    }
+
+    private func updateNeedsAutoImport() {
+        let canImport = settings.hkEnabled &&
+            (HKSyncDirection(rawValue: settings.hkDirection)?.canRead == true) &&
+            HKSyncTiming(rawValue: settings.hkTiming) == .automatic
+        if canImport { healthKit.needsAutoImport = true }
     }
 
     private func hourPicker(label: String, value: Binding<Int>) -> some View {

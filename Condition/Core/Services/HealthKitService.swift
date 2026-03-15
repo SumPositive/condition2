@@ -51,6 +51,8 @@ final class HealthKitService {
     var isImporting: Bool = false
     /// 一括インポート中の進捗メッセージ（空文字 = 実行中でない）
     var importProgress: String = ""
+    /// 設定変更後に記録タブへ戻ったときに自動インポートを1回実行するフラグ
+    var needsAutoImport: Bool = false
 
     private static let shareTypes: Set<HKSampleType> = [
         HKQuantityType(.bloodPressureSystolic),
@@ -315,83 +317,90 @@ final class HealthKitService {
 
     // MARK: - 期間一括読み込み
 
-    /// 指定期間のデータを日別に集約して返す（日ごとに最新サンプルを採用）
-    func readDailySamples(from startDate: Date, to endDate: Date) async -> [HealthKitValues] {
+    /// 指定期間の全サンプルを返す（分単位でグループ化、歩数は同日の全レコードに付与）
+    func readSamples(from startDate: Date, to endDate: Date) async -> [HealthKitValues] {
         guard isAvailable else {
-            logger.error("readDailySamples: HealthKit 利用不可")
+            logger.error("readSamples: HealthKit 利用不可")
             return []
         }
-        logger.info("readDailySamples 開始: \(startDate, privacy: .public) 〜 \(endDate, privacy: .public)")
+        logger.info("readSamples 開始: \(startDate, privacy: .public) 〜 \(endDate, privacy: .public)")
 
         let cal = Calendar.current
-        func key(_ d: Date) -> Date { cal.startOfDay(for: d) }
-        var byDay: [Date: HealthKitValues] = [:]
+        /// 同じ分の測定を1レコードに統合するキー
+        func minuteKey(_ d: Date) -> Date {
+            let secs = d.timeIntervalSinceReferenceDate
+            return Date(timeIntervalSinceReferenceDate: (secs / 60).rounded(.down) * 60)
+        }
+        var byMinute: [Date: HealthKitValues] = [:]
 
         // 血圧
         importProgress = "血圧を取得中..."
         let bpSamples = await allBPSamples(from: startDate, to: endDate)
         logger.info("血圧サンプル数: \(bpSamples.count)")
-        for (date, hi, lo) in bpSamples.reversed() {
-            let k = key(date); var v = byDay[k] ?? HealthKitValues(date: k)
-            if v.bpHi == 0 { v.bpHi = hi; v.bpLo = lo }
-            byDay[k] = v
+        for (date, hi, lo) in bpSamples {
+            let k = minuteKey(date); var v = byMinute[k] ?? HealthKitValues(date: date)
+            if v.bpHi == 0 { v.bpHi = hi; v.bpLo = lo; v.date = date }
+            byMinute[k] = v
         }
 
         // 脈拍
         importProgress = "脈拍を取得中..."
         let hrSamples = await allQtySamples(.heartRate, from: startDate, to: endDate, unit: HKUnit(from: "count/min"))
         logger.info("脈拍サンプル数: \(hrSamples.count)")
-        for (date, val) in hrSamples.reversed() {
-            let k = key(date); var v = byDay[k] ?? HealthKitValues(date: k)
+        for (date, val) in hrSamples {
+            let k = minuteKey(date); var v = byMinute[k] ?? HealthKitValues(date: date)
             if v.pulse == 0 { v.pulse = Int(val) }
-            byDay[k] = v
+            byMinute[k] = v
         }
 
         // 体温
         importProgress = "体温を取得中..."
         let tempSamples = await allQtySamples(.bodyTemperature, from: startDate, to: endDate, unit: .degreeCelsius())
         logger.info("体温サンプル数: \(tempSamples.count)")
-        for (date, val) in tempSamples.reversed() {
-            let k = key(date); var v = byDay[k] ?? HealthKitValues(date: k)
+        for (date, val) in tempSamples {
+            let k = minuteKey(date); var v = byMinute[k] ?? HealthKitValues(date: date)
             if v.temp == 0 { v.temp = Int(val * 10) }
-            byDay[k] = v
+            byMinute[k] = v
         }
 
         // 体重
         importProgress = "体重を取得中..."
         let weightSamples = await allQtySamples(.bodyMass, from: startDate, to: endDate, unit: .gramUnit(with: .kilo))
         logger.info("体重サンプル数: \(weightSamples.count)")
-        for (date, val) in weightSamples.reversed() {
-            let k = key(date); var v = byDay[k] ?? HealthKitValues(date: k)
+        for (date, val) in weightSamples {
+            let k = minuteKey(date); var v = byMinute[k] ?? HealthKitValues(date: date)
             if v.weight == 0 { v.weight = Int(val * 10) }
-            byDay[k] = v
+            byMinute[k] = v
         }
 
         // 体脂肪率
         importProgress = "体脂肪率を取得中..."
         let fatSamples = await allQtySamples(.bodyFatPercentage, from: startDate, to: endDate, unit: .percent())
         logger.info("体脂肪率サンプル数: \(fatSamples.count)")
-        for (date, val) in fatSamples.reversed() {
-            let k = key(date); var v = byDay[k] ?? HealthKitValues(date: k)
+        for (date, val) in fatSamples {
+            let k = minuteKey(date); var v = byMinute[k] ?? HealthKitValues(date: date)
             if v.bodyFat == 0 { v.bodyFat = Int(val * 100 * 10) }
-            byDay[k] = v
+            byMinute[k] = v
         }
 
-        // 歩数（日別合計）
+        // 歩数（日別合計）同日の最終時刻レコードにのみ付与、レコードがない日は startOfDay に作成
         importProgress = "歩数を取得中..."
         let stepSamples = await allStepsByDay(from: startDate, to: endDate)
         logger.info("歩数サンプル日数: \(stepSamples.count)")
-        for (date, steps) in stepSamples {
-            let k = key(date); var v = byDay[k] ?? HealthKitValues(date: k)
-            v.steps = steps
-            byDay[k] = v
+        for (dayDate, steps) in stepSamples {
+            let day = cal.startOfDay(for: dayDate)
+            let keysForDay = byMinute.keys.filter { cal.startOfDay(for: $0) == day }
+            if let lastKey = keysForDay.max() {
+                byMinute[lastKey]!.steps = steps
+            }
+            // keysForDay が空の場合（歩数のみの日）はレコードを作成しない
         }
 
         importProgress = ""
-        let result = byDay.values
-            .filter { $0.bpHi > 0 || $0.pulse > 0 || $0.temp > 0 || $0.weight > 0 || $0.steps > 0 || $0.bodyFat > 0 }
+        let result = byMinute.values
+            .filter { $0.bpHi > 0 || $0.pulse > 0 || $0.temp > 0 || $0.weight > 0 }
             .sorted { $0.date < $1.date }
-        logger.info("readDailySamples 完了: \(result.count) 日分")
+        logger.info("readSamples 完了: \(result.count) 件")
         return result
     }
 
