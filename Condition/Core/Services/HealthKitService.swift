@@ -336,6 +336,7 @@ final class HealthKitService {
         }
         logger.info("readSamples 開始: \(startDate, privacy: .public) 〜 \(endDate, privacy: .public)")
         importTimedOut = false
+        let startTime = Date()
 
         let result = await withCheckedContinuation { (cont: CheckedContinuation<[HealthKitValues], Never>) in
             let done = OnceMark()
@@ -344,7 +345,8 @@ final class HealthKitService {
             Task { @MainActor [self] in
                 try? await Task.sleep(for: .seconds(10))
                 guard done.claim() else { return }
-                logger.warning("readSamples タイムアウト（10秒）")
+                let elapsed = Int(Date().timeIntervalSince(startTime) * 1000)
+                logger.warning("readSamples タイムアウト（10秒）: \(elapsed) ms 経過")
                 importTimedOut = true
                 importProgress = ""
                 cont.resume(returning: [])
@@ -354,6 +356,8 @@ final class HealthKitService {
             Task { @MainActor [self] in
                 let values = await _runImport(from: startDate, to: endDate, hiddenFields: hiddenFields)
                 guard done.claim() else { return }
+                let elapsed = Int(Date().timeIntervalSince(startTime) * 1000)
+                logger.debug("readSamples 所要時間: \(elapsed) ms（\(values.count) 件）")
                 cont.resume(returning: values)
             }
         }
