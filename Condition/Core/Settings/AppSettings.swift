@@ -111,10 +111,10 @@ final class AppSettings {
     var hkEnabled: Bool = false {
         didSet { ud.set(hkEnabled, forKey: UDefKeys.hkEnabled) }
     }
-    var hkDirection: Int = HKSyncDirection.readOnly.rawValue {
+    var hkDirection: Int = HKSyncDirection.both.rawValue {
         didSet { ud.set(hkDirection, forKey: UDefKeys.hkDirection) }
     }
-    var hkTiming: Int = HKSyncTiming.manual.rawValue {
+    var hkTiming: Int = HKSyncTiming.automatic.rawValue {
         didSet { ud.set(hkTiming, forKey: UDefKeys.hkTiming) }
     }
 
@@ -125,6 +125,11 @@ final class AppSettings {
 
     private init() {
         loadFromKVS()
+        // UserDefaults デフォルト値登録（キー未登録時は 0 が返るため明示的に設定）
+        ud.register(defaults: [
+            UDefKeys.hkDirection: HKSyncDirection.both.rawValue,
+            UDefKeys.hkTiming:    HKSyncTiming.automatic.rawValue,
+        ])
         // UserDefaults（デバイス個別）読み込み
         hkEnabled   = ud.bool(forKey: UDefKeys.hkEnabled)
         hkDirection = ud.integer(forKey: UDefKeys.hkDirection)

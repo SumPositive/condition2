@@ -47,8 +47,10 @@ final class HealthKitService {
     private let store = HKHealthStore()
 
     var isAuthorized = false
-    /// アプリ起動中に一括インポートを実行済みかどうか
-    static var sessionImportDone = false
+    /// 一括インポート実行中フラグ（並走防止）
+    var isImporting: Bool = false
+    /// 一括インポート中の進捗メッセージ（空文字 = 実行中でない）
+    var importProgress: String = ""
 
     private static let shareTypes: Set<HKSampleType> = [
         HKQuantityType(.bloodPressureSystolic),
@@ -97,6 +99,9 @@ final class HealthKitService {
 
     func write(_ values: HealthKitValues) async {
         guard isAvailable else { return }
+
+        // 同日時の既存サンプルを削除してから追加（上書き相当）
+        await deleteSamples(at: values.date)
 
         var samples: [HKSample] = []
         let date = values.date
@@ -213,6 +218,33 @@ final class HealthKitService {
 
     // MARK: - Private helpers
 
+    /// 指定日時にこのアプリが書き込んだサンプルをすべて削除する
+    private func deleteSamples(at date: Date) async {
+        let pred = NSCompoundPredicate(andPredicateWithSubpredicates: [
+            HKQuery.predicateForSamples(withStart: date, end: date.addingTimeInterval(1)),
+            HKQuery.predicateForObjects(from: HKSource.default())
+        ])
+        logger.info("deleteSamples 開始: \(date, privacy: .public)")
+        // 血圧 Correlation を先に削除（配下の systolic/diastolic も同時に削除される）
+        do {
+            try await store.deleteObjects(of: HKCorrelationType(.bloodPressure), predicate: pred)
+        } catch {
+            logger.error("deleteSamples[bloodPressure] エラー: \(error.localizedDescription, privacy: .public)")
+        }
+        // その他の量的型を削除
+        let qtTypes: [HKQuantityTypeIdentifier] = [
+            .heartRate, .bodyTemperature, .bodyMass, .stepCount, .bodyFatPercentage
+        ]
+        for id in qtTypes {
+            do {
+                try await store.deleteObjects(of: HKQuantityType(id), predicate: pred)
+            } catch {
+                logger.error("deleteSamples[\(id.rawValue, privacy: .public)] エラー: \(error.localizedDescription, privacy: .public)")
+            }
+        }
+        logger.info("deleteSamples 完了")
+    }
+
     private func mostRecentQuantity(
         _ id: HKQuantityTypeIdentifier,
         before date: Date
@@ -285,63 +317,98 @@ final class HealthKitService {
 
     /// 指定期間のデータを日別に集約して返す（日ごとに最新サンプルを採用）
     func readDailySamples(from startDate: Date, to endDate: Date) async -> [HealthKitValues] {
-        guard isAvailable else { return [] }
+        guard isAvailable else {
+            logger.error("readDailySamples: HealthKit 利用不可")
+            return []
+        }
+        logger.info("readDailySamples 開始: \(startDate, privacy: .public) 〜 \(endDate, privacy: .public)")
+
         let cal = Calendar.current
         func key(_ d: Date) -> Date { cal.startOfDay(for: d) }
-
         var byDay: [Date: HealthKitValues] = [:]
 
-        // 血圧（日ごと最新）
-        for (date, hi, lo) in (await allBPSamples(from: startDate, to: endDate)).reversed() {
-            let k = key(date)
-            var v = byDay[k] ?? HealthKitValues(date: k)
+        // 血圧
+        importProgress = "血圧を取得中..."
+        let bpSamples = await allBPSamples(from: startDate, to: endDate)
+        logger.info("血圧サンプル数: \(bpSamples.count)")
+        for (date, hi, lo) in bpSamples.reversed() {
+            let k = key(date); var v = byDay[k] ?? HealthKitValues(date: k)
             if v.bpHi == 0 { v.bpHi = hi; v.bpLo = lo }
             byDay[k] = v
         }
+
         // 脈拍
-        for (date, val) in (await allQtySamples(.heartRate, from: startDate, to: endDate, unit: HKUnit(from: "count/min"))).reversed() {
+        importProgress = "脈拍を取得中..."
+        let hrSamples = await allQtySamples(.heartRate, from: startDate, to: endDate, unit: HKUnit(from: "count/min"))
+        logger.info("脈拍サンプル数: \(hrSamples.count)")
+        for (date, val) in hrSamples.reversed() {
             let k = key(date); var v = byDay[k] ?? HealthKitValues(date: k)
             if v.pulse == 0 { v.pulse = Int(val) }
             byDay[k] = v
         }
+
         // 体温
-        for (date, val) in (await allQtySamples(.bodyTemperature, from: startDate, to: endDate, unit: .degreeCelsius())).reversed() {
+        importProgress = "体温を取得中..."
+        let tempSamples = await allQtySamples(.bodyTemperature, from: startDate, to: endDate, unit: .degreeCelsius())
+        logger.info("体温サンプル数: \(tempSamples.count)")
+        for (date, val) in tempSamples.reversed() {
             let k = key(date); var v = byDay[k] ?? HealthKitValues(date: k)
             if v.temp == 0 { v.temp = Int(val * 10) }
             byDay[k] = v
         }
+
         // 体重
-        for (date, val) in (await allQtySamples(.bodyMass, from: startDate, to: endDate, unit: .gramUnit(with: .kilo))).reversed() {
+        importProgress = "体重を取得中..."
+        let weightSamples = await allQtySamples(.bodyMass, from: startDate, to: endDate, unit: .gramUnit(with: .kilo))
+        logger.info("体重サンプル数: \(weightSamples.count)")
+        for (date, val) in weightSamples.reversed() {
             let k = key(date); var v = byDay[k] ?? HealthKitValues(date: k)
             if v.weight == 0 { v.weight = Int(val * 10) }
             byDay[k] = v
         }
+
         // 体脂肪率
-        for (date, val) in (await allQtySamples(.bodyFatPercentage, from: startDate, to: endDate, unit: .percent())).reversed() {
+        importProgress = "体脂肪率を取得中..."
+        let fatSamples = await allQtySamples(.bodyFatPercentage, from: startDate, to: endDate, unit: .percent())
+        logger.info("体脂肪率サンプル数: \(fatSamples.count)")
+        for (date, val) in fatSamples.reversed() {
             let k = key(date); var v = byDay[k] ?? HealthKitValues(date: k)
             if v.bodyFat == 0 { v.bodyFat = Int(val * 100 * 10) }
             byDay[k] = v
         }
+
         // 歩数（日別合計）
-        for (date, steps) in await allStepsByDay(from: startDate, to: endDate) {
+        importProgress = "歩数を取得中..."
+        let stepSamples = await allStepsByDay(from: startDate, to: endDate)
+        logger.info("歩数サンプル日数: \(stepSamples.count)")
+        for (date, steps) in stepSamples {
             let k = key(date); var v = byDay[k] ?? HealthKitValues(date: k)
             v.steps = steps
             byDay[k] = v
         }
 
-        return byDay.values
+        importProgress = ""
+        let result = byDay.values
             .filter { $0.bpHi > 0 || $0.pulse > 0 || $0.temp > 0 || $0.weight > 0 || $0.steps > 0 || $0.bodyFat > 0 }
             .sorted { $0.date < $1.date }
+        logger.info("readDailySamples 完了: \(result.count) 日分")
+        return result
     }
 
     private func allBPSamples(from start: Date, to end: Date) async -> [(Date, Int, Int)] {
+        logger.info("allBPSamples 開始: \(start, privacy: .public) 〜 \(end, privacy: .public)")
         let predicate = HKQuery.predicateForSamples(withStart: start, end: end)
         return await withCheckedContinuation { continuation in
             let query = HKCorrelationQuery(
                 type: HKCorrelationType(.bloodPressure),
                 predicate: predicate,
                 samplePredicates: nil
-            ) { _, results, _ in
+            ) { _, results, error in
+                if let error {
+                    logger.error("allBPSamples エラー: \(error.localizedDescription, privacy: .public)")
+                    continuation.resume(returning: [])
+                    return
+                }
                 let pairs = (results ?? [])
                     .sorted { $0.endDate < $1.endDate }
                     .compactMap { corr -> (Date, Int, Int)? in
@@ -353,6 +420,7 @@ final class HealthKitService {
                                 Int(sys.quantity.doubleValue(for: .millimeterOfMercury())),
                                 Int(dia.quantity.doubleValue(for: .millimeterOfMercury())))
                     }
+                logger.info("allBPSamples 完了: \(pairs.count) 件")
                 continuation.resume(returning: pairs)
             }
             self.store.execute(query)
@@ -364,15 +432,23 @@ final class HealthKitService {
         from start: Date, to end: Date,
         unit: HKUnit
     ) async -> [(Date, Double)] {
+        logger.info("allQtySamples[\(id.rawValue, privacy: .public)] 開始")
         let predicate = HKQuery.predicateForSamples(withStart: start, end: end)
         let descriptor = HKSampleQueryDescriptor(
             predicates: [.quantitySample(type: HKQuantityType(id), predicate: predicate)],
             sortDescriptors: [SortDescriptor(\.endDate, order: .forward)])
-        guard let samples = try? await descriptor.result(for: store) else { return [] }
-        return samples.map { ($0.endDate, $0.quantity.doubleValue(for: unit)) }
+        do {
+            let samples = try await descriptor.result(for: store)
+            logger.info("allQtySamples[\(id.rawValue, privacy: .public)] 完了: \(samples.count) 件")
+            return samples.map { ($0.endDate, $0.quantity.doubleValue(for: unit)) }
+        } catch {
+            logger.error("allQtySamples[\(id.rawValue, privacy: .public)] エラー: \(error.localizedDescription, privacy: .public)")
+            return []
+        }
     }
 
     private func allStepsByDay(from start: Date, to end: Date) async -> [(Date, Int)] {
+        logger.info("allStepsByDay 開始: \(start, privacy: .public) 〜 \(end, privacy: .public)")
         let cal = Calendar.current
         let predicate = HKQuery.predicateForSamples(withStart: start, end: end)
         return await withCheckedContinuation { continuation in
@@ -383,13 +459,19 @@ final class HealthKitService {
                 anchorDate: cal.startOfDay(for: start),
                 intervalComponents: DateComponents(day: 1)
             )
-            query.initialResultsHandler = { _, collection, _ in
+            query.initialResultsHandler = { _, collection, error in
+                if let error {
+                    logger.error("allStepsByDay エラー: \(error.localizedDescription, privacy: .public)")
+                    continuation.resume(returning: [])
+                    return
+                }
                 var result: [(Date, Int)] = []
                 collection?.enumerateStatistics(from: start, to: end) { stats, _ in
                     if let sum = stats.sumQuantity() {
                         result.append((stats.startDate, Int(sum.doubleValue(for: .count()))))
                     }
                 }
+                logger.info("allStepsByDay 完了: \(result.count) 日分")
                 continuation.resume(returning: result)
             }
             self.store.execute(query)

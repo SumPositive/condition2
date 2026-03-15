@@ -21,6 +21,7 @@ struct RecordEditView: View {
     }()
 
     private var settings: AppSettings { AppSettings.shared }
+    private var hkService: HealthKitService { HealthKitService.shared }
 
     private var hkDirection: HKSyncDirection {
         HKSyncDirection(rawValue: settings.hkDirection) ?? .writeOnly
@@ -205,7 +206,11 @@ struct RecordEditView: View {
                 }
                 .disabled(vm.isLoadingFromHK)
             } footer: {
-                Text(String(localized: "HK_Import_Footer", defaultValue: "過去1年の未読記録を読み込みます"))
+                if vm.isLoadingFromHK, !hkService.importProgress.isEmpty {
+                    Text(hkService.importProgress)
+                } else {
+                    Text(String(localized: "HK_Import_Footer", defaultValue: "過去1年の未読記録を読み込みます"))
+                }
             }
         }
     }

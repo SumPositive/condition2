@@ -7,6 +7,7 @@ import SwiftData
 struct RecordListView: View {
 
     @Environment(\.modelContext) private var context
+    @Environment(\.scenePhase) private var scenePhase
     @Query(
         filter: #Predicate<BodyRecord> { $0.dateTime < bodyRecordGoalDate },
         sort: \BodyRecord.dateTime,
@@ -66,8 +67,10 @@ struct RecordListView: View {
                     showImportToast(count: count)
                 }
             }
-            .task {
-                await autoImportFromHealthKitIfNeeded()
+            .onChange(of: scenePhase) { _, phase in
+                if phase == .active {
+                    Task { await autoImportFromHealthKitIfNeeded() }
+                }
             }
             .sheet(item: $editTarget) { record in
                 RecordEditView(mode: .edit(record))
@@ -76,13 +79,20 @@ struct RecordListView: View {
                 GoalSettingsView()
             }
             .overlay(alignment: .bottom) {
-                if let msg = toastMessage {
-                    HKToastView(message: msg)
-                        .padding(.bottom, 24)
-                        .transition(.move(edge: .bottom).combined(with: .opacity))
+                VStack(spacing: 8) {
+                    if !hkService.importProgress.isEmpty {
+                        HKProgressView(message: hkService.importProgress)
+                            .transition(.move(edge: .bottom).combined(with: .opacity))
+                    }
+                    if let msg = toastMessage {
+                        HKToastView(message: msg)
+                            .transition(.move(edge: .bottom).combined(with: .opacity))
+                    }
                 }
+                .padding(.bottom, 24)
             }
             .animation(.easeInOut(duration: 0.3), value: toastMessage)
+            .animation(.easeInOut(duration: 0.3), value: hkService.importProgress)
         }
     }
 
@@ -117,12 +127,13 @@ struct RecordListView: View {
     // MARK: - HealthKit 自動インポート
 
     private func autoImportFromHealthKitIfNeeded() async {
-        guard !HealthKitService.sessionImportDone,
+        guard !hkService.isImporting,
               settings.hkEnabled,
               (HKSyncDirection(rawValue: settings.hkDirection)?.canRead) == true,
               HKSyncTiming(rawValue: settings.hkTiming) == .automatic
         else { return }
-        HealthKitService.sessionImportDone = true
+        hkService.isImporting = true
+        defer { hkService.isImporting = false }
 
         let cal = Calendar.current
         let now = Date()
@@ -194,6 +205,25 @@ struct HKToastView: View {
             .padding(.horizontal, 16)
             .padding(.vertical, 10)
             .background(Color.black.opacity(0.75), in: Capsule())
+    }
+}
+
+// MARK: - HK 進捗インジケーター
+
+struct HKProgressView: View {
+    let message: String
+
+    var body: some View {
+        HStack(spacing: 8) {
+            ProgressView()
+                .tint(.white)
+            Text(message)
+                .font(.subheadline.weight(.medium))
+                .foregroundStyle(.white)
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 10)
+        .background(Color.black.opacity(0.75), in: Capsule())
     }
 }
 

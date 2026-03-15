@@ -8,11 +8,13 @@ struct SettingsView: View {
     @State private var settings = AppSettings.shared
     @State private var calendar = CalendarService.shared
     @State private var healthKit = HealthKitService.shared
+    @Environment(\.openURL) private var openURL
     @State private var showGraphSettings = false
     @State private var showStatSettings  = false
     @State private var showCalendarSettings = false
     @State private var showGoalSettings  = false
     @State private var showAbout         = false
+    @State private var showHKGuideAlert  = false
 
     var body: some View {
         NavigationStack {
@@ -63,11 +65,18 @@ struct SettingsView: View {
                                      ? String(localized: "HKSett_Authorized", defaultValue: "許可済み")
                                      : String(localized: "HKSett_NotAuthorized", defaultValue: "未許可"))
                                     .foregroundStyle(healthKit.isAuthorized ? Color.secondary : Color.orange)
-                            }
-                            if !healthKit.isAuthorized {
-                                Button(String(localized: "HKSett_Request", defaultValue: "アクセスを許可")) {
-                                    Task { await healthKit.requestAuthorization() }
+                                Button(String(localized: "HKSett_ChangePermission", defaultValue: "許可を変更")) {
+                                    if healthKit.isAuthorized {
+                                        // 許可済み → 操作案内アラートを表示してからヘルスケアアプリへ
+                                        showHKGuideAlert = true
+                                    } else {
+                                        // 未許可 → システムダイアログを表示
+                                        Task { await healthKit.requestAuthorization() }
+                                    }
                                 }
+                                .font(.caption)
+                                .buttonStyle(.bordered)
+                                .buttonBorderShape(.capsule)
                             }
                             // 同期方向
                             Picker(String(localized: "HKSett_Direction", defaultValue: "同期方向"),
@@ -158,6 +167,20 @@ struct SettingsView: View {
                 }
             }
             .navigationTitle(String(localized: "Tab_Settings", defaultValue: "設定"))
+            .alert(
+                String(localized: "HKGuide_Title", defaultValue: "ヘルスケアの許可を変更"),
+                isPresented: $showHKGuideAlert
+            ) {
+                Button(String(localized: "HKGuide_Open", defaultValue: "ヘルスケアを開く")) {
+                    if let url = URL(string: "x-apple-health://") {
+                        openURL(url)
+                    }
+                }
+                Button(String(localized: "Cancel", defaultValue: "キャンセル"), role: .cancel) {}
+            } message: {
+                Text(String(localized: "HKGuide_Message",
+                            defaultValue: "ヘルスケア右上のアイコンをタップ → プライバシー → アプリ → 体調メモ を表示し、許可スイッチを操作してください"))
+            }
         }
     }
 
