@@ -47,6 +47,8 @@ final class HealthKitService {
     private let store = HKHealthStore()
 
     var isAuthorized = false
+    /// アプリ起動中に一括インポートを実行済みかどうか
+    static var sessionImportDone = false
 
     private static let shareTypes: Set<HKSampleType> = [
         HKQuantityType(.bloodPressureSystolic),
@@ -274,6 +276,121 @@ final class HealthKitService {
                     return
                 }
                 continuation.resume(returning: Int(sum.doubleValue(for: .count())))
+            }
+            self.store.execute(query)
+        }
+    }
+
+    // MARK: - 期間一括読み込み
+
+    /// 指定期間のデータを日別に集約して返す（日ごとに最新サンプルを採用）
+    func readDailySamples(from startDate: Date, to endDate: Date) async -> [HealthKitValues] {
+        guard isAvailable else { return [] }
+        let cal = Calendar.current
+        func key(_ d: Date) -> Date { cal.startOfDay(for: d) }
+
+        var byDay: [Date: HealthKitValues] = [:]
+
+        // 血圧（日ごと最新）
+        for (date, hi, lo) in (await allBPSamples(from: startDate, to: endDate)).reversed() {
+            let k = key(date)
+            var v = byDay[k] ?? HealthKitValues(date: k)
+            if v.bpHi == 0 { v.bpHi = hi; v.bpLo = lo }
+            byDay[k] = v
+        }
+        // 脈拍
+        for (date, val) in (await allQtySamples(.heartRate, from: startDate, to: endDate, unit: HKUnit(from: "count/min"))).reversed() {
+            let k = key(date); var v = byDay[k] ?? HealthKitValues(date: k)
+            if v.pulse == 0 { v.pulse = Int(val) }
+            byDay[k] = v
+        }
+        // 体温
+        for (date, val) in (await allQtySamples(.bodyTemperature, from: startDate, to: endDate, unit: .degreeCelsius())).reversed() {
+            let k = key(date); var v = byDay[k] ?? HealthKitValues(date: k)
+            if v.temp == 0 { v.temp = Int(val * 10) }
+            byDay[k] = v
+        }
+        // 体重
+        for (date, val) in (await allQtySamples(.bodyMass, from: startDate, to: endDate, unit: .gramUnit(with: .kilo))).reversed() {
+            let k = key(date); var v = byDay[k] ?? HealthKitValues(date: k)
+            if v.weight == 0 { v.weight = Int(val * 10) }
+            byDay[k] = v
+        }
+        // 体脂肪率
+        for (date, val) in (await allQtySamples(.bodyFatPercentage, from: startDate, to: endDate, unit: .percent())).reversed() {
+            let k = key(date); var v = byDay[k] ?? HealthKitValues(date: k)
+            if v.bodyFat == 0 { v.bodyFat = Int(val * 100 * 10) }
+            byDay[k] = v
+        }
+        // 歩数（日別合計）
+        for (date, steps) in await allStepsByDay(from: startDate, to: endDate) {
+            let k = key(date); var v = byDay[k] ?? HealthKitValues(date: k)
+            v.steps = steps
+            byDay[k] = v
+        }
+
+        return byDay.values
+            .filter { $0.bpHi > 0 || $0.pulse > 0 || $0.temp > 0 || $0.weight > 0 || $0.steps > 0 || $0.bodyFat > 0 }
+            .sorted { $0.date < $1.date }
+    }
+
+    private func allBPSamples(from start: Date, to end: Date) async -> [(Date, Int, Int)] {
+        let predicate = HKQuery.predicateForSamples(withStart: start, end: end)
+        return await withCheckedContinuation { continuation in
+            let query = HKCorrelationQuery(
+                type: HKCorrelationType(.bloodPressure),
+                predicate: predicate,
+                samplePredicates: nil
+            ) { _, results, _ in
+                let pairs = (results ?? [])
+                    .sorted { $0.endDate < $1.endDate }
+                    .compactMap { corr -> (Date, Int, Int)? in
+                        let objs = corr.objects.compactMap { $0 as? HKQuantitySample }
+                        guard let sys = objs.first(where: { $0.quantityType == HKQuantityType(.bloodPressureSystolic) }),
+                              let dia = objs.first(where: { $0.quantityType == HKQuantityType(.bloodPressureDiastolic) })
+                        else { return nil }
+                        return (corr.endDate,
+                                Int(sys.quantity.doubleValue(for: .millimeterOfMercury())),
+                                Int(dia.quantity.doubleValue(for: .millimeterOfMercury())))
+                    }
+                continuation.resume(returning: pairs)
+            }
+            self.store.execute(query)
+        }
+    }
+
+    private func allQtySamples(
+        _ id: HKQuantityTypeIdentifier,
+        from start: Date, to end: Date,
+        unit: HKUnit
+    ) async -> [(Date, Double)] {
+        let predicate = HKQuery.predicateForSamples(withStart: start, end: end)
+        let descriptor = HKSampleQueryDescriptor(
+            predicates: [.quantitySample(type: HKQuantityType(id), predicate: predicate)],
+            sortDescriptors: [SortDescriptor(\.endDate, order: .forward)])
+        guard let samples = try? await descriptor.result(for: store) else { return [] }
+        return samples.map { ($0.endDate, $0.quantity.doubleValue(for: unit)) }
+    }
+
+    private func allStepsByDay(from start: Date, to end: Date) async -> [(Date, Int)] {
+        let cal = Calendar.current
+        let predicate = HKQuery.predicateForSamples(withStart: start, end: end)
+        return await withCheckedContinuation { continuation in
+            let query = HKStatisticsCollectionQuery(
+                quantityType: HKQuantityType(.stepCount),
+                quantitySamplePredicate: predicate,
+                options: .cumulativeSum,
+                anchorDate: cal.startOfDay(for: start),
+                intervalComponents: DateComponents(day: 1)
+            )
+            query.initialResultsHandler = { _, collection, _ in
+                var result: [(Date, Int)] = []
+                collection?.enumerateStatistics(from: start, to: end) { stats, _ in
+                    if let sum = stats.sumQuantity() {
+                        result.append((stats.startDate, Int(sum.doubleValue(for: .count()))))
+                    }
+                }
+                continuation.resume(returning: result)
             }
             self.store.execute(query)
         }

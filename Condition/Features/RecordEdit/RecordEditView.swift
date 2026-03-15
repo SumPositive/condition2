@@ -42,8 +42,11 @@ struct RecordEditView: View {
         }
     }
 
-    init(mode: EditMode) {
+    private let onHKImported: ((Int) -> Void)?
+
+    init(mode: EditMode, onHKImported: ((Int) -> Void)? = nil) {
         _vm = State(initialValue: RecordEditViewModel(mode: mode))
+        self.onHKImported = onHKImported
     }
 
     var body: some View {
@@ -129,12 +132,6 @@ struct RecordEditView: View {
             .onAppear {
                 if isNewRecord {
                     vm.loadPreviousValues(context: context)
-                    // HealthKit 自動読み込み
-                    if settings.hkEnabled,
-                       hkDirection.canRead,
-                       hkTiming == .automatic {
-                        Task { await vm.loadFromHealthKit() }
-                    }
                 }
             }
             .onChange(of: vm.nBpHi_mmHg)   { _, _ in vm.isModified = true }
@@ -193,10 +190,7 @@ struct RecordEditView: View {
         if isNewRecord && settings.hkEnabled && hkDirection.canRead && hkTiming == .manual {
             Section {
                 Button {
-                    Task {
-                        await vm.loadFromHealthKit()
-                        saveAndDismiss()
-                    }
+                    bulkImportFromHealthKit()
                 } label: {
                     HStack {
                         Label(
@@ -210,7 +204,49 @@ struct RecordEditView: View {
                     }
                 }
                 .disabled(vm.isLoadingFromHK)
+            } footer: {
+                Text(String(localized: "HK_Import_Footer", defaultValue: "過去1年の未読記録を読み込みます"))
             }
+        }
+    }
+
+    private func bulkImportFromHealthKit() {
+        vm.isLoadingFromHK = true
+        Task {
+            defer { vm.isLoadingFromHK = false }
+            let cal = Calendar.current
+            let now = Date()
+            let oneYearAgo = cal.date(byAdding: .year, value: -1, to: now) ?? now.addingTimeInterval(-365 * 24 * 3600)
+
+            let hkValues = await HealthKitService.shared.readDailySamples(from: oneYearAgo, to: now)
+
+            // 既存レコードの日付セット（過去1年）
+            let descriptor = FetchDescriptor<BodyRecord>(
+                predicate: #Predicate { $0.dateTime >= oneYearAgo && $0.dateTime < now }
+            )
+            let existing = (try? context.fetch(descriptor)) ?? []
+            let existingDays = Set(existing.map { cal.startOfDay(for: $0.dateTime) })
+
+            let appSettings = AppSettings.shared
+            var addedCount = 0
+            for v in hkValues {
+                let day = cal.startOfDay(for: v.date)
+                guard !existingDays.contains(day) else { continue }
+                let record = BodyRecord(dateTime: v.date, dateOpt: appSettings.autoDateOpt(for: v.date))
+                record.nBpHi_mmHg   = v.bpHi
+                record.nBpLo_mmHg   = v.bpLo
+                record.nPulse_bpm   = v.pulse
+                record.nTemp_10c    = v.temp
+                record.nWeight_10Kg = v.weight
+                record.nPedometer   = v.steps
+                record.nBodyFat_10p = v.bodyFat
+                context.insert(record)
+                addedCount += 1
+            }
+            try? context.save()
+            let count = addedCount
+            dismiss()
+            onHKImported?(count)
         }
     }
 

@@ -17,8 +17,10 @@ struct RecordListView: View {
     @State private var editTarget: BodyRecord? = nil
     @State private var showAddSheet = false
     @State private var showGoalSheet = false
+    @State private var toastMessage: String? = nil
 
     private var settings: AppSettings { AppSettings.shared }
+    private var hkService: HealthKitService { HealthKitService.shared }
 
     // MARK: - セクション分割（年月ごと）
     private var sections: [(yearMonth: Int, records: [BodyRecord])] {
@@ -60,7 +62,12 @@ struct RecordListView: View {
                 }
             }
             .sheet(isPresented: $showAddSheet) {
-                RecordEditView(mode: .addNew)
+                RecordEditView(mode: .addNew) { count in
+                    showImportToast(count: count)
+                }
+            }
+            .task {
+                await autoImportFromHealthKitIfNeeded()
             }
             .sheet(item: $editTarget) { record in
                 RecordEditView(mode: .edit(record))
@@ -68,6 +75,14 @@ struct RecordListView: View {
             .sheet(isPresented: $showGoalSheet) {
                 GoalSettingsView()
             }
+            .overlay(alignment: .bottom) {
+                if let msg = toastMessage {
+                    HKToastView(message: msg)
+                        .padding(.bottom, 24)
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
+                }
+            }
+            .animation(.easeInOut(duration: 0.3), value: toastMessage)
         }
     }
 
@@ -99,6 +114,60 @@ struct RecordListView: View {
         }
     }
 
+    // MARK: - HealthKit 自動インポート
+
+    private func autoImportFromHealthKitIfNeeded() async {
+        guard !HealthKitService.sessionImportDone,
+              settings.hkEnabled,
+              (HKSyncDirection(rawValue: settings.hkDirection)?.canRead) == true,
+              HKSyncTiming(rawValue: settings.hkTiming) == .automatic
+        else { return }
+        HealthKitService.sessionImportDone = true
+
+        let cal = Calendar.current
+        let now = Date()
+        let oneYearAgo = cal.date(byAdding: .year, value: -1, to: now) ?? now.addingTimeInterval(-365 * 24 * 3600)
+
+        let hkValues = await hkService.readDailySamples(from: oneYearAgo, to: now)
+        guard !hkValues.isEmpty else { return }
+
+        let descriptor = FetchDescriptor<BodyRecord>(
+            predicate: #Predicate { $0.dateTime >= oneYearAgo && $0.dateTime < now }
+        )
+        let existing = (try? context.fetch(descriptor)) ?? []
+        let existingDays = Set(existing.map { cal.startOfDay(for: $0.dateTime) })
+
+        var addedCount = 0
+        for v in hkValues {
+            let day = cal.startOfDay(for: v.date)
+            guard !existingDays.contains(day) else { continue }
+            let record = BodyRecord(dateTime: v.date, dateOpt: settings.autoDateOpt(for: v.date))
+            record.nBpHi_mmHg   = v.bpHi
+            record.nBpLo_mmHg   = v.bpLo
+            record.nPulse_bpm   = v.pulse
+            record.nTemp_10c    = v.temp
+            record.nWeight_10Kg = v.weight
+            record.nPedometer   = v.steps
+            record.nBodyFat_10p = v.bodyFat
+            context.insert(record)
+            addedCount += 1
+        }
+        if addedCount > 0 {
+            try? context.save()
+            showImportToast(count: addedCount)
+        }
+    }
+
+    private func showImportToast(count: Int) {
+        guard count > 0 else { return }
+        toastMessage = String(format: String(localized: "HK_Toast_Imported",
+                                             defaultValue: "ヘルスケアから %d 件取得しました"), count)
+        Task {
+            try? await Task.sleep(for: .seconds(3))
+            toastMessage = nil
+        }
+    }
+
     // MARK: - 削除
 
     private func deleteRecords(in sectionRecords: [BodyRecord], offsets: IndexSet) {
@@ -110,6 +179,21 @@ struct RecordListView: View {
             }
             context.delete(record)
         }
+    }
+}
+
+// MARK: - HK トースト
+
+struct HKToastView: View {
+    let message: String
+
+    var body: some View {
+        Label(message, systemImage: "checkmark.circle.fill")
+            .font(.subheadline.weight(.medium))
+            .foregroundStyle(.white)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 10)
+            .background(Color.black.opacity(0.75), in: Capsule())
     }
 }
 
