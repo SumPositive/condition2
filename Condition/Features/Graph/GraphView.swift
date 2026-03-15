@@ -127,28 +127,34 @@ struct GraphView: View {
         case .pulse:
             LineChartView(records: displayRecords, keyPath: \.nPulse_bpm,
                           title: kind.title, unit: "bpm", color: .orange,
-                          goalValue: settings.goalPulse, period: period)
+                          goalValue: settings.goalPulse, period: period,
+                          tightDomain: true)
         case .temp:
             LineChartView(records: displayRecords, keyPath: \.nTemp_10c,
                           title: kind.title, unit: "℃", color: .pink,
-                          goalValue: settings.goalTemp, decimals: 1, period: period)
+                          goalValue: settings.goalTemp, decimals: 1, period: period,
+                          tightDomain: true)
         case .weight:
             LineChartView(records: displayRecords, keyPath: \.nWeight_10Kg,
                           title: kind.title, unit: "kg", color: .indigo,
-                          goalValue: settings.goalWeight, decimals: 1, period: period)
+                          goalValue: settings.goalWeight, decimals: 1, period: period,
+                          tightDomain: true)
         case .pedo:
             LineChartView(records: displayRecords, keyPath: \.nPedometer,
                           title: kind.title,
                           unit: String(localized: "Unit_Steps", defaultValue: "歩"),
-                          color: .green, goalValue: settings.goalPedometer, period: period)
+                          color: .green, goalValue: settings.goalPedometer, period: period,
+                          tightDomain: true)
         case .bodyFat:
             LineChartView(records: displayRecords, keyPath: \.nBodyFat_10p,
                           title: kind.title, unit: "%", color: .purple,
-                          goalValue: settings.goalBodyFat, decimals: 1, period: period)
+                          goalValue: settings.goalBodyFat, decimals: 1, period: period,
+                          tightDomain: true)
         case .skMuscle:
             LineChartView(records: displayRecords, keyPath: \.nSkMuscle_10p,
                           title: kind.title, unit: "%", color: .teal,
-                          goalValue: settings.goalSkMuscle, decimals: 1, period: period)
+                          goalValue: settings.goalSkMuscle, decimals: 1, period: period,
+                          tightDomain: true)
         }
     }
 }
@@ -445,6 +451,14 @@ struct BpChartView: View {
         return Int((Double(v.reduce(0, +)) / Double(v.count)).rounded())
     }
 
+    // Y軸タイトドメイン用（過去1年の上最大・下最小）
+    private var yearRecords: [BodyRecord] {
+        let oneYearAgo = cal.date(byAdding: .year, value: -1, to: Date()) ?? Date()
+        return validRecords.filter { $0.dateTime >= oneYearAgo }
+    }
+    private var yearMaxHi: Int? { yearRecords.map(\.nBpHi_mmHg).max() }
+    private var yearMinLo: Int? { yearRecords.map(\.nBpLo_mmHg).min() }
+
     var body: some View {
         PanelContainer {
             // ヘッダー
@@ -533,7 +547,7 @@ struct BpChartView: View {
                         .lineStyle(StrokeStyle(lineWidth: 1, dash: [4]))
                 }
             }
-            .chartYScale(domain: .automatic(includesZero: false))
+            .chartYTightDomain(enabled: true, minVal: yearMinLo, maxVal: yearMaxHi)
             .chartYAxis {
                 AxisMarks(position: .leading) { value in
                     AxisGridLine().foregroundStyle(.gray.opacity(0.2))
@@ -711,6 +725,18 @@ struct BpAverageChartView: View {
 
 // MARK: - 汎用折れ線グラフパネル
 
+private extension View {
+    @ViewBuilder
+    func chartYTightDomain(enabled: Bool, minVal: Int?, maxVal: Int?) -> some View {
+        if enabled, let lo = minVal, let hi = maxVal, lo < hi {
+            let pad = Swift.max(Double(hi - lo) * 0.15, 5.0)
+            self.chartYScale(domain: (Double(lo) - pad)...(Double(hi) + pad))
+        } else {
+            self.chartYScale(domain: .automatic(includesZero: false))
+        }
+    }
+}
+
 struct LineChartView: View {
     let records: [BodyRecord]
     let keyPath: KeyPath<BodyRecord, Int>
@@ -720,6 +746,7 @@ struct LineChartView: View {
     let goalValue: Int
     var decimals: Int = 0
     let period: GraphPeriod
+    var tightDomain: Bool = false
 
     private let cal = Calendar.current
     @State private var selectedDate: Date?
@@ -757,6 +784,14 @@ struct LineChartView: View {
     }
     private var minValue: Int? { periodRecords.map { $0[keyPath: keyPath] }.min() }
     private var maxValue: Int? { periodRecords.map { $0[keyPath: keyPath] }.max() }
+
+    // Y軸タイトドメイン用（過去1年全体の最大最小）
+    private var yearRecords: [BodyRecord] {
+        let oneYearAgo = cal.date(byAdding: .year, value: -1, to: Date()) ?? Date()
+        return validRecords.filter { $0.dateTime >= oneYearAgo }
+    }
+    private var yearMinValue: Int? { yearRecords.map { $0[keyPath: keyPath] }.min() }
+    private var yearMaxValue: Int? { yearRecords.map { $0[keyPath: keyPath] }.max() }
 
     private func fmt(_ v: Int) -> String { ValueFormatter.format(v, decimals: decimals) }
 
@@ -830,7 +865,7 @@ struct LineChartView: View {
                         }
                 }
             }
-            .chartYScale(domain: .automatic(includesZero: false))
+            .chartYTightDomain(enabled: tightDomain, minVal: yearMinValue, maxVal: yearMaxValue)
             .chartYAxis {
                 AxisMarks(position: .leading) { value in
                     AxisGridLine().foregroundStyle(.gray.opacity(0.2))

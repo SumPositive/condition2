@@ -233,9 +233,22 @@ struct GraphSettingsView: View {
                     Text("cm").foregroundStyle(.secondary)
                 }
             }
+
+            Section(String(localized: "GraphSett_Order", defaultValue: "パネル順序")) {
+                ForEach(settings.graphPanelOrder, id: \.self) { raw in
+                    if let kind = GraphKind(rawValue: raw) {
+                        Label(kind.title, systemImage: "line.3.horizontal")
+                            .foregroundStyle(.primary)
+                    }
+                }
+                .onMove { from, to in
+                    settings.graphPanelOrder.move(fromOffsets: from, toOffset: to)
+                }
+            }
         }
         .navigationTitle(String(localized: "GraphSett_Title", defaultValue: "グラフ設定"))
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar { EditButton() }
     }
 }
 

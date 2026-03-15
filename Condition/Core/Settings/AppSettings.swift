@@ -16,7 +16,16 @@ final class AppSettings {
     private let ud  = UserDefaults.standard
 
     // MARK: - グラフ設定
-    var graphPanelOrder: [Int] = GraphKind.allCases.map(\.rawValue) {
+    var graphPanelOrder: [Int] = [
+        GraphKind.bp.rawValue,       // 0
+        GraphKind.pulse.rawValue,    // 2
+        GraphKind.temp.rawValue,     // 3
+        GraphKind.bpAvg.rawValue,    // 1
+        GraphKind.weight.rawValue,   // 4
+        GraphKind.pedo.rawValue,     // 5
+        GraphKind.bodyFat.rawValue,  // 6
+        GraphKind.skMuscle.rawValue, // 7
+    ] {
         didSet { kvs.set(graphPanelOrder, forKey: KVSKeys.settGraphs) }
     }
     var graphOneWidth: Int = 45 {
