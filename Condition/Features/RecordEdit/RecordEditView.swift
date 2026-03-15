@@ -3,6 +3,7 @@
 
 import SwiftUI
 import SwiftData
+import HealthKit
 
 struct RecordEditView: View {
 
@@ -18,6 +19,15 @@ struct RecordEditView: View {
         f.setLocalizedDateFormatFromTemplate("yMdEjmm")
         return f
     }()
+
+    private var settings: AppSettings { AppSettings.shared }
+
+    private var hkDirection: HKSyncDirection {
+        HKSyncDirection(rawValue: settings.hkDirection) ?? .writeOnly
+    }
+    private var hkTiming: HKSyncTiming {
+        HKSyncTiming(rawValue: settings.hkTiming) ?? .automatic
+    }
 
     private var isNewRecord: Bool {
         if case .addNew = vm.mode { return true }
@@ -43,6 +53,7 @@ struct RecordEditView: View {
                 bpSection
                 bodySection
                 activitySection
+                healthKitSection
 
                 // メモセクション
                 Section(String(localized: "Section_Note", defaultValue: "メモ")) {
@@ -117,6 +128,12 @@ struct RecordEditView: View {
             .onAppear {
                 if isNewRecord {
                     vm.loadPreviousValues(context: context)
+                    // HealthKit 自動読み込み
+                    if settings.hkEnabled,
+                       hkDirection.canRead,
+                       hkTiming == .automatic {
+                        Task { await vm.loadFromHealthKit() }
+                    }
                 }
             }
             .onChange(of: vm.nBpHi_mmHg)   { _, _ in vm.isModified = true }
@@ -165,6 +182,45 @@ struct RecordEditView: View {
             dialRow(title: "歩数",     value: $vm.nPedometer,    enabled: $vm.pedometerEnabled, spec: MeasureRange.pedometer, unit: "歩", stepperStep: 1000,           color: .green)
             dialRow(title: "体脂肪率", value: $vm.nBodyFat_10p,  enabled: $vm.bodyFatEnabled,   spec: MeasureRange.bodyFat,   unit: "%",  stepperStep: 5, decimals: 1, color: .purple)
             dialRow(title: "骨格筋率", value: $vm.nSkMuscle_10p, enabled: $vm.skMuscleEnabled,  spec: MeasureRange.skMuscle,  unit: "%",  stepperStep: 5, decimals: 1, color: .teal)
+        }
+    }
+
+    // MARK: - HealthKit セクション（手動タイミングのみ表示）
+
+    @ViewBuilder
+    private var healthKitSection: some View {
+        let showRead  = settings.hkEnabled && hkDirection.canRead  && hkTiming == .manual
+        let showWrite = settings.hkEnabled && hkDirection.canWrite && hkTiming == .manual
+        if showRead || showWrite {
+            Section(String(localized: "HK_Section", defaultValue: "ヘルスケア")) {
+                if showRead {
+                    Button {
+                        Task { await vm.loadFromHealthKit() }
+                    } label: {
+                        HStack {
+                            Label(
+                                String(localized: "HK_Import", defaultValue: "ヘルスケアから取得"),
+                                systemImage: "arrow.down.heart"
+                            )
+                            Spacer()
+                            if vm.isLoadingFromHK {
+                                ProgressView()
+                            }
+                        }
+                    }
+                    .disabled(vm.isLoadingFromHK)
+                }
+                if showWrite {
+                    Button {
+                        vm.writeToHealthKit()
+                    } label: {
+                        Label(
+                            String(localized: "HK_Export", defaultValue: "ヘルスケアへ書き込み"),
+                            systemImage: "arrow.up.heart"
+                        )
+                    }
+                }
+            }
         }
     }
 

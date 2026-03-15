@@ -107,6 +107,20 @@ final class AppSettings {
         set { ud.set(newValue, forKey: UDefKeys.calendarTitle) }
     }
 
+    // MARK: - HealthKit（UserDefaults: デバイス個別）
+    var hkEnabled: Bool {
+        get { ud.bool(forKey: UDefKeys.hkEnabled) }
+        set { ud.set(newValue, forKey: UDefKeys.hkEnabled) }
+    }
+    var hkDirection: Int {
+        get { ud.integer(forKey: UDefKeys.hkDirection) }
+        set { ud.set(newValue, forKey: UDefKeys.hkDirection) }
+    }
+    var hkTiming: Int {
+        get { ud.integer(forKey: UDefKeys.hkTiming) }
+        set { ud.set(newValue, forKey: UDefKeys.hkTiming) }
+    }
+
     // MARK: - 購入状態（制限解除済み）
     let isUnlocked: Bool = true
 

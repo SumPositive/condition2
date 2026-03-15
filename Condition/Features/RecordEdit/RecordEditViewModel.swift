@@ -46,6 +46,7 @@ final class RecordEditViewModel {
     var isModified: Bool = false
     var isSaving: Bool = false
     var errorMessage: String?
+    var isLoadingFromHK: Bool = false
 
     let mode: EditMode
     private var originalRecord: BodyRecord?
@@ -248,7 +249,17 @@ final class RecordEditViewModel {
         }
 
         try context.save()
+        writeToHealthKitIfAutomatic()
         isModified = false
+    }
+
+    private func writeToHealthKitIfAutomatic() {
+        if case .goalEdit = mode { return }
+        let s = AppSettings.shared
+        guard s.hkEnabled,
+              HKSyncDirection(rawValue: s.hkDirection)?.canWrite == true,
+              HKSyncTiming(rawValue: s.hkTiming) == .automatic else { return }
+        Task { await HealthKitService.shared.write(currentHealthKitValues()) }
     }
 
     // MARK: - 削除
@@ -276,6 +287,54 @@ final class RecordEditViewModel {
         record.nPedometer    = pedometerEnabled ? nPedometer   : 0
         record.nBodyFat_10p  = bodyFatEnabled   ? nBodyFat_10p  : 0
         record.nSkMuscle_10p = skMuscleEnabled  ? nSkMuscle_10p : 0
+    }
+
+    // MARK: - HealthKit 連携
+
+    /// HealthKit から最新値を読み込んでフォームに反映
+    func loadFromHealthKit() async {
+        guard case .addNew = mode else { return }
+        isLoadingFromHK = true
+        defer { isLoadingFromHK = false }
+
+        let values = await HealthKitService.shared.readLatest(before: dateTime)
+        applyHealthKitValues(values)
+    }
+
+    /// HealthKit へ現在のフォーム値を書き込み
+    func writeToHealthKit() {
+        let s = AppSettings.shared
+        guard s.hkEnabled, HKSyncDirection(rawValue: s.hkDirection)?.canWrite == true else { return }
+        Task {
+            await HealthKitService.shared.write(currentHealthKitValues())
+        }
+    }
+
+    private func currentHealthKitValues() -> HealthKitValues {
+        HealthKitValues(
+            date:    dateTime,
+            bpHi:    bpHiEnabled      ? nBpHi_mmHg   : 0,
+            bpLo:    bpLoEnabled      ? nBpLo_mmHg   : 0,
+            pulse:   pulseEnabled     ? nPulse_bpm   : 0,
+            temp:    tempEnabled      ? nTemp_10c    : 0,
+            weight:  weightEnabled    ? nWeight_10Kg  : 0,
+            steps:   pedometerEnabled ? nPedometer   : 0,
+            bodyFat: bodyFatEnabled   ? nBodyFat_10p  : 0
+        )
+    }
+
+    private func applyHealthKitValues(_ v: HealthKitValues) {
+        if v.bpHi > 0    { nBpHi_mmHg   = v.bpHi;    bpHiEnabled      = true }
+        if v.bpLo > 0    { nBpLo_mmHg   = v.bpLo;    bpLoEnabled      = true }
+        if v.pulse > 0   { nPulse_bpm   = v.pulse;   pulseEnabled     = true }
+        if v.temp > 0    { nTemp_10c    = v.temp;    tempEnabled      = true }
+        if v.weight > 0  { nWeight_10Kg  = v.weight;  weightEnabled    = true }
+        if v.steps > 0   { nPedometer   = v.steps;   pedometerEnabled = true }
+        if v.bodyFat > 0 { nBodyFat_10p  = v.bodyFat; bodyFatEnabled   = true }
+        if v.bpHi > 0 || v.bpLo > 0 || v.pulse > 0 || v.temp > 0
+            || v.weight > 0 || v.steps > 0 || v.bodyFat > 0 {
+            isModified = true
+        }
     }
 
     // MARK: - カレンダーイベント保存

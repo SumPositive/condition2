@@ -48,4 +48,9 @@ enum UDefKeys {
     static let calendarID    = "UDEF_CalendarID"
     static let calendarTitle = "UDEF_CalendarTitle"
     static let migrationDone = "MigrationV2Done"    // CoreData→SwiftData移行完了フラグ
+
+    // MARK: - HealthKit（デバイス個別設定）
+    static let hkEnabled   = "UDEF_HKEnabled"
+    static let hkDirection = "UDEF_HKDirection"  // HKSyncDirection.rawValue
+    static let hkTiming    = "UDEF_HKTiming"     // HKSyncTiming.rawValue
 }

@@ -7,6 +7,7 @@ struct SettingsView: View {
 
     @State private var settings = AppSettings.shared
     @State private var calendar = CalendarService.shared
+    @State private var healthKit = HealthKitService.shared
     @State private var showGraphSettings = false
     @State private var showStatSettings  = false
     @State private var showCalendarSettings = false
@@ -29,6 +30,15 @@ struct SettingsView: View {
                     .onChange(of: settings.calendarEnabled) { _, enabled in
                         if enabled { Task { await calendar.requestAccess() } }
                     }
+                    if healthKit.isAvailable {
+                        Toggle(
+                            String(localized: "Settings_HealthKit", defaultValue: "ヘルスケア連携"),
+                            isOn: $settings.hkEnabled
+                        )
+                        .onChange(of: settings.hkEnabled) { _, enabled in
+                            if enabled { Task { await healthKit.requestAuthorization() } }
+                        }
+                    }
                 }
 
                 // MARK: - グラフ・統計
@@ -46,6 +56,15 @@ struct SettingsView: View {
                     Section {
                         NavigationLink(String(localized: "Settings_GoalDetail", defaultValue: "目標値を設定")) {
                             GoalSettingsView()
+                        }
+                    }
+                }
+
+                // MARK: - HealthKit
+                if settings.hkEnabled && healthKit.isAvailable {
+                    Section(String(localized: "Settings_HKSection", defaultValue: "ヘルスケア")) {
+                        NavigationLink(String(localized: "Settings_HKDetail", defaultValue: "ヘルスケア設定")) {
+                            HealthKitSettingsView()
                         }
                     }
                 }
@@ -292,6 +311,82 @@ struct GoalSettingsView: View {
             AZDialView(value: value, min: spec.min, max: spec.max, step: 1, stepperStep: 5)
         }
         .padding(.vertical, 4)
+    }
+}
+
+// MARK: - HealthKit 設定
+
+struct HealthKitSettingsView: View {
+    @State private var settings = AppSettings.shared
+    @State private var hkService = HealthKitService.shared
+
+    private var directionBinding: Binding<HKSyncDirection> {
+        Binding(
+            get: { HKSyncDirection(rawValue: settings.hkDirection) ?? .writeOnly },
+            set: { settings.hkDirection = $0.rawValue }
+        )
+    }
+    private var timingBinding: Binding<HKSyncTiming> {
+        Binding(
+            get: { HKSyncTiming(rawValue: settings.hkTiming) ?? .automatic },
+            set: { settings.hkTiming = $0.rawValue }
+        )
+    }
+
+    var body: some View {
+        Form {
+            Section(String(localized: "HKSett_Auth", defaultValue: "アクセス権限")) {
+                HStack {
+                    Text(String(localized: "HKSett_Status", defaultValue: "ステータス"))
+                    Spacer()
+                    Text(hkService.isAuthorized
+                         ? String(localized: "HKSett_Authorized", defaultValue: "許可済み")
+                         : String(localized: "HKSett_NotAuthorized", defaultValue: "未許可"))
+                        .foregroundStyle(hkService.isAuthorized ? Color.secondary : Color.orange)
+                }
+                if !hkService.isAuthorized {
+                    Button(String(localized: "HKSett_Request", defaultValue: "アクセスを許可")) {
+                        Task { await hkService.requestAuthorization() }
+                    }
+                }
+            }
+
+            Section(String(localized: "HKSett_Direction", defaultValue: "同期方向")) {
+                Picker(String(localized: "HKSett_Direction", defaultValue: "同期方向"),
+                       selection: directionBinding) {
+                    Text(String(localized: "HKDir_Write", defaultValue: "書き込みのみ（アプリ → ヘルスケア）"))
+                        .tag(HKSyncDirection.writeOnly)
+                    Text(String(localized: "HKDir_Read", defaultValue: "読み込みのみ（ヘルスケア → アプリ）"))
+                        .tag(HKSyncDirection.readOnly)
+                    Text(String(localized: "HKDir_Both", defaultValue: "双方向"))
+                        .tag(HKSyncDirection.both)
+                }
+                .pickerStyle(.inline)
+                .labelsHidden()
+            }
+
+            Section(String(localized: "HKSett_Timing", defaultValue: "タイミング")) {
+                Picker(String(localized: "HKSett_Timing", defaultValue: "タイミング"),
+                       selection: timingBinding) {
+                    Text(String(localized: "HKTiming_Auto", defaultValue: "自動（保存時 / 画面表示時）"))
+                        .tag(HKSyncTiming.automatic)
+                    Text(String(localized: "HKTiming_Manual", defaultValue: "手動（ボタン操作）"))
+                        .tag(HKSyncTiming.manual)
+                }
+                .pickerStyle(.inline)
+                .labelsHidden()
+            }
+
+            Section {
+                Text(String(localized: "HKSett_Note",
+                            defaultValue: "連携対象：上・下血圧、脈拍、体重、体温、歩数、体脂肪率"))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .navigationTitle(String(localized: "HKSett_Title", defaultValue: "ヘルスケア設定"))
+        .navigationBarTitleDisplayMode(.inline)
+        .onAppear { hkService.checkAuthorization() }
     }
 }
 

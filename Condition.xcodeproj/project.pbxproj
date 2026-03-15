@@ -13,6 +13,7 @@
 		2CCB75F6B884B4807D49F2DD /* KVSKeys.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5D0A6B773C8E379750D8D5B /* KVSKeys.swift */; };
 		307BEA02A0CE7F10B77FFC4A /* AppSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = E0E6E18224DAB54321E46951 /* AppSettings.swift */; };
 		324BCC0C55BD4703D20C4AA1 /* CalendarService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A3227D808998C73CE3FEADB /* CalendarService.swift */; };
+		8C1D4F9E3A6B5C2D0E7F9A1B /* HealthKitService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F7A3E9C1B2D5F8A6E0C4B7D /* HealthKitService.swift */; };
 		35CFF3F641C21C1669ADC898 /* BodyRecord.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB9225443B8D3A26F9D99025 /* BodyRecord.swift */; };
 		42832198D0789A3EEE5E6B66 /* RecordEditViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 037CD7BBB175D96B6BA9D41C /* RecordEditViewModel.swift */; };
 		44C6FAA140856CAAEA0D1BF7 /* ConditionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7168A998F0F394E7BE741CF8 /* ConditionTests.swift */; };
@@ -44,6 +45,7 @@
 		031D6782445FA50A16B167EC /* RecordListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordListView.swift; sourceTree = "<group>"; };
 		037CD7BBB175D96B6BA9D41C /* RecordEditViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordEditViewModel.swift; sourceTree = "<group>"; };
 		1A3227D808998C73CE3FEADB /* CalendarService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarService.swift; sourceTree = "<group>"; };
+		4F7A3E9C1B2D5F8A6E0C4B7D /* HealthKitService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthKitService.swift; sourceTree = "<group>"; };
 		1B00938D5C29ADB460EE55EA /* Condition.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Condition.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		1C90E168B96A53E7B7A773C3 /* AZDialView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AZDialView.swift; sourceTree = "<group>"; };
 		2C5B54F260937D2BF7A3B8E0 /* RecordEditView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordEditView.swift; sourceTree = "<group>"; };
@@ -224,6 +226,7 @@
 			isa = PBXGroup;
 			children = (
 				1A3227D808998C73CE3FEADB /* CalendarService.swift */,
+				4F7A3E9C1B2D5F8A6E0C4B7D /* HealthKitService.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -339,6 +342,7 @@
 				307BEA02A0CE7F10B77FFC4A /* AppSettings.swift in Sources */,
 				35CFF3F641C21C1669ADC898 /* BodyRecord.swift in Sources */,
 				324BCC0C55BD4703D20C4AA1 /* CalendarService.swift in Sources */,
+				8C1D4F9E3A6B5C2D0E7F9A1B /* HealthKitService.swift in Sources */,
 				82BEB0597976A364B0796572 /* ConditionApp.swift in Sources */,
 				8206959AD5C6A8FA4D0CF941 /* ContentView.swift in Sources */,
 				F15A862490DED9463FCB6F26 /* DateOpt.swift in Sources */,
