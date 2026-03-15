@@ -196,10 +196,6 @@ struct RecordListView: View {
     private func deleteRecords(in sectionRecords: [BodyRecord], offsets: IndexSet) {
         for index in offsets {
             let record = sectionRecords[index]
-            // カレンダーイベントも削除
-            if !record.sEventID.isEmpty {
-                CalendarService.shared.deleteEvent(eventID: record.sEventID)
-            }
             context.delete(record)
         }
     }

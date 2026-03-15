@@ -226,15 +226,11 @@ final class RecordEditViewModel {
             let record = BodyRecord(dateTime: dateTime, dateOpt: dateOpt)
             applyFields(to: record)
             context.insert(record)
-            // カレンダー連携
-            saveCalendarEvent(for: record)
 
         case .edit(let record):
             record.dateTime = dateTime
             record.dateOpt  = dateOpt
             applyFields(to: record)
-            // カレンダー更新
-            saveCalendarEvent(for: record)
 
         case .goalEdit:
             let s = AppSettings.shared
@@ -265,9 +261,6 @@ final class RecordEditViewModel {
     // MARK: - 削除
 
     func delete(record: BodyRecord, context: ModelContext) throws {
-        if !record.sEventID.isEmpty {
-            CalendarService.shared.deleteEvent(eventID: record.sEventID)
-        }
         context.delete(record)
         try context.save()
     }
@@ -342,45 +335,4 @@ final class RecordEditViewModel {
         }
     }
 
-    // MARK: - カレンダーイベント保存
-
-    private func saveCalendarEvent(for record: BodyRecord) {
-        let settings = AppSettings.shared
-        guard settings.calendarEnabled, !settings.calendarID.isEmpty else { return }
-
-        let title = buildEventTitle()
-        let notes = buildEventNotes()
-
-        let eventID = CalendarService.shared.saveEvent(
-            title: title,
-            notes: notes,
-            date: record.dateTime,
-            eventID: record.sEventID.isEmpty ? nil : record.sEventID,
-            calendarID: settings.calendarID
-        )
-        if let eid = eventID {
-            record.sEventID = eid
-        }
-    }
-
-    private func buildEventTitle() -> String {
-        var parts: [String] = [String(localized: "EventTitle_Base", defaultValue: "体調メモ")]
-        if nBpHi_mmHg > 0 || nBpLo_mmHg > 0 {
-            parts.append(dateOpt.label)
-        }
-        return parts.joined(separator: " ")
-    }
-
-    private func buildEventNotes() -> String {
-        var lines: [String] = []
-        if nBpHi_mmHg > 0 { lines.append("上\(nBpHi_mmHg) 下\(nBpLo_mmHg) 脈\(nPulse_bpm)") }
-        if nWeight_10Kg > 0 {
-            lines.append("体重 \(ValueFormatter.format(nWeight_10Kg, decimals: 1)) kg")
-        }
-        if nTemp_10c > 0 {
-            lines.append("体温 \(ValueFormatter.format(nTemp_10c, decimals: 1)) ℃")
-        }
-        if !sNote1.isEmpty { lines.append(sNote1) }
-        return lines.joined(separator: "\n")
-    }
 }

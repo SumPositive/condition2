@@ -6,8 +6,7 @@ import SwiftUI
 struct SettingsView: View {
 
     @State private var settings = AppSettings.shared
-    @State private var calendar = CalendarService.shared
-    @State private var healthKit = HealthKitService.shared
+@State private var healthKit = HealthKitService.shared
     @Environment(\.openURL) private var openURL
     @State private var showHKGuideAlert  = false
 
@@ -22,7 +21,7 @@ struct SettingsView: View {
                     NavigationLink {
                         DateOptMatrixView()
                     } label: {
-                        Text(String(localized: "Settings_DateOpt", defaultValue: "計測時刻設定"))
+                        Text(String(localized: "Settings_DateOpt", defaultValue: "時間帯と区分の初期値"))
                     }
 
                     // ヘルスケア
@@ -73,41 +72,6 @@ struct SettingsView: View {
                                 Text(String(localized: "HKTiming_Auto",   defaultValue: "自動")).tag(HKSyncTiming.automatic)
                             }
                             .pickerStyle(.segmented)
-                        }
-                    }
-
-                    // カレンダー
-                    Toggle(
-                        String(localized: "Settings_Calendar", defaultValue: "カレンダー連携"),
-                        isOn: $settings.calendarEnabled
-                    )
-                    .onChange(of: settings.calendarEnabled) { _, enabled in
-                        if enabled { Task { await calendar.requestAccess() } }
-                    }
-                    if settings.calendarEnabled {
-                        if calendar.availableCalendars.isEmpty {
-                            Button(String(localized: "Calendar_Request", defaultValue: "アクセスを許可")) {
-                                Task { await calendar.requestAccess() }
-                            }
-                        } else {
-                            ForEach(calendar.availableCalendars, id: \.calendarIdentifier) { cal in
-                                HStack {
-                                    Circle()
-                                        .fill(Color(cgColor: cal.cgColor))
-                                        .frame(width: 12, height: 12)
-                                    Text(cal.title)
-                                    Spacer()
-                                    if settings.calendarID == cal.calendarIdentifier {
-                                        Image(systemName: "checkmark")
-                                            .foregroundStyle(.blue)
-                                    }
-                                }
-                                .contentShape(Rectangle())
-                                .onTapGesture {
-                                    settings.calendarID    = cal.calendarIdentifier
-                                    settings.calendarTitle = cal.title
-                                }
-                            }
                         }
                     }
                 }
@@ -161,7 +125,7 @@ struct SettingsView: View {
 
 }
 
-// MARK: - 計測時刻設定マトリックス
+// MARK: - 時間帯と区分の初期値マトリックス
 
 struct DateOptMatrixView: View {
     @State private var settings = AppSettings.shared
@@ -226,7 +190,7 @@ struct DateOptMatrixView: View {
             .padding(.vertical, 4)
         }
         .background(Color(.systemGroupedBackground))
-        .navigationTitle(String(localized: "Settings_DateOpt", defaultValue: "計測時刻設定"))
+        .navigationTitle(String(localized: "Settings_DateOpt", defaultValue: "時間帯と区分の初期値"))
         .navigationBarTitleDisplayMode(.inline)
     }
 }
@@ -544,51 +508,6 @@ struct HealthKitSettingsView: View {
         .navigationTitle(String(localized: "HKSett_Title", defaultValue: "ヘルスケア設定"))
         .navigationBarTitleDisplayMode(.inline)
         .onAppear { hkService.checkAuthorization() }
-    }
-}
-
-// MARK: - カレンダー設定
-
-struct CalendarSettingsView: View {
-    @State private var calService = CalendarService.shared
-    @State private var settings = AppSettings.shared
-
-    var body: some View {
-        Form {
-            if calService.availableCalendars.isEmpty {
-                Section {
-                    Text(String(localized: "Calendar_NoAccess", defaultValue: "カレンダーへのアクセスが許可されていません"))
-                        .foregroundStyle(.secondary)
-                    Button(String(localized: "Calendar_Request", defaultValue: "アクセスを許可")) {
-                        Task { await calService.requestAccess() }
-                    }
-                }
-            } else {
-                Section(String(localized: "Calendar_Select", defaultValue: "カレンダーを選択")) {
-                    ForEach(calService.availableCalendars, id: \.calendarIdentifier) { cal in
-                        HStack {
-                            Circle()
-                                .fill(Color(cgColor: cal.cgColor))
-                                .frame(width: 12, height: 12)
-                            Text(cal.title)
-                            Spacer()
-                            if settings.calendarID == cal.calendarIdentifier {
-                                Image(systemName: "checkmark")
-                                    .foregroundStyle(.blue)
-                            }
-                        }
-                        .contentShape(Rectangle())
-                        .onTapGesture {
-                            settings.calendarID    = cal.calendarIdentifier
-                            settings.calendarTitle = cal.title
-                        }
-                    }
-                }
-            }
-        }
-        .navigationTitle(String(localized: "Calendar_Title", defaultValue: "カレンダー選択"))
-        .navigationBarTitleDisplayMode(.inline)
-        .task { await calService.requestAccess() }
     }
 }
 

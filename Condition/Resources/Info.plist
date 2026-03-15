@@ -20,9 +20,7 @@
 	<string>2.0.0</string>
 	<key>CFBundleVersion</key>
 	<string>1</string>
-	<key>NSCalendarsUsageDescription</key>
-	<string>健康データをカレンダーに記録するために使用します。</string>
-	<key>NSHealthShareUsageDescription</key>
+<key>NSHealthShareUsageDescription</key>
 	<string>ヘルスケアの記録を読み取り、記録画面に自動入力するために使用します。</string>
 	<key>NSHealthUpdateUsageDescription</key>
 	<string>記録した健康データをヘルスケアアプリに書き込むために使用します。</string>

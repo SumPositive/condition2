@@ -71,11 +71,7 @@ final class AppSettings {
     var goalEnabled: Bool = false {
         didSet { kvs.set(goalEnabled, forKey: KVSKeys.bGoal) }
     }
-    var calendarEnabled: Bool = false {
-        didSet { kvs.set(calendarEnabled, forKey: KVSKeys.bCalender) }
-    }
-
-    // MARK: - DateOpt 自動判定時刻（旧設定、マイグレーション用に保持）
+// MARK: - DateOpt 自動判定時刻（旧設定、マイグレーション用に保持）
     var wakeHour: Int = 6 {
         didSet { kvs.set(wakeHour, forKey: KVSKeys.dateOptWakeHour) }
     }
@@ -148,17 +144,7 @@ final class AppSettings {
         didSet { kvs.set(goalSkMuscle, forKey: KVSKeys.goalSkMuscle) }
     }
 
-    // MARK: - カレンダー（UserDefaults: デバイス個別）
-    var calendarID: String {
-        get { ud.string(forKey: UDefKeys.calendarID) ?? "" }
-        set { ud.set(newValue, forKey: UDefKeys.calendarID) }
-    }
-    var calendarTitle: String {
-        get { ud.string(forKey: UDefKeys.calendarTitle) ?? "" }
-        set { ud.set(newValue, forKey: UDefKeys.calendarTitle) }
-    }
-
-    // MARK: - HealthKit（UserDefaults: デバイス個別・@Observable 追跡対象にするため stored property）
+// MARK: - HealthKit（UserDefaults: デバイス個別・@Observable 追跡対象にするため stored property）
     var hkEnabled: Bool = false {
         didSet { ud.set(hkEnabled, forKey: UDefKeys.hkEnabled) }
     }
@@ -220,7 +206,6 @@ final class AppSettings {
         statShow24HLine = kvs.bool(forKey: KVSKeys.settStat24HLine)
 
         goalEnabled     = kvs.bool(forKey: KVSKeys.bGoal)
-        calendarEnabled = kvs.bool(forKey: KVSKeys.bCalender)
 
         let wh = kvs.longLong(forKey: KVSKeys.dateOptWakeHour)
         if wh > 0 { wakeHour = Int(wh) }

@@ -192,7 +192,6 @@ final class MigrationService {
             record.bCaution = (v == "YES")
         }
 
-        record.sEventID   = (obj.value(forKey: "sEventID")   as? String) ?? ""
         record.sNote1     = (obj.value(forKey: "sNote1")     as? String) ?? ""
         record.sNote2     = (obj.value(forKey: "sNote2")     as? String) ?? ""
         record.sEquipment = (obj.value(forKey: "sEquipment") as? String) ?? ""

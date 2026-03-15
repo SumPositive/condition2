@@ -13,8 +13,7 @@ final class BodyRecord {
     // MARK: - メタデータ
     var nDateOpt: Int = DateOpt.rest.rawValue    // DateOpt rawValue
     var bCaution: Bool = false                   // 注意フラグ
-    var sEventID: String = ""                    // カレンダーイベントID
-    var sNote1: String = ""
+var sNote1: String = ""
     var sNote2: String = ""
     var sEquipment: String = ""                  // 測定場所・装置
 

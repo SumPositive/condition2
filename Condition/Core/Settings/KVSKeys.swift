@@ -22,9 +22,7 @@ enum KVSKeys {
 
     // MARK: - 機能切替
     static let bGoal            = "KVS_bGoal"           // 目標値機能
-    static let bCalender        = "KVS_bCalender"       // カレンダー連携
-
-    // MARK: - 日付オプション時刻（前後2時間で自動判定）
+// MARK: - 日付オプション時刻（前後2時間で自動判定）
     static let dateOptWakeHour  = "KVS_DateOptWake_HOUR"
     static let dateOptRestHour  = "KVS_DateOptRest_HOUR"
     static let dateOptDownHour  = "KVS_DateOptDown_HOUR"
@@ -48,9 +46,7 @@ enum KVSKeys {
 
 enum UDefKeys {
     // MARK: - UserDefaults（デバイス個別設定）
-    static let calendarID    = "UDEF_CalendarID"
-    static let calendarTitle = "UDEF_CalendarTitle"
-    static let migrationDone = "MigrationV2Done"    // CoreData→SwiftData移行完了フラグ
+static let migrationDone = "MigrationV2Done"    // CoreData→SwiftData移行完了フラグ
 
     // MARK: - HealthKit（デバイス個別設定）
     static let hkEnabled   = "UDEF_HKEnabled"

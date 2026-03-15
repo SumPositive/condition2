@@ -1647,7 +1647,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "計測時刻設定"
+            "value" : "時間帯と区分の初期値"
           }
         }
       }
