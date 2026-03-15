@@ -53,6 +53,8 @@ final class HealthKitService {
     var importProgress: String = ""
     /// 設定変更後に記録タブへ戻ったときに自動インポートを1回実行するフラグ
     var needsAutoImport: Bool = false
+    /// タイムアウトが発生したときに true になるフラグ（アラート表示用）
+    var importTimedOut: Bool = false
 
     private static let shareTypes: Set<HKSampleType> = [
         HKQuantityType(.bloodPressureSystolic),
@@ -325,6 +327,7 @@ final class HealthKitService {
     // MARK: - 期間一括読み込み
 
     /// 指定期間の全サンプルを返す（分単位でグループ化、歩数は同日の全レコードに付与）
+    /// 10秒以内に完了しない場合は空配列を返し importTimedOut を true にする。
     /// - Parameter hiddenFields: 非表示フィールドの GraphKind.rawValue 集合。含まれる種別は取得をスキップする。
     func readSamples(from startDate: Date, to endDate: Date, hiddenFields: Set<Int> = []) async -> [HealthKitValues] {
         guard isAvailable else {
@@ -332,7 +335,34 @@ final class HealthKitService {
             return []
         }
         logger.info("readSamples 開始: \(startDate, privacy: .public) 〜 \(endDate, privacy: .public)")
+        importTimedOut = false
 
+        let result = await withCheckedContinuation { (cont: CheckedContinuation<[HealthKitValues], Never>) in
+            let done = OnceMark()
+
+            // 10 秒タイムアウト
+            Task { @MainActor [self] in
+                try? await Task.sleep(for: .seconds(10))
+                guard done.claim() else { return }
+                logger.warning("readSamples タイムアウト（10秒）")
+                importTimedOut = true
+                importProgress = ""
+                cont.resume(returning: [])
+            }
+
+            // 実際の取得
+            Task { @MainActor [self] in
+                let values = await _runImport(from: startDate, to: endDate, hiddenFields: hiddenFields)
+                guard done.claim() else { return }
+                cont.resume(returning: values)
+            }
+        }
+
+        importProgress = ""
+        return result
+    }
+
+    private func _runImport(from startDate: Date, to endDate: Date, hiddenFields: Set<Int>) async -> [HealthKitValues] {
         let cal = Calendar.current
         /// 同じ分の測定を1レコードに統合するキー
         func minuteKey(_ d: Date) -> Date {
@@ -416,7 +446,6 @@ final class HealthKitService {
             }
         }
 
-        importProgress = ""
         // 非表示でないバイタル項目のうち少なくとも1つが入力されているレコードのみ残す
         let result = byMinute.values
             .filter { v in
@@ -511,5 +540,21 @@ final class HealthKitService {
             }
             self.store.execute(query)
         }
+    }
+}
+
+// MARK: - ユーティリティ
+
+/// withCheckedContinuation の二重 resume を防ぐ一回限りのフラグ（スレッドセーフ）
+private final class OnceMark: @unchecked Sendable {
+    private var _claimed = false
+    private let lock = NSLock()
+
+    func claim() -> Bool {
+        lock.lock()
+        defer { lock.unlock() }
+        guard !_claimed else { return false }
+        _claimed = true
+        return true
     }
 }

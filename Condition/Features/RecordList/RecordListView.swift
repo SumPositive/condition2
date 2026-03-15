@@ -19,6 +19,7 @@ struct RecordListView: View {
     @State private var showAddSheet = false
     @State private var showGoalSheet = false
     @State private var toastMessage: String? = nil
+    @State private var showHKTimeoutAlert = false
 
     private var settings: AppSettings { AppSettings.shared }
     private var hkService: HealthKitService { HealthKitService.shared }
@@ -99,6 +100,17 @@ struct RecordListView: View {
             }
             .animation(.easeInOut(duration: 0.3), value: toastMessage)
             .animation(.easeInOut(duration: 0.3), value: hkService.importProgress)
+            .onChange(of: hkService.importTimedOut) { _, timedOut in
+                if timedOut { showHKTimeoutAlert = true }
+            }
+            .alert(
+                String(localized: "HKTimeout_Title", defaultValue: "ヘルスケア連携"),
+                isPresented: $showHKTimeoutAlert
+            ) {
+                Button("OK") { hkService.importTimedOut = false }
+            } message: {
+                Text(String(localized: "HKTimeout_Message", defaultValue: "ヘルスケアで「すべてのデータを表示」に異常がないか確認してください"))
+            }
         }
     }
 
@@ -115,7 +127,7 @@ struct RecordListView: View {
                 ForEach(sections, id: \.yearMonth) { section in
                     Section(header: RecordSectionHeader(yearMonth: section.yearMonth)) {
                         ForEach(section.records) { record in
-                            RecordRowView(record: record)
+                            RecordRowView(record: record, hkEnabled: settings.hkEnabled)
                                 .contentShape(Rectangle())
                                 .onTapGesture { editTarget = record }
                                 .listRowInsets(EdgeInsets(top: 1, leading: 16, bottom: 1, trailing: 16))
@@ -165,6 +177,7 @@ struct RecordListView: View {
         for v in hkValues {
             guard !existingTimes.contains(roundToMinute(v.date)) else { continue }
             let record = BodyRecord(dateTime: v.date, dateOpt: settings.autoDateOpt(for: v.date))
+            record.dataSource   = .hkImport
             record.nBpHi_mmHg   = v.bpHi
             record.nBpLo_mmHg   = v.bpLo
             record.nPulse_bpm   = v.pulse
@@ -343,6 +356,7 @@ struct RecordColumnHeader: View {
 struct RecordRowView: View {
     let record: BodyRecord
     var showActivity: Bool = true
+    var hkEnabled: Bool = false
 
     @Environment(\.verticalSizeClass) private var verticalSizeClass
 
@@ -388,9 +402,16 @@ struct RecordRowView: View {
                                 .foregroundStyle(.secondary)
                                 .fixedSize(horizontal: true, vertical: false)
                         }
-                        Text(Self.timeFormatter.string(from: record.dateTime))
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
+                        HStack(spacing: 2) {
+                            Text(Self.timeFormatter.string(from: record.dateTime))
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                            if hkEnabled {
+                                Image(systemName: record.dataSource.icon)
+                                    .font(.system(size: 7))
+                                    .foregroundStyle(record.dataSource.color)
+                            }
+                        }
                     }
                     // 右：アイコン＋区分ラベル
                     VStack(spacing: 1) {

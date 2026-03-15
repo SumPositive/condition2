@@ -47,6 +47,7 @@ final class RecordEditViewModel {
     var isSaving: Bool = false
     var errorMessage: String?
     var isLoadingFromHK: Bool = false
+    var dataSource: RecordDataSource = .appInput
 
     let mode: EditMode
     private var originalRecord: BodyRecord?
@@ -86,6 +87,7 @@ final class RecordEditViewModel {
 
         case .edit(let record):
             originalRecord = record
+            dataSource  = record.dataSource
             dateTime    = record.dateTime
             dateOpt     = record.dateOpt
             bCaution    = record.bCaution
@@ -224,6 +226,7 @@ final class RecordEditViewModel {
         switch mode {
         case .addNew:
             let record = BodyRecord(dateTime: dateTime, dateOpt: dateOpt)
+            record.dataSource = .appInput
             applyFields(to: record)
             context.insert(record)
 
@@ -231,6 +234,11 @@ final class RecordEditViewModel {
             record.dateTime = dateTime
             record.dateOpt  = dateOpt
             applyFields(to: record)
+            switch record.dataSource {
+            case .appInput:  record.dataSource = .appModified
+            case .hkImport:  record.dataSource = .hkModified
+            default: break
+            }
 
         case .goalEdit:
             let s = AppSettings.shared

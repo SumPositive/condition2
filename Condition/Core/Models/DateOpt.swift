@@ -56,3 +56,39 @@ enum DateOpt: Int, CaseIterable, Codable {
         }
     }
 }
+
+// MARK: - データ入力元
+
+enum RecordDataSource: Int {
+    case appInput    = 0  // このアプリで入力
+    case appModified = 1  // このアプリで入力後に変更
+    case hkImport    = 2  // ヘルスケア連携で読み取り
+    case hkModified  = 3  // ヘルスケア連携で読み取り後に変更
+
+    var icon: String {
+        switch self {
+        case .appInput:    return "pencil.circle"
+        case .appModified: return "pencil.circle.fill"
+        case .hkImport:    return "heart.circle"
+        case .hkModified:  return "heart.circle.fill"
+        }
+    }
+
+    var color: Color {
+        switch self {
+        case .appInput:    return .secondary
+        case .appModified: return .blue
+        case .hkImport:    return .secondary
+        case .hkModified:  return .pink
+        }
+    }
+
+    var label: String {
+        switch self {
+        case .appInput:    return String(localized: "DataSource_AppInput",    defaultValue: "このアプリで入力")
+        case .appModified: return String(localized: "DataSource_AppModified", defaultValue: "このアプリで入力後に変更")
+        case .hkImport:    return String(localized: "DataSource_HKImport",    defaultValue: "ヘルスケア連携で読み取り")
+        case .hkModified:  return String(localized: "DataSource_HKModified",  defaultValue: "ヘルスケア連携で読み取り後に変更")
+        }
+    }
+}

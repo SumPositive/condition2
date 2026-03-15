@@ -184,6 +184,17 @@ struct RecordEditView: View {
     @ViewBuilder
     private var dateSection: some View {
         if case .goalEdit = vm.mode { } else {
+            if case .edit = vm.mode, settings.hkEnabled {
+                Section {
+                    HStack(spacing: 8) {
+                        Image(systemName: vm.dataSource.icon)
+                            .foregroundStyle(vm.dataSource.color)
+                        Text(vm.dataSource.label)
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            }
             Section {
                 dateRow
                 dateOptRow

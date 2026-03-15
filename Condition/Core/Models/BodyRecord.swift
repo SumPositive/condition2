@@ -11,8 +11,9 @@ final class BodyRecord {
     @Attribute(.spotlight) var dateTime: Date = Date()
 
     // MARK: - メタデータ
-    var nDateOpt: Int = DateOpt.rest.rawValue    // DateOpt rawValue
-    var bCaution: Bool = false                   // 注意フラグ
+    var nDateOpt: Int = DateOpt.rest.rawValue        // DateOpt rawValue
+    var nDataSource: Int = RecordDataSource.appInput.rawValue  // RecordDataSource rawValue
+    var bCaution: Bool = false                       // 注意フラグ
 var sNote1: String = ""
     var sNote2: String = ""
     var sEquipment: String = ""                  // 測定場所・装置
@@ -58,6 +59,12 @@ var sNote1: String = ""
     @Transient var dateOpt: DateOpt {
         get { DateOpt(rawValue: nDateOpt) ?? .rest }
         set { nDateOpt = newValue.rawValue }
+    }
+
+    // MARK: - DataSource アクセサ
+    @Transient var dataSource: RecordDataSource {
+        get { RecordDataSource(rawValue: nDataSource) ?? .appInput }
+        set { nDataSource = newValue.rawValue }
     }
 
     // MARK: - 目標値用特殊日付（グローバル定数 bodyRecordGoalDate も参照）
