@@ -144,45 +144,68 @@ struct DateOptMatrixView: View {
 // MARK: - グラフ設定
 
 struct GraphSettingsView: View {
+    var isModal: Bool = false
     @State private var settings = AppSettings.shared
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
         Form {
-            Section(String(localized: "GraphSett_Display", defaultValue: "表示項目")) {
+            Section(String(localized: "GraphSett_Display", defaultValue: "補助グラフ")) {
                 Toggle(
-                    String(localized: "GraphSett_BpMean", defaultValue: "平均血圧"),
+                    String(localized: "GraphSett_BpMean", defaultValue: "平均血圧（（上－下）÷3＋下）"),
                     isOn: $settings.graphBpMean
                 )
                 Toggle(
-                    String(localized: "GraphSett_BpPress", defaultValue: "脈圧"),
+                    String(localized: "GraphSett_BpPress", defaultValue: "脈圧（上ー下）"),
                     isOn: $settings.graphBpPress
                 )
+                // BMI トグル＋身長入力
                 Toggle(
-                    String(localized: "Settings_Goal", defaultValue: "目標値を表示"),
-                    isOn: $settings.goalEnabled
+                    String(localized: "GraphSett_BMI", defaultValue: "BMI （体重÷身長×身長）"),
+                    isOn: $settings.graphBMI
                 )
-                if settings.goalEnabled {
-                    NavigationLink(String(localized: "Settings_GoalDetail", defaultValue: "目標値を設定")) {
-                        GoalSettingsView()
+                if settings.graphBMI {
+                    VStack(alignment: .leading, spacing: 4) {
+                        HStack {
+                            Text(String(localized: "GraphSett_Tall", defaultValue: "身長"))
+                                .font(.subheadline)
+                            Spacer()
+                            TextField("160", value: $settings.graphBMITall, format: .number)
+                                .keyboardType(.numberPad)
+                                .multilineTextAlignment(.trailing)
+                                .frame(width: 60)
+                            Text("cm").foregroundStyle(.secondary)
+                        }
+                        AZDialView(
+                            value: $settings.graphBMITall,
+                            min: 100,
+                            max: 250,
+                            step: 1,
+                            stepperStep: 5
+                        )
                     }
+                    .padding(.vertical, 4)
                 }
             }
 
-            Section(String(localized: "GraphSett_BMI", defaultValue: "BMI計算（身長）")) {
-                HStack {
-                    Text(String(localized: "GraphSett_Tall", defaultValue: "身長"))
-                    Spacer()
-                    TextField("170", value: $settings.graphBMITall, format: .number)
-                        .keyboardType(.numberPad)
-                        .multilineTextAlignment(.trailing)
-                        .frame(width: 60)
-                    Text("cm").foregroundStyle(.secondary)
+            Section {
+                NavigationLink(String(localized: "Settings_GoalDetail", defaultValue: "目標値を設定")) {
+                    GoalSettingsView()
                 }
             }
         }
         .navigationTitle(String(localized: "GraphSett_Title", defaultValue: "グラフ設定"))
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            if isModal {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button { dismiss() } label: {
+                        Image(systemName: "xmark")
+                            .fontWeight(.semibold)
+                    }
+                }
+            }
+        }
     }
 }
 

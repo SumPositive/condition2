@@ -12,6 +12,7 @@ enum KVSKeys {
     static let settGraphBpMean  = "KVS_SettGraphBpMean" // 平均血圧表示
     static let settGraphBpPress = "KVS_SettGraphBpPress"// 脈圧表示
     static let settGraphBMITall = "KVS_SettGraphBMITall"// 身長(cm) for BMI
+    static let settGraphBMI     = "KVS_SettGraphBMI"    // BMIグラフ表示
 
     // MARK: - 統計設定
     static let settStatType     = "KVS_SettStatType"    // 統計タイプ (0=Hi-Lo, 1=24H)

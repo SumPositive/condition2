@@ -79,7 +79,9 @@ struct GraphView: View {
                 }
             }
             .sheet(isPresented: $showSettings) {
-                GraphSettingsView()
+                NavigationStack {
+                    GraphSettingsView(isModal: true)
+                }
             }
         }
     }
@@ -141,6 +143,9 @@ struct GraphView: View {
                           title: kind.title, unit: "kg", color: .indigo,
                           goalValue: settings.goalWeight, decimals: 1, period: period,
                           tightDomain: true)
+            if settings.graphBMI && settings.graphBMITall > 0 {
+                BMIChartView(records: displayRecords, heightCm: settings.graphBMITall, period: period)
+            }
         case .pedo:
             LineChartView(records: displayRecords, keyPath: \.nPedometer,
                           title: kind.title,
@@ -229,6 +234,20 @@ private struct SelectionDetailRow: View {
 struct BpZone {
     let min: Int; let max: Int; let color: Color
 }
+
+// MARK: - BMI区分（日本肥満学会 JASSO基準）
+
+struct BMIZone {
+    let min: Double; let max: Double; let color: Color; let swatch: Color; let label: String
+}
+
+let bmiZones: [BMIZone] = [
+    .init(min:  0.0, max: 18.5, color: Color(red: 0.30, green: 0.60, blue: 0.95).opacity(0.13), swatch: Color(red: 0.30, green: 0.60, blue: 0.95), label: "低体重"),
+    .init(min: 18.5, max: 25.0, color: Color(red: 0.18, green: 0.65, blue: 0.28).opacity(0.11), swatch: Color(red: 0.18, green: 0.65, blue: 0.28), label: "普通体重"),
+    .init(min: 25.0, max: 30.0, color: Color(red: 0.90, green: 0.75, blue: 0.10).opacity(0.13), swatch: Color(red: 0.90, green: 0.75, blue: 0.10), label: "肥満度1"),
+    .init(min: 30.0, max: 35.0, color: Color(red: 0.95, green: 0.45, blue: 0.10).opacity(0.14), swatch: Color(red: 0.95, green: 0.45, blue: 0.10), label: "肥満度2"),
+    .init(min: 35.0, max: 60.0, color: Color(red: 0.80, green: 0.10, blue: 0.10).opacity(0.15), swatch: Color(red: 0.80, green: 0.10, blue: 0.10), label: "肥満度3以上"),
+]
 
 /// JSH 2019 基準による血圧区分カラー（上・下の高い方で分類）
 func jshColor(hi: Int, lo: Int) -> Color {
@@ -330,10 +349,15 @@ private extension View {
         chartGesture { proxy in
             SpatialTapGesture()
                 .onEnded { tap in
-                    guard let tapped: Date = proxy.value(atX: tap.location.x) else { return }
-                    let day = Calendar.current.startOfDay(for: tapped)
-                    guard validDays.contains(day) else {
-                        selectedDate.wrappedValue = nil   // データ無し → 選択解除
+                    let tapX = tap.location.x
+                    let tolerancePx: CGFloat = 44  // タップ許容範囲（ポイント）
+                    // タップ位置に最も近い有効日をピクセル距離で探す
+                    let nearest = validDays.compactMap { day -> (Date, CGFloat)? in
+                        guard let x = proxy.position(forX: day) else { return nil }
+                        return (day, abs(x - tapX))
+                    }.min(by: { $0.1 < $1.1 })
+                    guard let (day, distance) = nearest, distance <= tolerancePx else {
+                        selectedDate.wrappedValue = nil   // 許容範囲外 → 選択解除
                         return
                     }
                     if let sel = selectedDate.wrappedValue,
@@ -729,6 +753,16 @@ private extension View {
             self.chartYScale(domain: .automatic(includesZero: false))
         }
     }
+
+    @ViewBuilder
+    func chartYTightDomain(minVal: Double?, maxVal: Double?) -> some View {
+        if let lo = minVal, let hi = maxVal, lo < hi {
+            let pad = Swift.max((hi - lo) * 0.15, 0.5)
+            self.chartYScale(domain: (lo - pad)...(hi + pad))
+        } else {
+            self.chartYScale(domain: .automatic(includesZero: false))
+        }
+    }
 }
 
 struct LineChartView: View {
@@ -888,5 +922,229 @@ struct LineChartView: View {
                 }
             }
         }
+    }
+}
+
+// MARK: - BMIグラフパネル
+
+private struct BMIChartView: View {
+    let records: [BodyRecord]
+    let heightCm: Int
+    let period: GraphPeriod
+
+    private let cal = Calendar.current
+    @State private var selectedDate: Date?
+    @State private var scrollPosition: Date = Date()
+    @State private var showBMIInfo = false
+
+    private func dayStart(_ date: Date) -> Date { cal.startOfDay(for: date) }
+
+    private func bmi(for record: BodyRecord) -> Double? {
+        guard record.nWeight_10Kg > 0 else { return nil }
+        let hm = Double(heightCm) / 100.0
+        return (Double(record.nWeight_10Kg) / 10.0) / (hm * hm)
+    }
+
+    private var validRecords: [BodyRecord] {
+        records.filter { bmi(for: $0) != nil }
+            .sorted { $0.dateTime < $1.dateTime }
+    }
+
+    private var periodStart: Date {
+        cal.date(byAdding: .day, value: -period.rawValue, to: Date()) ?? Date()
+    }
+    private var periodRecords: [BodyRecord] { validRecords.filter { $0.dateTime >= periodStart } }
+
+    private var dailyValues: [DailyLineValue] {
+        let grouped = Dictionary(grouping: validRecords) { dayStart($0.dateTime) }
+        return grouped.map { date, recs in
+            let vals = recs.compactMap { bmi(for: $0) }
+            let avg = vals.reduce(0.0, +) / Double(vals.count)
+            return DailyLineValue(date: date, avg: avg)
+        }.sorted { $0.date < $1.date }
+    }
+
+    private var selectedDayRecords: [BodyRecord] {
+        guard let date = selectedDate else { return [] }
+        let target = dayStart(date)
+        return validRecords.filter { dayStart($0.dateTime) == target }
+    }
+
+    private var avgValue: Double? {
+        let v = periodRecords.compactMap { bmi(for: $0) }
+        guard !v.isEmpty else { return nil }
+        return v.reduce(0.0, +) / Double(v.count)
+    }
+    private var minValue: Double? { periodRecords.compactMap { bmi(for: $0) }.min() }
+    private var maxValue: Double? { periodRecords.compactMap { bmi(for: $0) }.max() }
+
+    private var yearMinBMI: Double? {
+        let oneYearAgo = cal.date(byAdding: .year, value: -1, to: Date()) ?? Date()
+        return validRecords.filter { $0.dateTime >= oneYearAgo }.compactMap { bmi(for: $0) }.min()
+    }
+    private var yearMaxBMI: Double? {
+        let oneYearAgo = cal.date(byAdding: .year, value: -1, to: Date()) ?? Date()
+        return validRecords.filter { $0.dateTime >= oneYearAgo }.compactMap { bmi(for: $0) }.max()
+    }
+
+    private func fmt(_ v: Double) -> String { String(format: "%.1f", v) }
+
+    var body: some View {
+        PanelContainer {
+            // ヘッダー
+            HStack(alignment: .firstTextBaseline) {
+                Text("BMI").font(.subheadline.weight(.semibold))
+                Button {
+                    showBMIInfo = true
+                } label: {
+                    HStack(spacing: 2) {
+                        Image(systemName: "info.circle")
+                        Text("JASSO基準")
+                    }
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                }
+                .buttonStyle(.plain)
+                .popover(isPresented: $showBMIInfo, arrowEdge: .bottom) {
+                    BMIStandardsPopover()
+                }
+                Spacer()
+                if let avg = avgValue {
+                    StatCell(label: "平均", value: fmt(avg))
+                }
+                if let mn = minValue, let mx = maxValue {
+                    StatCell(label: "範囲", value: "\(fmt(mn))–\(fmt(mx))")
+                }
+            }
+            .padding(.horizontal, 16)
+            .padding(.top, 14)
+            .padding(.bottom, 8)
+
+            // チャート
+            Chart {
+                // BMI基準帯（背景）
+                ForEach(bmiZones, id: \.label) { z in
+                    RectangleMark(
+                        yStart: .value("下限", z.min),
+                        yEnd:   .value("上限", z.max)
+                    )
+                    .foregroundStyle(z.color)
+                }
+
+                ForEach(dailyValues) { d in
+                    AreaMark(
+                        x: .value("日時", d.date),
+                        y: .value("BMI", d.avg)
+                    )
+                    .foregroundStyle(
+                        LinearGradient(colors: [Color.cyan.opacity(0.25), Color.cyan.opacity(0.0)],
+                                       startPoint: .top, endPoint: .bottom)
+                    )
+                    .interpolationMethod(.catmullRom)
+                }
+                ForEach(dailyValues) { d in
+                    LineMark(
+                        x: .value("日時", d.date),
+                        y: .value("BMI", d.avg)
+                    )
+                    .foregroundStyle(Color.cyan)
+                    .lineStyle(StrokeStyle(lineWidth: 2))
+                    .interpolationMethod(.catmullRom)
+                }
+                ForEach(validRecords) { r in
+                    if let b = bmi(for: r) {
+                        PointMark(
+                            x: .value("日時", dayStart(r.dateTime)),
+                            y: .value("BMI", b)
+                        )
+                        .foregroundStyle(r.dateOpt.color)
+                        .symbolSize(16)
+                    }
+                }
+                if let date = selectedDate {
+                    RuleMark(x: .value("選択", dayStart(date)))
+                        .foregroundStyle(.gray.opacity(0.35))
+                        .lineStyle(StrokeStyle(lineWidth: 1, dash: [4]))
+                }
+            }
+            .chartYTightDomain(minVal: yearMinBMI, maxVal: yearMaxBMI)
+            .chartYAxis {
+                AxisMarks(position: .leading) { value in
+                    AxisGridLine().foregroundStyle(.gray.opacity(0.2))
+                    AxisValueLabel {
+                        if let v = value.as(Double.self) {
+                            Text(fmt(v)).font(.caption2)
+                        }
+                    }
+                }
+            }
+            .tapToSelectDay($selectedDate, validDays: Set(validRecords.map { dayStart($0.dateTime) }))
+            .standardXAxis(period: period, scrollPosition: $scrollPosition, oldestDate: validRecords.first?.dateTime)
+            .frame(height: 120)
+            .padding(.horizontal, 8)
+            .padding(.bottom, 4)
+
+            // 選択詳細
+            if !selectedDayRecords.isEmpty {
+                Divider()
+                ForEach(selectedDayRecords) { r in
+                    if let b = bmi(for: r) {
+                        SelectionDetailRow(
+                            record: r,
+                            detail: "BMI \(fmt(b))",
+                            color: r.dateOpt.color
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+// MARK: - BMI基準ポップアップ
+
+private struct BMIStandardsPopover: View {
+    private struct Row {
+        let zone: BMIZone
+        var rangeText: String {
+            if zone.min <= 0  { return "< \(String(format: "%.1f", zone.max))" }
+            if zone.max >= 60 { return "≥ \(String(format: "%.1f", zone.min))" }
+            return "\(String(format: "%.1f", zone.min)) – \(String(format: "%.1f", zone.max))"
+        }
+    }
+    private let rows = bmiZones.reversed().map { Row(zone: $0) }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text("JASSO肥満度分類")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
+                .padding(.horizontal, 16)
+                .padding(.top, 14)
+                .padding(.bottom, 8)
+            Divider()
+            ForEach(rows, id: \.zone.label) { row in
+                HStack(spacing: 10) {
+                    RoundedRectangle(cornerRadius: 3)
+                        .fill(row.zone.swatch.opacity(0.75))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 3)
+                                .strokeBorder(.secondary.opacity(0.3), lineWidth: 0.5)
+                        )
+                        .frame(width: 18, height: 18)
+                    Text(row.zone.label)
+                        .font(.subheadline)
+                    Spacer()
+                    Text(row.rangeText)
+                        .font(.subheadline.monospacedDigit())
+                        .foregroundStyle(.secondary)
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
+                Divider().padding(.leading, 44)
+            }
+        }
+        .frame(minWidth: 260)
+        .presentationCompactAdaptation(.popover)
     }
 }

@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git rm:*)",
+      "Bash(grep -E \"\\\\.\\(swift|swift~\\)$\")",
+      "Bash(xcodebuild -scheme Condition -destination 'platform=iOS Simulator,name=iPhone 16' build)",
+      "Bash(sudo xcode-select:*)",
+      "Bash(DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer xcodebuild -scheme Condition -destination 'platform=iOS Simulator,name=iPhone 16' build)",
+      "Bash(DEVELOPER_DIR=/Applications/Xcode16.3.app/Contents/Developer xcodebuild -scheme Condition -destination 'platform=iOS Simulator,name=iPhone 16' build)",
+      "Bash(DEVELOPER_DIR=/Applications/Xcode16.3.app/Contents/Developer xcodebuild -scheme Condition -destination 'generic/platform=iOS Simulator' build)"
+    ]
+  }
+}

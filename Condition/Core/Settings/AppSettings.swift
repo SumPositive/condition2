@@ -46,8 +46,11 @@ final class AppSettings {
     var graphBpPress: Bool = false {
         didSet { kvs.set(graphBpPress, forKey: KVSKeys.settGraphBpPress) }
     }
-    var graphBMITall: Int = 0 {
+    var graphBMITall: Int = 160 {
         didSet { kvs.set(graphBMITall, forKey: KVSKeys.settGraphBMITall) }
+    }
+    var graphBMI: Bool = false {
+        didSet { kvs.set(graphBMI, forKey: KVSKeys.settGraphBMI) }
     }
 
     // MARK: - 統計設定
@@ -195,6 +198,7 @@ final class AppSettings {
 
         graphBpMean    = kvs.bool(forKey: KVSKeys.settGraphBpMean)
         graphBpPress   = kvs.bool(forKey: KVSKeys.settGraphBpPress)
+        graphBMI       = kvs.bool(forKey: KVSKeys.settGraphBMI)
         let tall = kvs.longLong(forKey: KVSKeys.settGraphBMITall)
         if tall > 0 { graphBMITall = Int(tall) }
 

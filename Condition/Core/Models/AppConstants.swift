@@ -108,7 +108,7 @@ enum GraphKind: Int, CaseIterable, Identifiable, Codable {
     var title: String {
         switch self {
         case .bp:       return String(localized: "Graph_Bp",       defaultValue: "血圧")
-        case .bpAvg:    return String(localized: "Graph_BpAvg",    defaultValue: "脈圧（上ー下）")
+        case .bpAvg:    return String(localized: "Graph_BpAvg",    defaultValue: "脈圧")
         case .pulse:    return String(localized: "Graph_Pulse",    defaultValue: "心拍数")
         case .temp:     return String(localized: "Graph_Temp",     defaultValue: "体温")
         case .weight:   return String(localized: "Graph_Weight",   defaultValue: "体重")
