@@ -120,11 +120,12 @@ struct GraphView: View {
         switch kind {
         case .bp:
             BpChartView(records: displayRecords, period: period)
-        case .bpAvg:
-            if settings.graphBpMean || settings.graphBpPress {
-                BpAverageChartView(records: displayRecords, period: period,
-                                   showMean: settings.graphBpMean, showPP: settings.graphBpPress)
+            // 脈圧は常に血圧の直後に表示（パネル順序に依存しない）
+            if settings.graphBpPress {
+                BpPpChartView(records: displayRecords, period: period)
             }
+        case .bpAvg:
+            EmptyView() // 脈圧は .bp の直後で描画済み
         case .pulse:
             LineChartView(records: displayRecords, keyPath: \.nPulse_bpm,
                           title: kind.title, unit: "bpm", color: .orange,
@@ -405,6 +406,7 @@ private struct DailyBp: Identifiable {
     let hi: Double
     let lo: Double
     var map: Double { (hi + 2 * lo) / 3 }
+    var pp:  Double { hi - lo }
     var id: Date { date }
 }
 
@@ -452,6 +454,15 @@ struct BpChartView: View {
         return Int((Double(v.reduce(0, +)) / Double(v.count)).rounded())
     }
 
+    private var avgMap: Int? {
+        guard let hi = avgHi, let lo = avgLo else { return nil }
+        return (hi + 2 * lo) / 3
+    }
+    private var avgPP: Int? {
+        guard let hi = avgHi, let lo = avgLo else { return nil }
+        return hi - lo
+    }
+
     // Y軸タイトドメイン用（過去1年の上最大・下最小）
     private var yearRecords: [BodyRecord] {
         let oneYearAgo = cal.date(byAdding: .year, value: -1, to: Date()) ?? Date()
@@ -467,8 +478,8 @@ struct BpChartView: View {
                 Text(GraphKind.bp.title)
                     .font(.subheadline.weight(.semibold))
                 Spacer()
-                if let hi = avgHi, let lo = avgLo {
-                    StatCell(label: "平均", value: "\(hi)／\(lo)")
+                if settings.graphBpMean, let map = avgMap {
+                    StatCell(label: "平均血圧", value: "\(map)")
                 }
                 if let mnHi = periodRecords.map(\.nBpHi_mmHg).min(),
                    let mxHi = periodRecords.map(\.nBpHi_mmHg).max(),
@@ -522,13 +533,15 @@ struct BpChartView: View {
                         .foregroundStyle(r.dateOpt.color)
                         .symbolSize(18)
                 }
-                // 平均血圧ライン（日次平均を経由）
-                ForEach(dailyAverages) { d in
-                    LineMark(x: .value("日時", d.date), y: .value("平均血圧", d.map),
-                             series: .value("系列", "平均血圧"))
-                        .foregroundStyle(.purple)
-                        .lineStyle(StrokeStyle(lineWidth: 1.5, dash: [4, 2]))
-                        .interpolationMethod(.catmullRom)
+                // 平均血圧ライン（graphBpMean ON 時のみ）
+                if settings.graphBpMean {
+                    ForEach(dailyAverages) { d in
+                        LineMark(x: .value("日時", d.date), y: .value("平均血圧", d.map),
+                                 series: .value("系列", "平均血圧"))
+                            .foregroundStyle(.purple)
+                            .lineStyle(StrokeStyle(lineWidth: 1.5, dash: [4, 2]))
+                            .interpolationMethod(.catmullRom)
+                    }
                 }
                 // 選択ルール
                 if let date = selectedDate {
@@ -566,9 +579,10 @@ struct BpChartView: View {
                 Divider()
                 ForEach(selectedDayRecords) { r in
                     let map = (r.nBpHi_mmHg + 2 * r.nBpLo_mmHg) / 3
+                    let mapStr = settings.graphBpMean ? "  平均 \(map)" : ""
                     SelectionDetailRow(
                         record: r,
-                        detail: "\(r.nBpHi_mmHg)／\(r.nBpLo_mmHg)  平均 \(map) mmHg",
+                        detail: "\(r.nBpHi_mmHg)／\(r.nBpLo_mmHg)\(mapStr) mmHg",
                         color: r.dateOpt.color
                     )
                 }
@@ -578,13 +592,11 @@ struct BpChartView: View {
     }
 }
 
-// MARK: - 平均血圧・脈圧グラフパネル
+// MARK: - 脈圧グラフパネル
 
-struct BpAverageChartView: View {
+struct BpPpChartView: View {
     let records: [BodyRecord]
     let period: GraphPeriod
-    let showMean: Bool
-    let showPP: Bool
 
     private let cal = Calendar.current
     @State private var selectedDate: Date?
@@ -597,21 +609,30 @@ struct BpAverageChartView: View {
             .sorted { $0.dateTime < $1.dateTime }
     }
 
-    private var dailyBpAvg: [DailyBpAvg] {
+    private var dailyPP: [DailyBpAvg] {
         let grouped = Dictionary(grouping: validRecords) { dayStart($0.dateTime) }
         return grouped.map { date, recs in
-            let mean = Double(recs.map { ($0.nBpHi_mmHg + $0.nBpLo_mmHg * 2) / 3 }.reduce(0, +)) / Double(recs.count)
-            let pp   = Double(recs.map { $0.nBpHi_mmHg - $0.nBpLo_mmHg }.reduce(0, +)) / Double(recs.count)
-            return DailyBpAvg(date: date, mean: mean, pp: pp)
+            let pp = Double(recs.map { $0.nBpHi_mmHg - $0.nBpLo_mmHg }.reduce(0, +)) / Double(recs.count)
+            return DailyBpAvg(date: date, mean: pp, pp: pp)
         }.sorted { $0.date < $1.date }
     }
 
-    private var meanValues: [(record: BodyRecord, value: Int)] {
-        validRecords.map { r in (r, (r.nBpHi_mmHg + r.nBpLo_mmHg * 2) / 3) }
-    }
     private var ppValues: [(record: BodyRecord, value: Int)] {
         validRecords.map { r in (r, r.nBpHi_mmHg - r.nBpLo_mmHg) }
     }
+
+    private var periodStart: Date {
+        cal.date(byAdding: .day, value: -period.rawValue, to: Date()) ?? Date()
+    }
+    private var periodPPValues: [Int] {
+        validRecords.filter { $0.dateTime >= periodStart }.map { $0.nBpHi_mmHg - $0.nBpLo_mmHg }
+    }
+    private var avgPP: Int? {
+        guard !periodPPValues.isEmpty else { return nil }
+        return Int((Double(periodPPValues.reduce(0, +)) / Double(periodPPValues.count)).rounded())
+    }
+    private var minPP: Int? { periodPPValues.min() }
+    private var maxPP: Int? { periodPPValues.max() }
 
     private var selectedDayRecords: [BodyRecord] {
         guard let date = selectedDate else { return [] }
@@ -619,74 +640,52 @@ struct BpAverageChartView: View {
         return validRecords.filter { dayStart($0.dateTime) == target }
     }
 
-    private var latestMean: Int? { dailyBpAvg.last.map { Int($0.mean.rounded()) } }
-    private var latestPP: Int?   { dailyBpAvg.last.map { Int($0.pp.rounded()) } }
-
     var body: some View {
         PanelContainer {
-            // ヘッダー
-            HStack(alignment: .top) {
+            // ヘッダー（血圧セクションと同スタイル）
+            HStack(alignment: .firstTextBaseline) {
                 Text(GraphKind.bpAvg.title)
                     .font(.subheadline.weight(.semibold))
                 Spacer()
-                HStack(spacing: 16) {
-                    if showMean, let v = latestMean {
-                        VStack(alignment: .trailing, spacing: 0) {
-                            Text("\(v)")
-                                .font(.system(size: 28, weight: .bold, design: .rounded))
-                                .foregroundStyle(.purple)
-                            Text("平均血圧 mmHg").font(.caption2).foregroundStyle(.secondary)
-                        }
-                    }
-                    if showPP, let v = latestPP {
-                        VStack(alignment: .trailing, spacing: 0) {
-                            Text("\(v)")
-                                .font(.system(size: 28, weight: .bold, design: .rounded))
-                                .foregroundStyle(.orange)
-                            Text("脈圧 mmHg").font(.caption2).foregroundStyle(.secondary)
-                        }
-                    }
+                if let avg = avgPP {
+                    StatCell(label: "平均", value: "\(avg)")
                 }
+                if let mn = minPP, let mx = maxPP {
+                    StatCell(label: "範囲", value: "\(mn)–\(mx)")
+                }
+                Text("mmHg").font(.subheadline.weight(.semibold)).foregroundStyle(.orange)
             }
             .padding(.horizontal, 16)
             .padding(.top, 14)
             .padding(.bottom, 8)
 
             Chart {
-                if showMean {
-                    ForEach(dailyBpAvg) { d in
-                        AreaMark(x: .value("日時", d.date), y: .value("平均血圧", d.mean))
-                            .foregroundStyle(LinearGradient(colors: [.purple.opacity(0.2), .purple.opacity(0)],
-                                                            startPoint: .top, endPoint: .bottom))
-                            .interpolationMethod(.catmullRom)
-                    }
-                    ForEach(dailyBpAvg) { d in
-                        LineMark(x: .value("日時", d.date), y: .value("平均血圧", d.mean),
-                                 series: .value("type", "mean"))
-                            .foregroundStyle(.purple)
-                            .lineStyle(StrokeStyle(lineWidth: 2))
-                            .interpolationMethod(.catmullRom)
-                    }
-                    ForEach(meanValues, id: \.record.dateTime) { item in
-                        PointMark(x: .value("日時", dayStart(item.record.dateTime)), y: .value("平均血圧", Double(item.value)))
-                            .foregroundStyle(item.record.dateOpt.color)
-                            .symbolSize(16)
-                    }
+                // 正常範囲帯（40〜50 mmHg）
+                RectangleMark(yStart: .value("正常下限", 40), yEnd: .value("正常上限", 50))
+                    .foregroundStyle(Color.green.opacity(0.12))
+                // 正常範囲の境界線
+                RuleMark(y: .value("正常下限", 40))
+                    .foregroundStyle(Color.green.opacity(0.4))
+                    .lineStyle(StrokeStyle(lineWidth: 1, dash: [3, 2]))
+                RuleMark(y: .value("正常上限", 50))
+                    .foregroundStyle(Color.green.opacity(0.4))
+                    .lineStyle(StrokeStyle(lineWidth: 1, dash: [3, 2]))
+                // 日次平均ライン
+                ForEach(dailyPP) { d in
+                    LineMark(x: .value("日時", d.date), y: .value("脈圧", d.pp),
+                             series: .value("type", "pp"))
+                        .foregroundStyle(.orange)
+                        .lineStyle(StrokeStyle(lineWidth: 2))
+                        .interpolationMethod(.catmullRom)
                 }
-                if showPP {
-                    ForEach(dailyBpAvg) { d in
-                        LineMark(x: .value("日時", d.date), y: .value("脈圧", d.pp),
-                                 series: .value("type", "pp"))
-                            .foregroundStyle(.orange)
-                            .lineStyle(StrokeStyle(lineWidth: 2))
-                            .interpolationMethod(.catmullRom)
-                    }
-                    ForEach(ppValues, id: \.record.dateTime) { item in
-                        PointMark(x: .value("日時", dayStart(item.record.dateTime)), y: .value("脈圧", Double(item.value)))
-                            .foregroundStyle(item.record.dateOpt.color)
-                            .symbolSize(16)
-                    }
+                // 個別ポイント
+                ForEach(ppValues, id: \.record.dateTime) { item in
+                    PointMark(x: .value("日時", dayStart(item.record.dateTime)),
+                              y: .value("脈圧", Double(item.value)))
+                        .foregroundStyle(item.record.dateOpt.color)
+                        .symbolSize(16)
                 }
+                // 選択ルール
                 if let date = selectedDate {
                     RuleMark(x: .value("選択", dayStart(date)))
                         .foregroundStyle(.gray.opacity(0.35))
@@ -709,15 +708,9 @@ struct BpAverageChartView: View {
             if !selectedDayRecords.isEmpty {
                 Divider()
                 ForEach(selectedDayRecords) { r in
-                    let mean = (r.nBpHi_mmHg + r.nBpLo_mmHg * 2) / 3
-                    let pp   = r.nBpHi_mmHg - r.nBpLo_mmHg
-                    let detail: String = {
-                        var parts: [String] = []
-                        if showMean { parts.append("平均 \(mean)") }
-                        if showPP   { parts.append("脈圧 \(pp)") }
-                        return parts.joined(separator: "  ") + " mmHg"
-                    }()
-                    SelectionDetailRow(record: r, detail: detail, color: r.dateOpt.color)
+                    SelectionDetailRow(record: r,
+                                       detail: "脈圧 \(r.nBpHi_mmHg - r.nBpLo_mmHg) mmHg",
+                                       color: r.dateOpt.color)
                 }
             }
         }
