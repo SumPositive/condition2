@@ -67,20 +67,15 @@ enum RecordDataSource: Int {
 
     var icon: String {
         switch self {
-        case .appInput:    return "pencil.circle"
-        case .appModified: return "pencil.circle.fill"
-        case .hkImport:    return "heart.circle"
-        case .hkModified:  return "heart.circle.fill"
+        case .appInput:    return "hand.point.up.left"
+        case .appModified: return "hand.draw.badge.ellipsis"
+        case .hkImport:    return "arrow.down"
+        case .hkModified:  return "arrow.uturn.up"
         }
     }
 
     var color: Color {
-        switch self {
-        case .appInput:    return .secondary
-        case .appModified: return .blue
-        case .hkImport:    return .secondary
-        case .hkModified:  return .pink
-        }
+        return .secondary
     }
 
     var label: String {
