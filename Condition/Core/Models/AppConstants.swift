@@ -56,6 +56,10 @@ enum MeasureRange {
     static let bodyFat = MeasureSpec(min: 0,   initVal: 235, max: 1000,  decimals: 1)
     // 骨格筋率 x10 % (285 = 28.5 %)
     static let skMuscle = MeasureSpec(min: 0,   initVal: 285, max: 1000,  decimals: 1)
+    // 脈圧 mmHg
+    static let bpPp = MeasureSpec(min: 10,  initVal: 40,  max: 100,  decimals: 0)
+    // BMI x10 (220 = 22.0)
+    static let bmi  = MeasureSpec(min: 100, initVal: 220, max: 500,  decimals: 1)
 }
 
 struct MeasureSpec {

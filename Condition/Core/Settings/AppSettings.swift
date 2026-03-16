@@ -146,6 +146,12 @@ final class AppSettings {
     var goalSkMuscle: Int = 0 {
         didSet { kvs.set(goalSkMuscle, forKey: KVSKeys.goalSkMuscle) }
     }
+    var goalBpPp: Int = 0 {
+        didSet { kvs.set(goalBpPp, forKey: KVSKeys.goalBpPp) }
+    }
+    var goalBMI: Int = 0 {
+        didSet { kvs.set(goalBMI, forKey: KVSKeys.goalBMI) }
+    }
 
 // MARK: - HealthKit（UserDefaults: デバイス個別・@Observable 追跡対象にするため stored property）
     var hkEnabled: Bool = false {
@@ -244,6 +250,10 @@ final class AppSettings {
         if gbf > 0 { goalBodyFat = Int(gbf) }
         let gsk = kvs.longLong(forKey: KVSKeys.goalSkMuscle)
         if gsk > 0 { goalSkMuscle = Int(gsk) }
+        let gpp = kvs.longLong(forKey: KVSKeys.goalBpPp)
+        if gpp > 0 { goalBpPp = Int(gpp) }
+        let gbmi = kvs.longLong(forKey: KVSKeys.goalBMI)
+        if gbmi > 0 { goalBMI = Int(gbmi) }
 
     }
 

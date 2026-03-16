@@ -40,6 +40,8 @@ enum KVSKeys {
     static let goalPedometer = "Goal_nPedometer"
     static let goalBodyFat   = "Goal_nBodyFat_10p"
     static let goalSkMuscle  = "Goal_nSkMuscle_10p"
+    static let goalBpPp      = "Goal_nBpPp_mmHg"
+    static let goalBMI       = "Goal_nBMI_10"
 
     // MARK: - 購入状態（KVSにも保存）
     static let unlockProductID = "com.azukid.AzBodyNote.Unlock"

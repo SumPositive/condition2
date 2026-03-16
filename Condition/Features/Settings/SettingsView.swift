@@ -2,6 +2,7 @@
 // 設定メイン画面（旧 SettingTVC 相当）
 
 import SwiftUI
+import SwiftData
 
 struct SettingsView: View {
 
@@ -186,11 +187,13 @@ struct GraphSettingsView: View {
                     }
                     .padding(.vertical, 4)
                 }
-            }
-
-            Section {
-                NavigationLink(String(localized: "Settings_GoalDetail", defaultValue: "目標値を設定")) {
+                NavigationLink {
                     GoalSettingsView()
+                } label: {
+                    LabeledContent(
+                        String(localized: "GraphSett_Goal", defaultValue: "目標"),
+                        value: String(localized: "GraphSett_GoalAction", defaultValue: "設定")
+                    )
                 }
             }
         }
@@ -308,97 +311,96 @@ struct StatSettingsView: View {
 
 struct GoalSettingsView: View {
     @State private var settings = AppSettings.shared
-    @Environment(\.dismiss) private var dismiss
+
+    @Query(
+        filter: #Predicate<BodyRecord> { $0.dateTime < bodyRecordGoalDate },
+        sort: \BodyRecord.dateTime,
+        order: .reverse
+    )
+    private var records: [BodyRecord]
+
+    private var latest: BodyRecord? { records.first }
+
+    // 最新値（0 = 未記録）
+    private var latestBpHi:    Int? { latest?.nBpHi_mmHg }
+    private var latestBpLo:    Int? { latest?.nBpLo_mmHg }
+    private var latestBpPp:    Int? {
+        guard let hi = latest?.nBpHi_mmHg, let lo = latest?.nBpLo_mmHg,
+              hi > 0, lo > 0 else { return nil }
+        return hi - lo
+    }
+    private var latestPulse:   Int? { latest?.nPulse_bpm }
+    private var latestWeight:  Int? { latest?.nWeight_10Kg }
+    private var latestTemp:    Int? { latest?.nTemp_10c }
+    private var latestPedo:    Int? { latest?.nPedometer }
+    private var latestBodyFat: Int? { latest?.nBodyFat_10p }
+    private var latestSkMuscle:Int? { latest?.nSkMuscle_10p }
+    private var latestBMI:     Int? {
+        guard let w = latest?.nWeight_10Kg, w > 0,
+              settings.graphBMITall > 0 else { return nil }
+        let hm = Double(settings.graphBMITall) / 100.0
+        return Int((Double(w) / 10.0 / (hm * hm) * 10).rounded())
+    }
 
     var body: some View {
         NavigationStack {
             Form {
-                Section(String(localized: "Goal_BP", defaultValue: "血圧・心拍数")) {
-                    goalDialRow(
-                        label: String(localized: "Field_BpHi", defaultValue: "上血圧"),
-                        value: $settings.goalBpHi,
-                        spec: MeasureRange.bpHi,
-                        unit: "mmHg"
-                    )
-                    goalDialRow(
-                        label: String(localized: "Field_BpLo", defaultValue: "下血圧"),
-                        value: $settings.goalBpLo,
-                        spec: MeasureRange.bpLo,
-                        unit: "mmHg"
-                    )
-                    goalDialRow(
-                        label: String(localized: "Field_Pulse", defaultValue: "心拍数"),
-                        value: $settings.goalPulse,
-                        spec: MeasureRange.pulse,
-                        unit: "bpm"
-                    )
-                }
-                Section(String(localized: "Goal_Body", defaultValue: "体重・体温")) {
-                    goalDialRow(
-                        label: String(localized: "Field_Weight", defaultValue: "体重"),
-                        value: $settings.goalWeight,
-                        spec: MeasureRange.weight,
-                        unit: "kg",
-                        decimals: 1
-                    )
-                    goalDialRow(
-                        label: String(localized: "Field_Temp", defaultValue: "体温"),
-                        value: $settings.goalTemp,
-                        spec: MeasureRange.temp,
-                        unit: "℃",
-                        decimals: 1
-                    )
-                }
-                Section(String(localized: "Goal_Activity", defaultValue: "活動・体組成")) {
-                    goalDialRow(
-                        label: String(localized: "Field_Pedo", defaultValue: "歩数"),
-                        value: $settings.goalPedometer,
-                        spec: MeasureRange.pedometer,
-                        unit: String(localized: "Unit_Steps", defaultValue: "歩")
-                    )
-                    goalDialRow(
-                        label: String(localized: "Field_BodyFat", defaultValue: "体脂肪率"),
-                        value: $settings.goalBodyFat,
-                        spec: MeasureRange.bodyFat,
-                        unit: "%",
-                        decimals: 1
-                    )
-                    goalDialRow(
-                        label: String(localized: "Field_SkMuscle", defaultValue: "骨格筋率"),
-                        value: $settings.goalSkMuscle,
-                        spec: MeasureRange.skMuscle,
-                        unit: "%",
-                        decimals: 1
-                    )
+                Section(String(localized: "Goal_Title", defaultValue: "目標値")) {
+                    goalDialRow(title: "上（収縮期血圧）", value: $settings.goalBpHi,      spec: MeasureRange.bpHi,      recordVal: latestBpHi,   unit: "mmHg", stepperStep: 10, color: .red)
+                    goalDialRow(title: "下（拡張期血圧）", value: $settings.goalBpLo,      spec: MeasureRange.bpLo,      recordVal: latestBpLo,   unit: "mmHg", stepperStep: 5,  color: .blue)
+                    goalDialRow(title: "脈圧",             value: $settings.goalBpPp,      spec: MeasureRange.bpPp,      recordVal: latestBpPp,   unit: "mmHg", stepperStep: 5,  color: .orange)
+                    goalDialRow(title: "心拍数",           value: $settings.goalPulse,     spec: MeasureRange.pulse,     recordVal: latestPulse,  unit: "bpm",  stepperStep: 5,  color: .orange)
+                    goalDialRow(title: "体重",             value: $settings.goalWeight,    spec: MeasureRange.weight,    recordVal: latestWeight, unit: "kg",   stepperStep: 10, decimals: 1, color: .indigo)
+                    goalDialRow(title: "BMI",              value: $settings.goalBMI,       spec: MeasureRange.bmi,       recordVal: latestBMI,    unit: "",     stepperStep: 5,  decimals: 1, color: .cyan)
+                    goalDialRow(title: "体温",             value: $settings.goalTemp,      spec: MeasureRange.temp,      recordVal: latestTemp,   unit: "℃",   stepperStep: 1,  decimals: 1, color: .pink)
+                    goalDialRow(title: "歩数",             value: $settings.goalPedometer, spec: MeasureRange.pedometer, recordVal: latestPedo,   unit: "歩",   stepperStep: 1000, color: .green)
+                    goalDialRow(title: "体脂肪率",         value: $settings.goalBodyFat,   spec: MeasureRange.bodyFat,   recordVal: latestBodyFat,unit: "%",    stepperStep: 5,  decimals: 1, color: .purple)
+                    goalDialRow(title: "骨格筋率",         value: $settings.goalSkMuscle,  spec: MeasureRange.skMuscle,  recordVal: latestSkMuscle,unit: "%",   stepperStep: 5,  decimals: 1, color: .teal)
                 }
             }
-            .navigationTitle(String(localized: "Goal_Title", defaultValue: "目標値"))
+            .navigationTitle(String(localized: "GoalLine_Title", defaultValue: "目標設定"))
             .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button(String(localized: "Done", defaultValue: "完了")) { dismiss() }
-                }
-            }
         }
     }
 
+    @ViewBuilder
     private func goalDialRow(
-        label: String,
+        title: String,
         value: Binding<Int>,
         spec: MeasureSpec,
+        recordVal: Int?,
         unit: String,
-        decimals: Int = 0
+        stepperStep: Int,
+        decimals: Int = 0,
+        color: Color = .primary
     ) -> some View {
+        let defaultVal = (recordVal ?? 0) > 0 ? recordVal! : spec.initVal
+        let enabled = Binding<Bool>(
+            get: { value.wrappedValue > 0 },
+            set: { on in value.wrappedValue = on ? defaultVal : 0 }
+        )
         VStack(alignment: .leading, spacing: 4) {
             HStack {
-                Text(label).font(.subheadline)
+                Text(title).font(.subheadline)
                 Spacer()
-                Text(value.wrappedValue > 0 ? ValueFormatter.format(value.wrappedValue, decimals: decimals) : "-")
-                    .font(.subheadline.monospacedDigit())
-                    .foregroundStyle(value.wrappedValue > 0 ? .primary : .secondary)
-                Text(unit).font(.caption).foregroundStyle(.secondary)
+                if enabled.wrappedValue {
+                    Text(ValueFormatter.format(value.wrappedValue, decimals: decimals))
+                        .font(.title2.bold().monospacedDigit())
+                        .foregroundStyle(color)
+                    Text(unit)
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(color.opacity(0.7))
+                } else {
+                    Text("－")
+                        .font(.title2)
+                        .foregroundStyle(.tertiary)
+                }
+                Toggle("", isOn: enabled)
+                    .labelsHidden()
             }
-            AZDialView(value: value, min: spec.min, max: spec.max, step: 1, stepperStep: 5)
+            if enabled.wrappedValue {
+                AZDialView(value: value, min: spec.min, max: spec.max, step: 1, stepperStep: stepperStep)
+            }
         }
         .padding(.vertical, 4)
     }

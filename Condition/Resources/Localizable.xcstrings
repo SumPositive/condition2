@@ -960,6 +960,23 @@
         }
       }
     },
+    "GoalLine_Title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Goal Lines"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "目標設定"
+          }
+        }
+      }
+    },
     "Graph_BodyFat" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -1193,7 +1210,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "表示項目"
+            "value" : "補助グラフ"
           }
         }
       }

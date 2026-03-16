@@ -124,7 +124,7 @@ struct GraphView: View {
             BpChartView(records: displayRecords, period: period)
             // 脈圧は常に血圧の直後に表示（パネル順序に依存しない）
             if settings.graphBpPress {
-                BpPpChartView(records: displayRecords, period: period)
+                BpPpChartView(records: displayRecords, period: period, goalValue: settings.goalBpPp)
             }
         case .bpAvg:
             EmptyView() // 脈圧は .bp の直後で描画済み
@@ -144,7 +144,7 @@ struct GraphView: View {
                           goalValue: settings.goalWeight, decimals: 1, period: period,
                           tightDomain: true)
             if settings.graphBMI && settings.graphBMITall > 0 {
-                BMIChartView(records: displayRecords, heightCm: settings.graphBMITall, period: period)
+                BMIChartView(records: displayRecords, heightCm: settings.graphBMITall, period: period, goalValue: settings.goalBMI)
             }
         case .pedo:
             LineChartView(records: displayRecords, keyPath: \.nPedometer,
@@ -621,6 +621,7 @@ struct BpChartView: View {
 struct BpPpChartView: View {
     let records: [BodyRecord]
     let period: GraphPeriod
+    var goalValue: Int = 0
 
     private let cal = Calendar.current
     @State private var selectedDate: Date?
@@ -714,6 +715,18 @@ struct BpPpChartView: View {
                     RuleMark(x: .value("選択", dayStart(date)))
                         .foregroundStyle(.gray.opacity(0.35))
                         .lineStyle(StrokeStyle(lineWidth: 1, dash: [4]))
+                }
+                // 目標ライン
+                if goalValue > 0 {
+                    RuleMark(y: .value("目標", goalValue))
+                        .foregroundStyle(Color.orange.opacity(0.5))
+                        .lineStyle(StrokeStyle(lineWidth: 1, dash: [4]))
+                        .annotation(position: .top, alignment: .trailing) {
+                            Text(String(localized: "Graph_Goal", defaultValue: "目標"))
+                                .font(.caption2)
+                                .foregroundStyle(Color.orange.opacity(0.7))
+                                .padding(.trailing, 4)
+                        }
                 }
             }
             .chartYScale(domain: .automatic(includesZero: false))
@@ -931,6 +944,7 @@ private struct BMIChartView: View {
     let records: [BodyRecord]
     let heightCm: Int
     let period: GraphPeriod
+    var goalValue: Int = 0  // ×10 スケール（例: 220 = 22.0）
 
     private let cal = Calendar.current
     @State private var selectedDate: Date?
@@ -1065,6 +1079,19 @@ private struct BMIChartView: View {
                     RuleMark(x: .value("選択", dayStart(date)))
                         .foregroundStyle(.gray.opacity(0.35))
                         .lineStyle(StrokeStyle(lineWidth: 1, dash: [4]))
+                }
+                // 目標ライン
+                if goalValue > 0 {
+                    let goalBMIDouble = Double(goalValue) / 10.0
+                    RuleMark(y: .value("目標", goalBMIDouble))
+                        .foregroundStyle(Color.cyan.opacity(0.5))
+                        .lineStyle(StrokeStyle(lineWidth: 1, dash: [4]))
+                        .annotation(position: .top, alignment: .trailing) {
+                            Text(String(localized: "Graph_Goal", defaultValue: "目標"))
+                                .font(.caption2)
+                                .foregroundStyle(Color.cyan.opacity(0.7))
+                                .padding(.trailing, 4)
+                        }
                 }
             }
             .chartYTightDomain(minVal: yearMinBMI, maxVal: yearMaxBMI)
