@@ -182,7 +182,7 @@ struct RecordEditView: View {
             dialRow(title: "体脂肪率", value: $vm.nBodyFat_10p, enabled: $vm.bodyFatEnabled, spec: MeasureRange.bodyFat, unit: "%", stepperStep: 5, decimals: 1, color: .purple)
         case .skMuscle:
             dialRow(title: "骨格筋率", value: $vm.nSkMuscle_10p, enabled: $vm.skMuscleEnabled, spec: MeasureRange.skMuscle, unit: "%", stepperStep: 5, decimals: 1, color: .teal)
-        case .bpAvg:
+        case .bpAvg, .bmi, .weightChange:
             EmptyView()
         }
     }

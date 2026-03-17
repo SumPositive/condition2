@@ -108,8 +108,8 @@ private struct GraphContentView: View {
                 }
                 .pickerStyle(.segmented)
 
-                let hidden = Set(settings.hiddenFields)
-                ForEach(settings.graphPanelOrder.filter { !hidden.contains($0) }, id: \.self) { kindRaw in
+                let hidden = Set(settings.graphHiddenPanels)
+                ForEach(settings.graphDisplayOrder.filter { !hidden.contains($0) }, id: \.self) { kindRaw in
                     if let kind = GraphKind(rawValue: kindRaw) {
                         graphPanel(kind: kind)
                     }
@@ -125,11 +125,8 @@ private struct GraphContentView: View {
         switch kind {
         case .bp:
             BpChartView(records: records, period: period)
-            if settings.graphBpPress {
-                BpPpChartView(records: records, period: period, goalValue: settings.goalBpPp)
-            }
         case .bpAvg:
-            EmptyView()
+            BpPpChartView(records: records, period: period, goalValue: settings.goalBpPp)
         case .pulse:
             LineChartView(records: records, keyPath: \.nPulse_bpm,
                           title: kind.title, unit: "bpm", color: .orange,
@@ -145,12 +142,12 @@ private struct GraphContentView: View {
                           title: kind.title, unit: "kg", color: .indigo,
                           goalValue: settings.goalWeight, decimals: 1, period: period,
                           tightDomain: true, showMovingAverage: settings.graphWeightMA)
-            if settings.graphBMI && settings.graphBMITall > 0 {
+        case .bmi:
+            if settings.graphBMITall > 0 {
                 BMIChartView(records: records, heightCm: settings.graphBMITall, period: period, goalValue: settings.goalBMI)
             }
-            if settings.graphWeightChange {
-                WeightChangeChartView(records: records, period: period)
-            }
+        case .weightChange:
+            WeightChangeChartView(records: records, period: period)
         case .pedo:
             LineChartView(records: records, keyPath: \.nPedometer,
                           title: kind.title,
@@ -281,7 +278,7 @@ let bpLoZones: [BpZone] = [
     .init(min: 110, max: 140, color: Color(red: 0.75, green: 0.10, blue: 0.10).opacity(0.14)),
 ]
 
-// MARK: - 血圧分布バー
+// MARK: - 血圧 分布バー
 
 /// JSH ゾーン背景 + 測定範囲カプセル + 平均マーカーを Canvas で描画する横バー
 struct BpDistributionBar: View {

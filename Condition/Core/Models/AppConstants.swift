@@ -98,30 +98,67 @@ enum GraphConstants {
 
 // MARK: - グラフパネル種別（旧 EnumGraphs）
 enum GraphKind: Int, CaseIterable, Identifiable, Codable {
-    case bp      = 0
-    case bpAvg   = 1
-    case pulse   = 2
-    case temp    = 3
-    case weight  = 4
-    case pedo    = 5
-    case bodyFat = 6
-    case skMuscle = 7
+    case bp           = 0
+    case bpAvg        = 1  // 脈圧（グラフ専用）
+    case pulse        = 2
+    case temp         = 3
+    case weight       = 4
+    case pedo         = 5
+    case bodyFat      = 6
+    case skMuscle     = 7
+    case bmi          = 8  // BMI（グラフ専用）
+    case weightChange = 9  // 体重変化量（グラフ専用）
 
     var id: Int { rawValue }
 
     var title: String {
         switch self {
-        case .bp:       return String(localized: "Graph_Bp",       defaultValue: "血圧")
-        case .bpAvg:    return String(localized: "Graph_BpAvg",    defaultValue: "脈圧")
-        case .pulse:    return String(localized: "Graph_Pulse",    defaultValue: "心拍数")
-        case .temp:     return String(localized: "Graph_Temp",     defaultValue: "体温")
-        case .weight:   return String(localized: "Graph_Weight",   defaultValue: "体重")
-        case .pedo:     return String(localized: "Graph_Pedo",     defaultValue: "歩数")
-        case .bodyFat:  return String(localized: "Graph_BodyFat",  defaultValue: "体脂肪率")
-        case .skMuscle: return String(localized: "Graph_SkMuscle", defaultValue: "骨格筋率")
+        case .bp:           return String(localized: "Graph_Bp",           defaultValue: "血圧")
+        case .bpAvg:        return String(localized: "Graph_BpAvg",        defaultValue: "脈圧（上ー下）")
+        case .pulse:        return String(localized: "Graph_Pulse",        defaultValue: "心拍数")
+        case .temp:         return String(localized: "Graph_Temp",         defaultValue: "体温")
+        case .weight:       return String(localized: "Graph_Weight",       defaultValue: "体重")
+        case .pedo:         return String(localized: "Graph_Pedo",         defaultValue: "歩数")
+        case .bodyFat:      return String(localized: "Graph_BodyFat",      defaultValue: "体脂肪率")
+        case .skMuscle:     return String(localized: "Graph_SkMuscle",     defaultValue: "骨格筋率")
+        case .bmi:          return String(localized: "Graph_BMI",          defaultValue: "BMI（体重÷身長×身長）")
+        case .weightChange: return String(localized: "Graph_WeightChange", defaultValue: "体重変化量")
         }
     }
 
-    /// 記録入力画面にも対応するフィールドかどうか（bpAvg はグラフ専用）
-    var isRecordField: Bool { self != .bpAvg }
+    /// 記録入力画面にも対応するフィールドかどうか
+    var isRecordField: Bool {
+        switch self {
+        case .bpAvg, .bmi, .weightChange: return false
+        default: return true
+        }
+    }
+}
+
+enum StatSection: Int, CaseIterable, Identifiable {
+    case bpJsh          = 0
+    case bpRatio        = 1
+    case bpDateOptAvg   = 2
+    case bp24h          = 3
+    case weightSummary  = 4
+    case weightWeekly   = 5
+    case tempSummary    = 6
+    case tempDateOptAvg = 7
+    case tempHist       = 8
+
+    var id: Int { rawValue }
+
+    var title: String {
+        switch self {
+        case .bpJsh:          return String(localized: "StatSection_BpJsh",          defaultValue: "血圧 分布")
+        case .bpRatio:        return String(localized: "StatSection_BpRatio",        defaultValue: "血圧 JSH基準割合")
+        case .bpDateOptAvg:   return String(localized: "StatSection_BpDateOptAvg",   defaultValue: "血圧 区分別平均")
+        case .bp24h:          return String(localized: "StatSection_Bp24h",          defaultValue: "血圧 24時間分散")
+        case .weightSummary:  return String(localized: "StatSection_WeightSummary",  defaultValue: "体重 サマリー")
+        case .weightWeekly:   return String(localized: "StatSection_WeightWeekly",   defaultValue: "体重 週次平均")
+        case .tempSummary:    return String(localized: "StatSection_TempSummary",    defaultValue: "体温 サマリー")
+        case .tempDateOptAvg: return String(localized: "StatSection_TempDateOptAvg", defaultValue: "体温 区分別平均")
+        case .tempHist:       return String(localized: "StatSection_TempHist",       defaultValue: "体温 分布")
+        }
+    }
 }

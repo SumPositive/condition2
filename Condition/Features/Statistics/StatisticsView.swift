@@ -65,10 +65,17 @@ struct StatisticsView: View {
         }
     }
 
+    private var visibleStatSections: [StatSection] {
+        let hidden = Set(settings.statHiddenSections)
+        return settings.statSectionOrder.compactMap { raw in
+            guard !hidden.contains(raw) else { return nil }
+            return StatSection(rawValue: raw)
+        }
+    }
+
     private var scrollContent: some View {
         ScrollView {
             VStack(spacing: 16) {
-                // 期間ピッカー
                 Picker("期間", selection: periodBinding) {
                     ForEach(GraphPeriod.allCases, id: \.self) { p in
                         Text(p.label).tag(p)
@@ -77,17 +84,26 @@ struct StatisticsView: View {
                 .pickerStyle(.segmented)
                 .padding(.horizontal)
 
-                // JSH 血圧分布
-                BpJshView(records: targetRecords)
-
-                // JSH基準割合バー
-                BpJshRatioView(records: targetRecords)
-
-                // 区分別（DateOpt）平均値
-                BpDateOptAverageView(records: targetRecords)
-
-}
+                ForEach(visibleStatSections) { section in
+                    statSectionView(section)
+                }
+            }
             .padding()
+        }
+    }
+
+    @ViewBuilder
+    private func statSectionView(_ section: StatSection) -> some View {
+        switch section {
+        case .bpJsh:          BpJshView(records: targetRecords)
+        case .bpRatio:        BpJshRatioView(records: targetRecords)
+        case .bpDateOptAvg:   BpDateOptAverageView(records: targetRecords)
+        case .bp24h:          Bp24HChartView(records: targetRecords)
+        case .weightSummary:  WeightSummaryView(records: targetRecords)
+        case .weightWeekly:   WeightWeeklyChartView(records: targetRecords)
+        case .tempSummary:    TempSummaryView(records: targetRecords)
+        case .tempDateOptAvg: TempDateOptAverageView(records: targetRecords)
+        case .tempHist:       TempHistogramView(records: targetRecords)
         }
     }
 
@@ -158,11 +174,10 @@ struct BpJshView: View {
     }
 
     var body: some View {
-        guard !validRecords.isEmpty else { return AnyView(EmptyView()) }
         return AnyView(
             VStack(alignment: .leading, spacing: 10) {
                 HStack {
-                    Text(String(localized: "Stat_JshDist_Title", defaultValue: "血圧分布"))
+                    Text(String(localized: "Stat_JshDist_Title", defaultValue: "血圧 分布"))
                         .font(.headline)
                     Spacer()
                     Button {
@@ -254,6 +269,13 @@ struct BpJshView: View {
                 }
                 .frame(height: 330)
                 .padding(.horizontal, 4)
+                .overlay {
+                    if validRecords.isEmpty {
+                        Text(String(localized: "Stat_NoData", defaultValue: "期間内にデータがありません"))
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    }
+                }
 
                 // 区分（DateOpt）凡例
                 let cols = [GridItem(.fixed(90)), GridItem(.fixed(90)), GridItem(.fixed(90))]
@@ -391,7 +413,7 @@ private struct JSHStandardsPopover: View {
     }
 }
 
-// MARK: - JSH基準割合バー
+// MARK: - 血圧 JSH基準割合バー
 
 struct BpJshRatioView: View {
     let records: [BodyRecord]
@@ -424,25 +446,29 @@ struct BpJshRatioView: View {
     var body: some View {
         let c = counts
         let total = c.reduce(0, +)
-        guard total > 0 else { return AnyView(EmptyView()) }
 
         return AnyView(
             VStack(alignment: .leading, spacing: 10) {
-                Text(String(localized: "Stat_JshRatio_Title", defaultValue: "JSH基準割合"))
+                Text(String(localized: "Stat_JshRatio_Title", defaultValue: "血圧 JSH基準割合"))
                     .font(.headline)
                     .padding(.horizontal)
 
                 GeometryReader { geo in
-                    HStack(spacing: 0) {
-                        ForEach(Array(Self.jshCategories.enumerated()), id: \.offset) { i, cat in
-                            if c[i] > 0 {
-                                Rectangle()
-                                    .fill(cat.color)
-                                    .frame(width: geo.size.width * CGFloat(c[i]) / CGFloat(total))
+                    if total > 0 {
+                        HStack(spacing: 0) {
+                            ForEach(Array(Self.jshCategories.enumerated()), id: \.offset) { i, cat in
+                                if c[i] > 0 {
+                                    Rectangle()
+                                        .fill(cat.color)
+                                        .frame(width: geo.size.width * CGFloat(c[i]) / CGFloat(total))
+                                }
                             }
                         }
+                        .clipShape(RoundedRectangle(cornerRadius: 6))
+                    } else {
+                        RoundedRectangle(cornerRadius: 6)
+                            .fill(Color.secondary.opacity(0.15))
                     }
-                    .clipShape(RoundedRectangle(cornerRadius: 6))
                 }
                 .frame(height: 28)
                 .padding(.horizontal)
@@ -502,12 +528,10 @@ struct BpDateOptAverageView: View {
     }
 
     var body: some View {
-        guard !data.isEmpty else { return AnyView(EmptyView()) }
-
         return AnyView(
             VStack(alignment: .leading, spacing: 10) {
                 HStack {
-                    Text(String(localized: "Stat_DateOptAvg_Title", defaultValue: "区分別平均血圧"))
+                    Text(String(localized: "Stat_DateOptAvg_Title", defaultValue: "血圧 区分別平均"))
                         .font(.headline)
                     Spacer()
                     HStack(spacing: 10) {
@@ -524,6 +548,13 @@ struct BpDateOptAverageView: View {
                 .padding(.horizontal)
 
                 VStack(spacing: 8) {
+                    if data.isEmpty {
+                        Text(String(localized: "Stat_NoData", defaultValue: "期間内にデータがありません"))
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 8)
+                    }
                     ForEach(data, id: \.opt) { item in
                         HStack(alignment: .center, spacing: 8) {
                             Label(item.opt.label, systemImage: item.opt.icon)
@@ -631,5 +662,346 @@ struct Bp24HChartView: View {
         .padding(.vertical, 8)
         .background(.background.secondary)
         .clipShape(RoundedRectangle(cornerRadius: 12))
+    }
+}
+
+// MARK: - 体重 サマリー
+
+struct WeightSummaryView: View {
+    let records: [BodyRecord]
+
+    private var weightRecords: [BodyRecord] {
+        records.filter { $0.nWeight_10Kg > 0 }.sorted { $0.dateTime < $1.dateTime }
+    }
+
+    var body: some View {
+        let recs = weightRecords
+        let values = recs.map { Double($0.nWeight_10Kg) / 10.0 }
+        let avg = values.isEmpty ? 0.0 : values.reduce(0, +) / Double(values.count)
+        let minVal = values.min() ?? 0.0
+        let maxVal = values.max() ?? 0.0
+        let change = values.count >= 2 ? values.last! - values.first! : 0.0
+
+        return VStack(spacing: 8) {
+            Text(String(localized: "Stat_WeightSummary_Title", defaultValue: "体重 サマリー"))
+                .font(.headline)
+
+            if values.isEmpty {
+                Text(String(localized: "Stat_NoData", defaultValue: "期間内にデータがありません"))
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            } else {
+                Grid(horizontalSpacing: 12, verticalSpacing: 4) {
+                    GridRow {
+                        Text("").frame(width: 32)
+                        Text(String(localized: "Stat_Avg", defaultValue: "平均"))
+                            .font(.caption).foregroundStyle(.secondary)
+                        Text(String(localized: "Stat_Min", defaultValue: "最小"))
+                            .font(.caption).foregroundStyle(.secondary)
+                        Text(String(localized: "Stat_Max", defaultValue: "最大"))
+                            .font(.caption).foregroundStyle(.secondary)
+                        Text(String(localized: "Stat_Change", defaultValue: "変化"))
+                            .font(.caption).foregroundStyle(.secondary)
+                    }
+                    GridRow {
+                        Text("kg").font(.caption).foregroundStyle(.secondary)
+                        Text(String(format: "%.1f", avg)).font(.title3.monospacedDigit())
+                        Text(String(format: "%.1f", minVal)).font(.title3.monospacedDigit())
+                        Text(String(format: "%.1f", maxVal)).font(.title3.monospacedDigit())
+                        HStack(spacing: 2) {
+                            Image(systemName: change > 0.05 ? "arrow.up" : change < -0.05 ? "arrow.down" : "minus")
+                                .foregroundStyle(change > 0.05 ? .red : change < -0.05 ? .blue : .secondary)
+                                .font(.caption)
+                            Text(String(format: "%.1f", abs(change)))
+                                .font(.title3.monospacedDigit())
+                                .foregroundStyle(change > 0.05 ? .red : change < -0.05 ? .blue : .secondary)
+                        }
+                    }
+                }
+            }
+        }
+        .padding()
+        .background(.background.secondary)
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+    }
+}
+
+// MARK: - 体重 週次平均バーチャート
+
+struct WeightWeeklyChartView: View {
+    let records: [BodyRecord]
+
+    private struct WeekAvg: Identifiable {
+        let weekStart: Date
+        let avg: Double
+        var id: Date { weekStart }
+    }
+
+    private var weeklyData: [WeekAvg] {
+        let cal = Calendar(identifier: .iso8601)
+        var groups: [Date: [Double]] = [:]
+        for r in records where r.nWeight_10Kg > 0 {
+            guard let interval = cal.dateInterval(of: .weekOfYear, for: r.dateTime) else { continue }
+            groups[interval.start, default: []].append(Double(r.nWeight_10Kg) / 10.0)
+        }
+        return groups
+            .map { WeekAvg(weekStart: $0.key, avg: $0.value.reduce(0, +) / Double($0.value.count)) }
+            .sorted { $0.weekStart < $1.weekStart }
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(String(localized: "Stat_WeightWeekly_Title", defaultValue: "体重 週次平均"))
+                .font(.headline)
+                .padding(.horizontal)
+
+            let data = weeklyData
+            if data.isEmpty {
+                Text(String(localized: "Stat_NoData", defaultValue: "期間内にデータがありません"))
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity)
+                    .padding()
+            } else {
+                Chart(data) { item in
+                    BarMark(
+                        x: .value("週", item.weekStart, unit: .weekOfYear),
+                        y: .value("kg", item.avg)
+                    )
+                    .foregroundStyle(Color.blue.opacity(0.7))
+                }
+                .chartXAxis {
+                    AxisMarks(values: .automatic) {
+                        AxisValueLabel(format: .dateTime.month(.abbreviated).day())
+                    }
+                }
+                .chartYAxisLabel("kg")
+                .frame(height: 200)
+                .padding(.horizontal)
+            }
+        }
+        .padding(.vertical, 8)
+        .background(.background.secondary)
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+    }
+}
+
+// MARK: - 体温 サマリー
+
+struct TempSummaryView: View {
+    let records: [BodyRecord]
+
+    private var settings: AppSettings { AppSettings.shared }
+
+    private func standardDeviation(_ values: [Double]) -> Double {
+        guard values.count > 1 else { return 0 }
+        let avg = values.reduce(0, +) / Double(values.count)
+        let variance = values.map { pow($0 - avg, 2) }.reduce(0, +) / Double(values.count - 1)
+        return sqrt(variance)
+    }
+
+    var body: some View {
+        let values = records.filter { $0.nTemp_10c > 0 }.map { Double($0.nTemp_10c) / 10.0 }
+        let avg = values.isEmpty ? 0.0 : values.reduce(0, +) / Double(values.count)
+        let sd = standardDeviation(values)
+        let minVal = values.min() ?? 0.0
+        let maxVal = values.max() ?? 0.0
+
+        return VStack(spacing: 8) {
+            Text(String(localized: "Stat_TempSummary_Title", defaultValue: "体温 サマリー"))
+                .font(.headline)
+
+            if values.isEmpty {
+                Text(String(localized: "Stat_NoData", defaultValue: "期間内にデータがありません"))
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            } else {
+                Grid(horizontalSpacing: 12, verticalSpacing: 4) {
+                    GridRow {
+                        Text("").frame(width: 32)
+                        Text(String(localized: "Stat_Avg", defaultValue: "平均"))
+                            .font(.caption).foregroundStyle(.secondary)
+                        if settings.statShowAvg {
+                            Text("±SD").font(.caption).foregroundStyle(.secondary)
+                        }
+                        Text(String(localized: "Stat_Min", defaultValue: "最小"))
+                            .font(.caption).foregroundStyle(.secondary)
+                        Text(String(localized: "Stat_Max", defaultValue: "最大"))
+                            .font(.caption).foregroundStyle(.secondary)
+                    }
+                    GridRow {
+                        Text("°C").font(.caption).foregroundStyle(.secondary)
+                        Text(String(format: "%.1f", avg)).font(.title3.monospacedDigit())
+                        if settings.statShowAvg {
+                            Text(String(format: "%.2f", sd)).font(.caption).foregroundStyle(.secondary)
+                        }
+                        Text(String(format: "%.1f", minVal)).font(.title3.monospacedDigit())
+                        Text(String(format: "%.1f", maxVal)).font(.title3.monospacedDigit())
+                    }
+                }
+            }
+        }
+        .padding()
+        .background(.background.secondary)
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+    }
+}
+
+// MARK: - 体温 区分別平均
+
+struct TempDateOptAverageView: View {
+    let records: [BodyRecord]
+
+    private struct OptAvg: Identifiable {
+        let opt: DateOpt
+        let avg: Double
+        var id: DateOpt { opt }
+    }
+
+    private let barMin = 35.0
+    private let barMax = 38.5
+
+    private var data: [OptAvg] {
+        DateOpt.allCases.compactMap { opt in
+            let filtered = records.filter { $0.nDateOpt == opt.rawValue && $0.nTemp_10c > 0 }
+            guard !filtered.isEmpty else { return nil }
+            let avg = Double(filtered.map { $0.nTemp_10c }.reduce(0, +)) / Double(filtered.count) / 10.0
+            return OptAvg(opt: opt, avg: avg)
+        }
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text(String(localized: "Stat_TempDateOptAvg_Title", defaultValue: "体温 区分別平均"))
+                .font(.headline)
+                .padding(.horizontal)
+
+            VStack(spacing: 8) {
+                if data.isEmpty {
+                    Text(String(localized: "Stat_NoData", defaultValue: "期間内にデータがありません"))
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 8)
+                }
+                ForEach(data) { item in
+                    HStack(alignment: .center, spacing: 8) {
+                        Label(item.opt.label, systemImage: item.opt.icon)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .frame(width: 72, alignment: .leading)
+                            .lineLimit(1)
+                        barView(value: item.avg, color: item.opt.color)
+                        Text(String(format: "%.1f", item.avg))
+                            .font(.caption2.monospacedDigit())
+                            .frame(width: 32, alignment: .trailing)
+                    }
+                }
+            }
+            .padding(.horizontal)
+        }
+        .padding(.vertical, 8)
+        .background(.background.secondary)
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+    }
+
+    private func barView(value: Double, color: Color) -> some View {
+        let ratio = CGFloat((value - barMin) / (barMax - barMin))
+        return Color.secondary.opacity(0.1)
+            .frame(height: 14)
+            .clipShape(RoundedRectangle(cornerRadius: 3))
+            .overlay(alignment: .leading) {
+                GeometryReader { geo in
+                    RoundedRectangle(cornerRadius: 3)
+                        .fill(color.opacity(0.8))
+                        .frame(width: max(4, geo.size.width * ratio))
+                }
+            }
+    }
+}
+
+// MARK: - 体温分布ヒストグラム
+
+struct TempHistogramView: View {
+    let records: [BodyRecord]
+
+    private struct Bin: Identifiable {
+        let lower: Double
+        let count: Int
+        var id: Double { lower }
+        var color: Color {
+            if lower < 36.0 { return .blue }
+            if lower < 37.0 { return .green }
+            if lower < 37.5 { return Color(red: 1.0, green: 0.7, blue: 0.0) }
+            return .orange
+        }
+    }
+
+    private var bins: [Bin] {
+        let values = records.compactMap { $0.nTemp_10c > 0 ? $0.nTemp_10c : nil }
+        return stride(from: 350, to: 410, by: 2).map { lo in
+            Bin(lower: Double(lo) / 10.0, count: values.filter { $0 >= lo && $0 < lo + 2 }.count)
+        }
+    }
+
+    private var hasData: Bool { bins.contains { $0.count > 0 } }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(String(localized: "Stat_TempHist_Title", defaultValue: "体温 分布"))
+                .font(.headline)
+                .padding(.horizontal)
+            if hasData {
+                chartContent
+            } else {
+                Text(String(localized: "Stat_NoData", defaultValue: "期間内にデータがありません"))
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity)
+                    .padding()
+            }
+        }
+        .padding(.vertical, 8)
+        .background(.background.secondary)
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+    }
+
+    private var chartContent: some View {
+        VStack(spacing: 8) {
+            Chart(bins) { bin in
+                RectangleMark(
+                    xStart: .value("temp", bin.lower),
+                    xEnd: .value("temp", bin.lower + 0.2),
+                    yStart: .value("count", 0),
+                    yEnd: .value("count", bin.count)
+                )
+                .foregroundStyle(bin.color.opacity(0.8))
+            }
+            .chartXAxisLabel("°C")
+            .chartYAxisLabel(String(localized: "Stat_Count", defaultValue: "件数"))
+            .frame(height: 180)
+            .padding(.horizontal)
+
+            LazyVGrid(columns: [GridItem(.fixed(130)), GridItem(.fixed(130))], alignment: .center) {
+                legendItem(color: .blue,
+                           label: String(localized: "Stat_TempHist_Low",    defaultValue: "低体温 (<36°C)"))
+                legendItem(color: .green,
+                           label: String(localized: "Stat_TempHist_Normal", defaultValue: "正常 (36–37°C)"))
+                legendItem(color: Color(red: 1.0, green: 0.7, blue: 0.0),
+                           label: String(localized: "Stat_TempHist_Low37",  defaultValue: "微熱 (37–37.5°C)"))
+                legendItem(color: .orange,
+                           label: String(localized: "Stat_TempHist_Fever",  defaultValue: "発熱 (≥37.5°C)"))
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.horizontal)
+        }
+    }
+
+    private func legendItem(color: Color, label: String) -> some View {
+        HStack(spacing: 4) {
+            RoundedRectangle(cornerRadius: 2).fill(color.opacity(0.8)).frame(width: 10, height: 10)
+            Text(label).font(.caption2).foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }

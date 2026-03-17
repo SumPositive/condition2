@@ -15,7 +15,31 @@ final class AppSettings {
     private let kvs = NSUbiquitousKeyValueStore.default
     private let ud  = UserDefaults.standard
 
-    // MARK: - グラフ設定
+    // MARK: - グラフ設定（グラフ専用表示）
+    var graphDisplayOrder: [Int] = [
+        GraphKind.bp.rawValue,
+        GraphKind.bpAvg.rawValue,
+        GraphKind.pulse.rawValue,
+        GraphKind.weight.rawValue,
+        GraphKind.bmi.rawValue,
+        GraphKind.weightChange.rawValue,
+        GraphKind.temp.rawValue,
+        GraphKind.pedo.rawValue,
+        GraphKind.bodyFat.rawValue,
+        GraphKind.skMuscle.rawValue,
+    ] {
+        didSet { kvs.set(graphDisplayOrder, forKey: KVSKeys.settGraphDisplayOrder) }
+    }
+    var graphHiddenPanels: [Int] = [
+        GraphKind.temp.rawValue,
+        GraphKind.pedo.rawValue,
+        GraphKind.bodyFat.rawValue,
+        GraphKind.skMuscle.rawValue,
+    ] {
+        didSet { kvs.set(graphHiddenPanels, forKey: KVSKeys.settGraphHiddenPanels) }
+    }
+
+    // MARK: - グラフ設定（記録入力共通）
     var graphPanelOrder: [Int] = [
         GraphKind.bp.rawValue,       // 0
         GraphKind.pulse.rawValue,    // 2
@@ -74,6 +98,12 @@ final class AppSettings {
     }
     var statShow24HLine: Bool = false {
         didSet { kvs.set(statShow24HLine, forKey: KVSKeys.settStat24HLine) }
+    }
+    var statSectionOrder: [Int] = StatSection.allCases.map(\.rawValue) {
+        didSet { kvs.set(statSectionOrder, forKey: KVSKeys.settStatSections) }
+    }
+    var statHiddenSections: [Int] = [] {
+        didSet { kvs.set(statHiddenSections, forKey: KVSKeys.settStatHiddenSections) }
     }
 
     // MARK: - 機能切替
@@ -199,6 +229,16 @@ final class AppSettings {
     // MARK: - KVS ロード
 
     func loadFromKVS() {
+        if let arr = kvs.array(forKey: KVSKeys.settGraphDisplayOrder) as? [Int], !arr.isEmpty {
+            graphDisplayOrder = arr
+        }
+        if let arr = kvs.array(forKey: KVSKeys.settGraphHiddenPanels) as? [Int] {
+            graphHiddenPanels = arr
+        }
+        // 新しい GraphKind が追加された場合、既存ユーザーの順序末尾に補完
+        for raw in GraphKind.allCases.map(\.rawValue) where !graphDisplayOrder.contains(raw) {
+            graphDisplayOrder.append(raw)
+        }
         if let arr = kvs.array(forKey: KVSKeys.settGraphs) as? [Int], !arr.isEmpty {
             graphPanelOrder = arr
         }
@@ -222,6 +262,12 @@ final class AppSettings {
         statShowAvg     = kvs.bool(forKey: KVSKeys.settStatAvgShow)
         statShowTimeLine = kvs.bool(forKey: KVSKeys.settStatTimeLine)
         statShow24HLine = kvs.bool(forKey: KVSKeys.settStat24HLine)
+        if let arr = kvs.array(forKey: KVSKeys.settStatSections) as? [Int], !arr.isEmpty {
+            statSectionOrder = arr
+        }
+        if let arr = kvs.array(forKey: KVSKeys.settStatHiddenSections) as? [Int] {
+            statHiddenSections = arr
+        }
 
         if kvs.object(forKey: KVSKeys.bGoal) != nil { goalEnabled = kvs.bool(forKey: KVSKeys.bGoal) }
 

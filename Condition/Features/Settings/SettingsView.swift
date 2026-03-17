@@ -149,52 +149,39 @@ struct GraphSettingsView: View {
     @State private var settings = AppSettings.shared
     @Environment(\.dismiss) private var dismiss
 
+    private var hiddenSet: Set<Int> { Set(settings.graphHiddenPanels) }
+
     var body: some View {
-        Form {
+        List {
             Section(String(localized: "GraphSett_Display", defaultValue: "補助グラフ")) {
                 Toggle(
                     String(localized: "GraphSett_BpMean", defaultValue: "平均血圧（（上－下）÷3＋下）"),
                     isOn: $settings.graphBpMean
                 )
                 Toggle(
-                    String(localized: "GraphSett_BpPress", defaultValue: "脈圧（上ー下）"),
-                    isOn: $settings.graphBpPress
-                )
-                Toggle(
                     String(localized: "GraphSett_WeightMA", defaultValue: "体重移動平均（直近7件）"),
                     isOn: $settings.graphWeightMA
                 )
-                Toggle(
-                    String(localized: "GraphSett_WeightChange", defaultValue: "体重変化量"),
-                    isOn: $settings.graphWeightChange
-                )
-                // BMI トグル＋身長入力
-                Toggle(
-                    String(localized: "GraphSett_BMI", defaultValue: "BMI （体重÷身長×身長）"),
-                    isOn: $settings.graphBMI
-                )
-                if settings.graphBMI {
-                    VStack(alignment: .leading, spacing: 4) {
-                        HStack {
-                            Text(String(localized: "GraphSett_Tall", defaultValue: "身長"))
-                                .font(.subheadline)
-                            Spacer()
-                            TextField("160", value: $settings.graphBMITall, format: .number)
-                                .keyboardType(.numberPad)
-                                .multilineTextAlignment(.trailing)
-                                .frame(width: 60)
-                            Text("cm").foregroundStyle(.secondary)
-                        }
-                        AZDialView(
-                            value: $settings.graphBMITall,
-                            min: 100,
-                            max: 250,
-                            step: 1,
-                            stepperStep: 5
-                        )
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack {
+                        Text(String(localized: "GraphSett_Tall", defaultValue: "身長（BMI 計算用）"))
+                            .font(.subheadline)
+                        Spacer()
+                        TextField("160", value: $settings.graphBMITall, format: .number)
+                            .keyboardType(.numberPad)
+                            .multilineTextAlignment(.trailing)
+                            .frame(width: 60)
+                        Text("cm").foregroundStyle(.secondary)
                     }
-                    .padding(.vertical, 4)
+                    AZDialView(
+                        value: $settings.graphBMITall,
+                        min: 100,
+                        max: 250,
+                        step: 1,
+                        stepperStep: 5
+                    )
                 }
+                .padding(.vertical, 4)
                 NavigationLink {
                     GoalSettingsView()
                 } label: {
@@ -204,7 +191,34 @@ struct GraphSettingsView: View {
                     )
                 }
             }
+
+            Section {
+                ForEach(settings.graphDisplayOrder, id: \.self) { raw in
+                    if let kind = GraphKind(rawValue: raw) {
+                        Toggle(isOn: Binding(
+                            get: { !hiddenSet.contains(raw) },
+                            set: { visible in
+                                if visible {
+                                    settings.graphHiddenPanels.removeAll { $0 == raw }
+                                } else if !settings.graphHiddenPanels.contains(raw) {
+                                    settings.graphHiddenPanels.append(raw)
+                                }
+                            }
+                        )) {
+                            Text(kind.title)
+                        }
+                    }
+                }
+                .onMove { from, to in
+                    settings.graphDisplayOrder.move(fromOffsets: from, toOffset: to)
+                }
+            } header: {
+                Text(String(localized: "GraphSett_PanelOrder", defaultValue: "グラフ表示と並び順"))
+            } footer: {
+                Text(String(localized: "GraphSett_PanelOrder_Footer", defaultValue: "並び順はグラフに反映されます"))
+            }
         }
+        .environment(\.editMode, .constant(.active))
         .navigationTitle(String(localized: "GraphSett_Title", defaultValue: "グラフ設定"))
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
@@ -252,7 +266,7 @@ struct FieldOrderSettingsView: View {
                     settings.graphPanelOrder.move(fromOffsets: from, toOffset: to)
                 }
             } footer: {
-                Text(String(localized: "FieldOrder_Footer", defaultValue: "並び順はグラフと記録入力の両方に反映されます"))
+                Text(String(localized: "FieldOrder_Footer", defaultValue: "並び順は記録入力に反映されます"))
             }
         }
         .environment(\.editMode, .constant(.active))
@@ -268,23 +282,37 @@ struct StatSettingsView: View {
     @State private var settings = AppSettings.shared
     @Environment(\.dismiss) private var dismiss
 
+    private var hiddenSet: Set<Int> { Set(settings.statHiddenSections) }
+
     var body: some View {
-        Form {
-            Section(String(localized: "StatSett_Options", defaultValue: "表示オプション")) {
-                Toggle(
-                    String(localized: "StatSett_ShowAvg", defaultValue: "平均±標準偏差"),
-                    isOn: $settings.statShowAvg
-                )
-                Toggle(
-                    String(localized: "StatSett_TimeLine", defaultValue: "時系列線"),
-                    isOn: $settings.statShowTimeLine
-                )
-                Toggle(
-                    String(localized: "StatSett_24HLine", defaultValue: "起床・就寝ライン（24時間）"),
-                    isOn: $settings.statShow24HLine
-                )
+        List {
+            Section {
+                ForEach(settings.statSectionOrder, id: \.self) { raw in
+                    if let section = StatSection(rawValue: raw) {
+                        Toggle(isOn: Binding(
+                            get: { !hiddenSet.contains(raw) },
+                            set: { visible in
+                                if visible {
+                                    settings.statHiddenSections.removeAll { $0 == raw }
+                                } else if !settings.statHiddenSections.contains(raw) {
+                                    settings.statHiddenSections.append(raw)
+                                }
+                            }
+                        )) {
+                            Text(section.title)
+                        }
+                    }
+                }
+                .onMove { from, to in
+                    settings.statSectionOrder.move(fromOffsets: from, toOffset: to)
+                }
+            } header: {
+                Text(String(localized: "StatSett_PanelOrder", defaultValue: "統計表示と並び順"))
+            } footer: {
+                Text(String(localized: "StatSett_Footer", defaultValue: "並び順は統計画面に反映されます"))
             }
         }
+        .environment(\.editMode, .constant(.active))
         .navigationTitle(String(localized: "StatSett_Title", defaultValue: "統計設定"))
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {

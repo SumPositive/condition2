@@ -17,11 +17,15 @@ enum KVSKeys {
     static let settGraphWeightChange = "KVS_SettGraphWeightChange"   // 体重変化量
 
     // MARK: - 統計設定
-    static let settStatType     = "KVS_SettStatType"    // 統計タイプ (0=Hi-Lo, 1=24H)
-    static let settStatDays     = "KVS_SettStatDays"    // 集計日数
-    static let settStatAvgShow  = "KVS_SettStatAvgShow" // 平均±標準偏差表示
-    static let settStatTimeLine = "KVS_SettStatTimeLine"// 時系列線表示
-    static let settStat24HLine  = "KVS_SettStat24H_Line"// 24H線表示
+    static let settStatType            = "KVS_SettStatType"           // 統計タイプ (0=Hi-Lo, 1=24H)
+    static let settStatDays            = "KVS_SettStatDays"           // 集計日数
+    static let settStatAvgShow         = "KVS_SettStatAvgShow"        // 平均±標準偏差表示
+    static let settStatTimeLine        = "KVS_SettStatTimeLine"       // 時系列線表示
+    static let settStat24HLine         = "KVS_SettStat24H_Line"       // 24H線表示
+    static let settStatSections        = "KVS_SettStatSections"       // 統計セクション順序 ([Int])
+    static let settStatHiddenSections  = "KVS_SettStatHiddenSections" // 非表示統計セクション ([Int])
+    static let settGraphDisplayOrder   = "KVS_SettGraphDisplayOrder"  // グラフ専用パネル順序 ([Int])
+    static let settGraphHiddenPanels   = "KVS_SettGraphHiddenPanels"  // グラフ専用非表示パネル ([Int])
 
     // MARK: - 機能切替
     static let bGoal            = "KVS_bGoal"           // 目標値機能
