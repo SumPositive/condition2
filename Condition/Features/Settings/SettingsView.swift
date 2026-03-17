@@ -160,6 +160,14 @@ struct GraphSettingsView: View {
                     String(localized: "GraphSett_BpPress", defaultValue: "脈圧（上ー下）"),
                     isOn: $settings.graphBpPress
                 )
+                Toggle(
+                    String(localized: "GraphSett_WeightMA", defaultValue: "体重移動平均（直近7件）"),
+                    isOn: $settings.graphWeightMA
+                )
+                Toggle(
+                    String(localized: "GraphSett_WeightChange", defaultValue: "体重変化量"),
+                    isOn: $settings.graphWeightChange
+                )
                 // BMI トグル＋身長入力
                 Toggle(
                     String(localized: "GraphSett_BMI", defaultValue: "BMI （体重÷身長×身長）"),
@@ -256,37 +264,12 @@ struct FieldOrderSettingsView: View {
 // MARK: - 統計設定
 
 struct StatSettingsView: View {
+    var isModal: Bool = false
     @State private var settings = AppSettings.shared
-
-    private var periodBinding: Binding<GraphPeriod> {
-        Binding(
-            get: { GraphPeriod(rawValue: settings.statDays) ?? .threeMonths },
-            set: { settings.statDays = $0.rawValue }
-        )
-    }
+    @Environment(\.dismiss) private var dismiss
 
     var body: some View {
         Form {
-            Section(String(localized: "StatSett_Type", defaultValue: "グラフ種類")) {
-                Picker(
-                    String(localized: "StatSett_TypePicker", defaultValue: "表示方式"),
-                    selection: $settings.statType
-                ) {
-                    Text(String(localized: "StatSett_HiLo", defaultValue: "Hi-Lo分散")).tag(0)
-                    Text(String(localized: "StatSett_24H",  defaultValue: "24時間分散")).tag(1)
-                }
-                .pickerStyle(.segmented)
-            }
-
-            Section(String(localized: "StatSett_Days", defaultValue: "集計期間")) {
-                Picker("期間", selection: periodBinding) {
-                    ForEach(GraphPeriod.allCases, id: \.self) { p in
-                        Text(p.label).tag(p)
-                    }
-                }
-                .pickerStyle(.segmented)
-            }
-
             Section(String(localized: "StatSett_Options", defaultValue: "表示オプション")) {
                 Toggle(
                     String(localized: "StatSett_ShowAvg", defaultValue: "平均±標準偏差"),
@@ -304,6 +287,16 @@ struct StatSettingsView: View {
         }
         .navigationTitle(String(localized: "StatSett_Title", defaultValue: "統計設定"))
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            if isModal {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button { dismiss() } label: {
+                        Image(systemName: "xmark")
+                            .fontWeight(.semibold)
+                    }
+                }
+            }
+        }
     }
 }
 

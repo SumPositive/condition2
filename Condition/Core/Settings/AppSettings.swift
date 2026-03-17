@@ -40,17 +40,23 @@ final class AppSettings {
     var graphOneWidth: Int = 45 {
         didSet { kvs.set(graphOneWidth, forKey: KVSKeys.settGraphOneWid) }
     }
-    var graphBpMean: Bool = false {
+    var graphBpMean: Bool = true {
         didSet { kvs.set(graphBpMean, forKey: KVSKeys.settGraphBpMean) }
     }
-    var graphBpPress: Bool = false {
+    var graphBpPress: Bool = true {
         didSet { kvs.set(graphBpPress, forKey: KVSKeys.settGraphBpPress) }
     }
     var graphBMITall: Int = 160 {
         didSet { kvs.set(graphBMITall, forKey: KVSKeys.settGraphBMITall) }
     }
-    var graphBMI: Bool = false {
+    var graphBMI: Bool = true {
         didSet { kvs.set(graphBMI, forKey: KVSKeys.settGraphBMI) }
+    }
+    var graphWeightMA: Bool = true {
+        didSet { kvs.set(graphWeightMA, forKey: KVSKeys.settGraphWeightMA) }
+    }
+    var graphWeightChange: Bool = true {
+        didSet { kvs.set(graphWeightChange, forKey: KVSKeys.settGraphWeightChange) }
     }
 
     // MARK: - 統計設定
@@ -71,7 +77,7 @@ final class AppSettings {
     }
 
     // MARK: - 機能切替
-    var goalEnabled: Bool = false {
+    var goalEnabled: Bool = true {
         didSet { kvs.set(goalEnabled, forKey: KVSKeys.bGoal) }
     }
 // MARK: - DateOpt 自動判定時刻（旧設定、マイグレーション用に保持）
@@ -202,11 +208,13 @@ final class AppSettings {
         let ow = kvs.longLong(forKey: KVSKeys.settGraphOneWid)
         if ow > 0 { graphOneWidth = Int(ow) }
 
-        graphBpMean    = kvs.bool(forKey: KVSKeys.settGraphBpMean)
-        graphBpPress   = kvs.bool(forKey: KVSKeys.settGraphBpPress)
-        graphBMI       = kvs.bool(forKey: KVSKeys.settGraphBMI)
+        if kvs.object(forKey: KVSKeys.settGraphBpMean)    != nil { graphBpMean    = kvs.bool(forKey: KVSKeys.settGraphBpMean) }
+        if kvs.object(forKey: KVSKeys.settGraphBpPress)   != nil { graphBpPress   = kvs.bool(forKey: KVSKeys.settGraphBpPress) }
+        if kvs.object(forKey: KVSKeys.settGraphBMI)       != nil { graphBMI       = kvs.bool(forKey: KVSKeys.settGraphBMI) }
         let tall = kvs.longLong(forKey: KVSKeys.settGraphBMITall)
         if tall > 0 { graphBMITall = Int(tall) }
+        if kvs.object(forKey: KVSKeys.settGraphWeightMA)     != nil { graphWeightMA     = kvs.bool(forKey: KVSKeys.settGraphWeightMA) }
+        if kvs.object(forKey: KVSKeys.settGraphWeightChange) != nil { graphWeightChange = kvs.bool(forKey: KVSKeys.settGraphWeightChange) }
 
         let sd = kvs.longLong(forKey: KVSKeys.settStatDays)
         if sd > 0 { statDays = Int(sd) }
@@ -215,7 +223,7 @@ final class AppSettings {
         statShowTimeLine = kvs.bool(forKey: KVSKeys.settStatTimeLine)
         statShow24HLine = kvs.bool(forKey: KVSKeys.settStat24HLine)
 
-        goalEnabled     = kvs.bool(forKey: KVSKeys.bGoal)
+        if kvs.object(forKey: KVSKeys.bGoal) != nil { goalEnabled = kvs.bool(forKey: KVSKeys.bGoal) }
 
         let wh = kvs.longLong(forKey: KVSKeys.dateOptWakeHour)
         if wh > 0 { wakeHour = Int(wh) }

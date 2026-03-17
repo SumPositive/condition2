@@ -80,10 +80,15 @@ struct RecordEditView: View {
 
                 // オプションセクション
                 Section {
-                    Toggle(
-                        String(localized: "Field_Caution", defaultValue: "注意フラグ"),
-                        isOn: $vm.bCaution
-                    )
+                    Toggle(isOn: $vm.bCaution) {
+                        HStack(spacing: 6) {
+                            if vm.bCaution {
+                                Image(systemName: "flag.fill")
+                                    .foregroundStyle(.orange)
+                            }
+                            Text(String(localized: "Field_Caution", defaultValue: "注意フラグ"))
+                        }
+                    }
                 }
 
                 // 削除ボタン（編集時のみ）
@@ -137,6 +142,7 @@ struct RecordEditView: View {
                     vm.loadPreviousValues(context: context)
                 }
             }
+            .onChange(of: vm.bCaution)      { _, _ in vm.isModified = true }
             .onChange(of: vm.nBpHi_mmHg)   { _, _ in vm.isModified = true }
             .onChange(of: vm.nBpLo_mmHg)   { _, _ in vm.isModified = true }
             .onChange(of: vm.nPulse_bpm)    { _, _ in vm.isModified = true }

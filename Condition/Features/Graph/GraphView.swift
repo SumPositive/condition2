@@ -40,48 +40,60 @@ enum GraphPeriod: Int, CaseIterable {
 // MARK: - GraphView
 
 struct GraphView: View {
-
-    @Query(
-        filter: #Predicate<BodyRecord> { $0.dateTime < bodyRecordGoalDate },
-        sort: \BodyRecord.dateTime,
-        order: .reverse
-    )
-    private var records: [BodyRecord]
-
-    private var settings: AppSettings { AppSettings.shared }
-
-    @State private var showSettings = false
-    @State private var limitCount = GraphConstants.graphPageLimit
     @State private var period: GraphPeriod = .threeMonths
+    @State private var showSettings = false
 
-    private var displayRecords: [BodyRecord] {
-        Array(records.prefix(limitCount))
+    private var cutoffDate: Date {
+        Calendar.current.date(byAdding: .day, value: -period.rawValue, to: Date()) ?? Date()
     }
 
     var body: some View {
         NavigationStack {
-            Group {
-                if records.isEmpty {
-                    ContentUnavailableView(
-                        String(localized: "Graph_Empty", defaultValue: "データがありません"),
-                        systemImage: "chart.line.uptrend.xyaxis"
-                    )
-                } else {
-                    scrollContent
-                }
-            }
-            .navigationTitle(String(localized: "Tab_Graph", defaultValue: "グラフ"))
-            .toolbar {
-                ToolbarItem(placement: .primaryAction) {
-                    Button { showSettings = true } label: {
-                        Image(systemName: "slider.horizontal.3")
+            GraphContentView(cutoffDate: cutoffDate, period: $period)
+                .navigationTitle(String(localized: "Tab_Graph", defaultValue: "グラフ"))
+                .toolbar {
+                    ToolbarItem(placement: .primaryAction) {
+                        Button { showSettings = true } label: {
+                            Image(systemName: "slider.horizontal.3")
+                        }
                     }
                 }
-            }
-            .sheet(isPresented: $showSettings) {
-                NavigationStack {
-                    GraphSettingsView(isModal: true)
+                .sheet(isPresented: $showSettings) {
+                    NavigationStack {
+                        GraphSettingsView(isModal: true)
+                    }
                 }
+        }
+    }
+}
+
+// MARK: - GraphContentView
+
+/// period に応じた日付範囲で @Query を組み立てる内部ビュー。
+/// cutoffDate が変わると SwiftUI が再初期化し @Query が再実行される。
+private struct GraphContentView: View {
+    @Query private var records: [BodyRecord]
+    @Binding var period: GraphPeriod
+
+    private var settings: AppSettings { AppSettings.shared }
+
+    init(cutoffDate: Date, period: Binding<GraphPeriod>) {
+        let predicate = #Predicate<BodyRecord> {
+            $0.dateTime >= cutoffDate && $0.dateTime < bodyRecordGoalDate
+        }
+        _records = Query(filter: predicate, sort: \BodyRecord.dateTime, order: .reverse)
+        _period = period
+    }
+
+    var body: some View {
+        Group {
+            if records.isEmpty {
+                ContentUnavailableView(
+                    String(localized: "Graph_Empty", defaultValue: "データがありません"),
+                    systemImage: "chart.line.uptrend.xyaxis"
+                )
+            } else {
+                scrollContent
             }
         }
     }
@@ -89,7 +101,6 @@ struct GraphView: View {
     private var scrollContent: some View {
         ScrollView(.vertical) {
             VStack(spacing: 16) {
-                // 期間ピッカー
                 Picker("期間", selection: $period) {
                     ForEach(GraphPeriod.allCases, id: \.self) { p in
                         Text(p.label).tag(p)
@@ -103,14 +114,6 @@ struct GraphView: View {
                         graphPanel(kind: kind)
                     }
                 }
-
-                if records.count > limitCount {
-                    Button(String(localized: "Graph_LoadMore", defaultValue: "さらに読み込む")) {
-                        limitCount += GraphConstants.graphPageLimit
-                    }
-                    .font(.subheadline)
-                    .padding()
-                }
             }
             .padding(.horizontal)
             .padding(.vertical, 12)
@@ -121,44 +124,46 @@ struct GraphView: View {
     private func graphPanel(kind: GraphKind) -> some View {
         switch kind {
         case .bp:
-            BpChartView(records: displayRecords, period: period)
-            // 脈圧は常に血圧の直後に表示（パネル順序に依存しない）
+            BpChartView(records: records, period: period)
             if settings.graphBpPress {
-                BpPpChartView(records: displayRecords, period: period, goalValue: settings.goalBpPp)
+                BpPpChartView(records: records, period: period, goalValue: settings.goalBpPp)
             }
         case .bpAvg:
-            EmptyView() // 脈圧は .bp の直後で描画済み
+            EmptyView()
         case .pulse:
-            LineChartView(records: displayRecords, keyPath: \.nPulse_bpm,
+            LineChartView(records: records, keyPath: \.nPulse_bpm,
                           title: kind.title, unit: "bpm", color: .orange,
                           goalValue: settings.goalPulse, period: period,
                           tightDomain: true)
         case .temp:
-            LineChartView(records: displayRecords, keyPath: \.nTemp_10c,
+            LineChartView(records: records, keyPath: \.nTemp_10c,
                           title: kind.title, unit: "℃", color: .pink,
                           goalValue: settings.goalTemp, decimals: 1, period: period,
                           tightDomain: true)
         case .weight:
-            LineChartView(records: displayRecords, keyPath: \.nWeight_10Kg,
+            LineChartView(records: records, keyPath: \.nWeight_10Kg,
                           title: kind.title, unit: "kg", color: .indigo,
                           goalValue: settings.goalWeight, decimals: 1, period: period,
-                          tightDomain: true)
+                          tightDomain: true, showMovingAverage: settings.graphWeightMA)
             if settings.graphBMI && settings.graphBMITall > 0 {
-                BMIChartView(records: displayRecords, heightCm: settings.graphBMITall, period: period, goalValue: settings.goalBMI)
+                BMIChartView(records: records, heightCm: settings.graphBMITall, period: period, goalValue: settings.goalBMI)
+            }
+            if settings.graphWeightChange {
+                WeightChangeChartView(records: records, period: period)
             }
         case .pedo:
-            LineChartView(records: displayRecords, keyPath: \.nPedometer,
+            LineChartView(records: records, keyPath: \.nPedometer,
                           title: kind.title,
                           unit: String(localized: "Unit_Steps", defaultValue: "歩"),
                           color: .green, goalValue: settings.goalPedometer, period: period,
                           tightDomain: true)
         case .bodyFat:
-            LineChartView(records: displayRecords, keyPath: \.nBodyFat_10p,
+            LineChartView(records: records, keyPath: \.nBodyFat_10p,
                           title: kind.title, unit: "%", color: .purple,
                           goalValue: settings.goalBodyFat, decimals: 1, period: period,
                           tightDomain: true)
         case .skMuscle:
-            LineChartView(records: displayRecords, keyPath: \.nSkMuscle_10p,
+            LineChartView(records: records, keyPath: \.nSkMuscle_10p,
                           title: kind.title, unit: "%", color: .teal,
                           goalValue: settings.goalSkMuscle, decimals: 1, period: period,
                           tightDomain: true)
@@ -254,23 +259,23 @@ func jshColor(hi: Int, lo: Int) -> Color {
     if hi >= 180 || lo >= 110 { return Color(red: 0.80, green: 0.00, blue: 0.00) }
     if hi >= 160 || lo >= 100 { return Color(red: 0.95, green: 0.25, blue: 0.00) }
     if hi >= 140 || lo >= 90  { return Color(red: 1.00, green: 0.55, blue: 0.00) }
-    if hi >= 130 || lo >= 80  { return Color(red: 0.90, green: 0.78, blue: 0.00) }
-    if hi >= 120              { return Color(red: 0.30, green: 0.75, blue: 0.20) }
-    return Color(red: 0.05, green: 0.60, blue: 0.20)
+    if hi >= 130 || lo >= 80  { return Color(white: 0.20) }
+    if hi >= 120              { return Color(red: 0.25, green: 0.72, blue: 0.35) }
+    return Color(red: 0.20, green: 0.50, blue: 0.90)
 }
 
 let bpHiZones: [BpZone] = [
-    .init(min:  80, max: 120, color: Color(red: 0.18, green: 0.65, blue: 0.28).opacity(0.08)),
+    .init(min:  80, max: 120, color: Color(red: 0.20, green: 0.50, blue: 0.90).opacity(0.09)),
     .init(min: 120, max: 130, color: Color(red: 0.45, green: 0.72, blue: 0.28).opacity(0.09)),
-    .init(min: 130, max: 140, color: Color(red: 0.85, green: 0.72, blue: 0.10).opacity(0.10)),
+    .init(min: 130, max: 140, color: Color(white: 0.55).opacity(0.12)),
     .init(min: 140, max: 160, color: Color.orange.opacity(0.11)),
     .init(min: 160, max: 180, color: Color(red: 0.90, green: 0.30, blue: 0.10).opacity(0.12)),
     .init(min: 180, max: 220, color: Color(red: 0.75, green: 0.10, blue: 0.10).opacity(0.14)),
 ]
 
 let bpLoZones: [BpZone] = [
-    .init(min:  40, max:  80, color: Color(red: 0.18, green: 0.65, blue: 0.28).opacity(0.08)),
-    .init(min:  80, max:  90, color: Color(red: 0.85, green: 0.72, blue: 0.10).opacity(0.10)),
+    .init(min:  40, max:  80, color: Color(red: 0.20, green: 0.50, blue: 0.90).opacity(0.09)),
+    .init(min:  80, max:  90, color: Color(white: 0.55).opacity(0.12)),
     .init(min:  90, max: 100, color: Color.orange.opacity(0.11)),
     .init(min: 100, max: 110, color: Color(red: 0.90, green: 0.30, blue: 0.10).opacity(0.12)),
     .init(min: 110, max: 140, color: Color(red: 0.75, green: 0.10, blue: 0.10).opacity(0.14)),
@@ -442,6 +447,7 @@ struct BpChartView: View {
     private var settings: AppSettings { AppSettings.shared }
     @State private var selectedDate: Date?
     @State private var scrollPosition: Date = Date()
+    @Environment(\.verticalSizeClass) private var verticalSizeClass
 
     private var validRecords: [BodyRecord] {
         records.filter { $0.nBpHi_mmHg > 0 && $0.nBpLo_mmHg > 0 }
@@ -585,7 +591,8 @@ struct BpChartView: View {
                         .lineStyle(StrokeStyle(lineWidth: 1, dash: [4]))
                 }
             }
-            .chartYTightDomain(enabled: true, minVal: yearMinLo, maxVal: yearMaxHi)
+            .chartYTightDomain(enabled: true, minVal: yearMinLo, maxVal: yearMaxHi,
+                               goalValues: [settings.goalBpLo, settings.goalBpHi])
             .chartYAxis {
                 AxisMarks(position: .leading) { value in
                     AxisGridLine().foregroundStyle(.gray.opacity(0.2))
@@ -594,7 +601,7 @@ struct BpChartView: View {
             }
             .tapToSelectDay($selectedDate, validDays: Set(validRecords.map { dayStart($0.dateTime) }))
             .standardXAxis(period: period, scrollPosition: $scrollPosition, oldestDate: validRecords.first?.dateTime)
-            .frame(height: 150)
+            .frame(height: verticalSizeClass == .compact ? 300 : 150)
             .padding(.horizontal, 8)
             .padding(.bottom, 4)
 
@@ -626,6 +633,7 @@ struct BpPpChartView: View {
     private let cal = Calendar.current
     @State private var selectedDate: Date?
     @State private var scrollPosition: Date = Date()
+    @Environment(\.verticalSizeClass) private var verticalSizeClass
 
     private func dayStart(_ date: Date) -> Date { cal.startOfDay(for: date) }
 
@@ -721,15 +729,10 @@ struct BpPpChartView: View {
                     RuleMark(y: .value("目標", goalValue))
                         .foregroundStyle(Color.orange.opacity(0.5))
                         .lineStyle(StrokeStyle(lineWidth: 1, dash: [4]))
-                        .annotation(position: .top, alignment: .trailing) {
-                            Text(String(localized: "Graph_Goal", defaultValue: "目標"))
-                                .font(.caption2)
-                                .foregroundStyle(Color.orange.opacity(0.7))
-                                .padding(.trailing, 4)
-                        }
                 }
             }
-            .chartYScale(domain: .automatic(includesZero: false))
+            .chartYTightDomain(enabled: true, minVal: minPP, maxVal: maxPP,
+                               goalValues: [goalValue])
             .chartYAxis {
                 AxisMarks(position: .leading) { value in
                     AxisGridLine().foregroundStyle(.gray.opacity(0.2))
@@ -738,7 +741,7 @@ struct BpPpChartView: View {
             }
             .tapToSelectDay($selectedDate, validDays: Set(validRecords.map { dayStart($0.dateTime) }))
             .standardXAxis(period: period, scrollPosition: $scrollPosition, oldestDate: validRecords.first?.dateTime)
-            .frame(height: 120)
+            .frame(height: verticalSizeClass == .compact ? 240 : 120)
             .padding(.horizontal, 8)
             .padding(.bottom, 4)
 
@@ -758,8 +761,11 @@ struct BpPpChartView: View {
 
 private extension View {
     @ViewBuilder
-    func chartYTightDomain(enabled: Bool, minVal: Int?, maxVal: Int?) -> some View {
-        if enabled, let lo = minVal, let hi = maxVal, lo < hi {
+    func chartYTightDomain(enabled: Bool, minVal: Int?, maxVal: Int?, goalValues: [Int] = []) -> some View {
+        let goals = goalValues.filter { $0 > 0 }
+        let lo = ([minVal].compactMap { $0 } + goals).min()
+        let hi = ([maxVal].compactMap { $0 } + goals).max()
+        if enabled, let lo, let hi, lo < hi {
             let pad = Swift.max(Double(hi - lo) * 0.15, 5.0)
             self.chartYScale(domain: (Double(lo) - pad)...(Double(hi) + pad))
         } else {
@@ -768,8 +774,11 @@ private extension View {
     }
 
     @ViewBuilder
-    func chartYTightDomain(minVal: Double?, maxVal: Double?) -> some View {
-        if let lo = minVal, let hi = maxVal, lo < hi {
+    func chartYTightDomain(minVal: Double?, maxVal: Double?, goalValues: [Double] = []) -> some View {
+        let goals = goalValues.filter { $0 > 0 }
+        let lo = ([minVal].compactMap { $0 } + goals).min()
+        let hi = ([maxVal].compactMap { $0 } + goals).max()
+        if let lo, let hi, lo < hi {
             let pad = Swift.max((hi - lo) * 0.15, 0.5)
             self.chartYScale(domain: (lo - pad)...(hi + pad))
         } else {
@@ -788,10 +797,12 @@ struct LineChartView: View {
     var decimals: Int = 0
     let period: GraphPeriod
     var tightDomain: Bool = false
+    var showMovingAverage: Bool = false
 
     private let cal = Calendar.current
     @State private var selectedDate: Date?
     @State private var scrollPosition: Date = Date()
+    @Environment(\.verticalSizeClass) private var verticalSizeClass
 
     private func dayStart(_ date: Date) -> Date { cal.startOfDay(for: date) }
 
@@ -834,6 +845,18 @@ struct LineChartView: View {
     private var yearMinValue: Int? { yearRecords.map { $0[keyPath: keyPath] }.min() }
     private var yearMaxValue: Int? { yearRecords.map { $0[keyPath: keyPath] }.max() }
 
+    // 直近7件の移動平均（dailyValues の各インデックスで最大7件遡って平均）
+    private var movingAverageValues: [DailyLineValue] {
+        guard showMovingAverage else { return [] }
+        let sorted = dailyValues
+        return sorted.indices.map { i in
+            let start = max(0, i - 6)
+            let window = sorted[start...i]
+            let avg = window.map { $0.avg }.reduce(0, +) / Double(window.count)
+            return DailyLineValue(date: sorted[i].date, avg: avg)
+        }
+    }
+
     private func fmt(_ v: Int) -> String { ValueFormatter.format(v, decimals: decimals) }
 
     var body: some View {
@@ -856,6 +879,17 @@ struct LineChartView: View {
 
             // チャート
             Chart {
+                // 移動平均ライン（直近7件）― エリア・ライン・ドットより背面になるよう先頭に描画
+                ForEach(movingAverageValues) { d in
+                    LineMark(
+                        x: .value("日時", d.date),
+                        y: .value("移動平均", d.avg),
+                        series: .value("series", "ma")
+                    )
+                    .foregroundStyle(Color.orange.opacity(0.4))
+                    .lineStyle(StrokeStyle(lineWidth: 2))
+                    .interpolationMethod(.catmullRom)
+                }
                 // エリア（日次平均）
                 ForEach(dailyValues) { d in
                     AreaMark(
@@ -898,15 +932,10 @@ struct LineChartView: View {
                     RuleMark(y: .value("目標", goalValue))
                         .foregroundStyle(color.opacity(0.5))
                         .lineStyle(StrokeStyle(lineWidth: 1, dash: [4]))
-                        .annotation(position: .top, alignment: .trailing) {
-                            Text(String(localized: "Graph_Goal", defaultValue: "目標"))
-                                .font(.caption2)
-                                .foregroundStyle(color.opacity(0.7))
-                                .padding(.trailing, 4)
-                        }
                 }
             }
-            .chartYTightDomain(enabled: tightDomain, minVal: yearMinValue, maxVal: yearMaxValue)
+            .chartYTightDomain(enabled: tightDomain, minVal: yearMinValue, maxVal: yearMaxValue,
+                               goalValues: [goalValue])
             .chartYAxis {
                 AxisMarks(position: .leading) { value in
                     AxisGridLine().foregroundStyle(.gray.opacity(0.2))
@@ -919,7 +948,7 @@ struct LineChartView: View {
             }
             .tapToSelectDay($selectedDate, validDays: Set(validRecords.map { dayStart($0.dateTime) }))
             .standardXAxis(period: period, scrollPosition: $scrollPosition, oldestDate: validRecords.first?.dateTime)
-            .frame(height: 120)
+            .frame(height: verticalSizeClass == .compact ? 240 : 120)
             .padding(.horizontal, 8)
             .padding(.bottom, 4)
 
@@ -950,6 +979,7 @@ private struct BMIChartView: View {
     @State private var selectedDate: Date?
     @State private var scrollPosition: Date = Date()
     @State private var showBMIInfo = false
+    @Environment(\.verticalSizeClass) private var verticalSizeClass
 
     private func dayStart(_ date: Date) -> Date { cal.startOfDay(for: date) }
 
@@ -1086,15 +1116,10 @@ private struct BMIChartView: View {
                     RuleMark(y: .value("目標", goalBMIDouble))
                         .foregroundStyle(Color.cyan.opacity(0.5))
                         .lineStyle(StrokeStyle(lineWidth: 1, dash: [4]))
-                        .annotation(position: .top, alignment: .trailing) {
-                            Text(String(localized: "Graph_Goal", defaultValue: "目標"))
-                                .font(.caption2)
-                                .foregroundStyle(Color.cyan.opacity(0.7))
-                                .padding(.trailing, 4)
-                        }
                 }
             }
-            .chartYTightDomain(minVal: yearMinBMI, maxVal: yearMaxBMI)
+            .chartYTightDomain(minVal: yearMinBMI, maxVal: yearMaxBMI,
+                               goalValues: [goalValue > 0 ? Double(goalValue) / 10.0 : 0])
             .chartYAxis {
                 AxisMarks(position: .leading) { value in
                     AxisGridLine().foregroundStyle(.gray.opacity(0.2))
@@ -1107,7 +1132,7 @@ private struct BMIChartView: View {
             }
             .tapToSelectDay($selectedDate, validDays: Set(validRecords.map { dayStart($0.dateTime) }))
             .standardXAxis(period: period, scrollPosition: $scrollPosition, oldestDate: validRecords.first?.dateTime)
-            .frame(height: 120)
+            .frame(height: verticalSizeClass == .compact ? 240 : 120)
             .padding(.horizontal, 8)
             .padding(.bottom, 4)
 
@@ -1123,6 +1148,122 @@ private struct BMIChartView: View {
                         )
                     }
                 }
+            }
+        }
+    }
+}
+
+// MARK: - 体重変化量グラフ
+
+private struct DailyWeightChange: Identifiable {
+    let id: Date
+    let date: Date
+    let change: Double  // kg（正 = 増加、負 = 減少）
+}
+
+struct WeightChangeChartView: View {
+    let records: [BodyRecord]
+    let period: GraphPeriod
+
+    private let cal = Calendar.current
+    @State private var selectedDate: Date?
+    @State private var scrollPosition: Date = Date()
+    @Environment(\.verticalSizeClass) private var verticalSizeClass
+
+    private func dayStart(_ date: Date) -> Date { cal.startOfDay(for: date) }
+
+    private var validRecords: [BodyRecord] {
+        records.filter { $0.nWeight_10Kg > 0 }.sorted { $0.dateTime < $1.dateTime }
+    }
+
+    private var dailyAvg: [(date: Date, avg: Double)] {
+        let grouped = Dictionary(grouping: validRecords) { dayStart($0.dateTime) }
+        return grouped.map { date, recs in
+            let avg = Double(recs.map { $0.nWeight_10Kg }.reduce(0, +)) / Double(recs.count) / 10.0
+            return (date: date, avg: avg)
+        }.sorted { $0.date < $1.date }
+    }
+
+    private var changeValues: [DailyWeightChange] {
+        let avgs = dailyAvg
+        guard avgs.count > 1 else { return [] }
+        var result: [DailyWeightChange] = []
+        for i in 1..<avgs.count {
+            let change = avgs[i].avg - avgs[i - 1].avg
+            result.append(DailyWeightChange(id: avgs[i].date, date: avgs[i].date, change: change))
+        }
+        return result
+    }
+
+    private var selectedChange: DailyWeightChange? {
+        guard let date = selectedDate else { return nil }
+        return changeValues.first { $0.date == dayStart(date) }
+    }
+
+    private var validDays: Set<Date> { Set(changeValues.map { $0.date }) }
+
+    private var allChanges: [Double] { changeValues.map { $0.change } }
+    private var minChange: Double? { allChanges.min() }
+    private var maxChange: Double? { allChanges.max() }
+
+    var body: some View {
+        PanelContainer {
+            HStack(alignment: .firstTextBaseline) {
+                Text("体重変化量").font(.subheadline.weight(.semibold))
+                Spacer()
+                Text("kg").font(.subheadline.weight(.semibold)).foregroundStyle(.indigo)
+            }
+            .padding(.horizontal, 16)
+            .padding(.top, 14)
+            .padding(.bottom, 8)
+
+            Chart {
+                RuleMark(y: .value("ゼロ", 0))
+                    .foregroundStyle(.gray.opacity(0.4))
+                    .lineStyle(StrokeStyle(lineWidth: 1))
+                ForEach(changeValues) { d in
+                    BarMark(
+                        x: .value("日時", d.date),
+                        y: .value("変化量", d.change)
+                    )
+                    .foregroundStyle(d.change >= 0 ? Color.orange.opacity(0.75) : Color.teal.opacity(0.75))
+                }
+                if let date = selectedDate {
+                    RuleMark(x: .value("選択", dayStart(date)))
+                        .foregroundStyle(.gray.opacity(0.35))
+                        .lineStyle(StrokeStyle(lineWidth: 1, dash: [4]))
+                }
+            }
+            .chartYTightDomain(minVal: minChange, maxVal: maxChange)
+            .chartYAxis {
+                AxisMarks(position: .leading) { value in
+                    AxisGridLine().foregroundStyle(.gray.opacity(0.2))
+                    AxisValueLabel {
+                        if let v = value.as(Double.self) {
+                            Text(String(format: "%+.1f", v)).font(.caption2)
+                        }
+                    }
+                }
+            }
+            .tapToSelectDay($selectedDate, validDays: validDays)
+            .standardXAxis(period: period, scrollPosition: $scrollPosition, oldestDate: changeValues.first?.date)
+            .frame(height: verticalSizeClass == .compact ? 200 : 100)
+            .padding(.horizontal, 8)
+            .padding(.bottom, 4)
+
+            if let ch = selectedChange {
+                Divider()
+                HStack(spacing: 6) {
+                    Image(systemName: ch.change >= 0 ? "arrow.up" : "arrow.down")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(ch.change >= 0 ? .orange : .teal)
+                    Text(String(format: "%+.1f kg", ch.change))
+                        .font(.callout.monospacedDigit())
+                        .foregroundStyle(ch.change >= 0 ? Color.orange : Color.teal)
+                    Spacer()
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 6)
             }
         }
     }

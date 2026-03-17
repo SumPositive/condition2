@@ -60,17 +60,17 @@ enum DateOpt: Int, CaseIterable, Codable {
 // MARK: - データ入力元
 
 enum RecordDataSource: Int {
-    case appInput    = 0  // このアプリで入力
-    case appModified = 1  // このアプリで入力後に変更
-    case hkImport    = 2  // ヘルスケア連携で読み取り
-    case hkModified  = 3  // ヘルスケア連携で読み取り後に変更
+    case appInput    = 0  // このアプリで入力された記録です
+    case appModified = 1  // このアプリで入力後に変更された記録です
+    case hkImport    = 2  // ヘルスケアから読み込まれた記録です
+    case hkModified  = 3  // ヘルスケアから読み込まれた後に変更された記録です
 
     var icon: String {
         switch self {
-        case .appInput:    return "hand.point.up.left"
-        case .appModified: return "hand.draw.badge.ellipsis"
-        case .hkImport:    return "arrow.down"
-        case .hkModified:  return "arrow.uturn.up"
+        case .appInput:    return "app"
+        case .appModified: return "app.fill"
+        case .hkImport:    return "heart"
+        case .hkModified:  return "heart.fill"
         }
     }
 
@@ -80,10 +80,10 @@ enum RecordDataSource: Int {
 
     var label: String {
         switch self {
-        case .appInput:    return String(localized: "DataSource_AppInput",    defaultValue: "このアプリで入力")
-        case .appModified: return String(localized: "DataSource_AppModified", defaultValue: "このアプリで入力後に変更")
-        case .hkImport:    return String(localized: "DataSource_HKImport",    defaultValue: "ヘルスケア連携で読み取り")
-        case .hkModified:  return String(localized: "DataSource_HKModified",  defaultValue: "ヘルスケア連携で読み取り後に変更")
+        case .appInput:    return String(localized: "DataSource_AppInput",    defaultValue: "このアプリで入力された記録です")
+        case .appModified: return String(localized: "DataSource_AppModified", defaultValue: "このアプリで入力後に変更された記録です")
+        case .hkImport:    return String(localized: "DataSource_HKImport",    defaultValue: "ヘルスケアから読み込まれた記録です")
+        case .hkModified:  return String(localized: "DataSource_HKModified",  defaultValue: "ヘルスケアから読み込まれた後に変更された記録です。ヘルスケアに対しては変更や削除ができず常に追加されます。ヘルスケア側で重複する記録が不要ならば削除してください")
         }
     }
 }

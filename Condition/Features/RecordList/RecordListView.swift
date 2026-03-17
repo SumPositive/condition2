@@ -17,7 +17,7 @@ struct RecordListView: View {
 
     @State private var editTarget: BodyRecord? = nil
     @State private var showAddSheet = false
-    @State private var showGoalSheet = false
+
     @State private var toastMessage: String? = nil
     @State private var showHKTimeoutAlert = false
 
@@ -55,13 +55,6 @@ struct RecordListView: View {
                         Image(systemName: "plus")
                     }
                 }
-                if settings.goalEnabled {
-                    ToolbarItem(placement: .secondaryAction) {
-                        Button(String(localized: "Goal", defaultValue: "目標")) {
-                            showGoalSheet = true
-                        }
-                    }
-                }
             }
             .sheet(isPresented: $showAddSheet) {
                 RecordEditView(mode: .addNew) { count in
@@ -82,9 +75,7 @@ struct RecordListView: View {
             .sheet(item: $editTarget) { record in
                 RecordEditView(mode: .edit(record))
             }
-            .sheet(isPresented: $showGoalSheet) {
-                GoalSettingsView()
-            }
+
             .overlay(alignment: .bottom) {
                 VStack(spacing: 8) {
                     if !hkService.importProgress.isEmpty {
@@ -393,7 +384,7 @@ struct RecordRowView: View {
                         HStack(alignment: .firstTextBaseline, spacing: 2) {
                             Text(dayString)
                                 .font(.title3.bold().monospacedDigit())
-                                .foregroundStyle(record.bCaution ? .red : .primary)
+                                .foregroundStyle(.primary)
                                 .lineLimit(1)
                                 .fixedSize(horizontal: true, vertical: false)
                             Text(Self.weekdayFormatter.string(from: record.dateTime))
@@ -409,7 +400,7 @@ struct RecordRowView: View {
                         // 常に 6pt スペーサーを確保（メモあり行と位置を揃える）
                         Color.clear.frame(height: 6)
                     }
-                    // 右：区分アイコン＋データソースアイコン
+                    // 右：区分アイコン＋データソースアイコン（注意フラグは overlay）
                     VStack(spacing: 3) {
                         Image(systemName: record.dateOpt.icon)
                             .font(.system(size: 15))
@@ -425,6 +416,15 @@ struct RecordRowView: View {
                         Color.clear.frame(height: 6)
                     }
                     .frame(width: 44, alignment: .center)
+                    .overlay(alignment: .bottom) {
+                        if record.bCaution {
+                            Image(systemName: "flag.fill")
+                                .font(.system(size: 9))
+                                .foregroundStyle(.orange)
+                                .offset(x: hkEnabled ? -22 : 0)
+                                .padding(.bottom, hkEnabled ? 22 : 0)
+                        }
+                    }
                 }
                 .frame(width: dateColumnWidth, alignment: .leading)
                 .padding(.trailing, 4)
@@ -491,6 +491,8 @@ struct RecordRowView: View {
     private func valueCell(_ value: String, width: CGFloat, height: CGFloat = 32) -> some View {
         Text(value.isEmpty ? "-" : value)
             .font(.body.monospacedDigit())
+            .minimumScaleFactor(0.6)
+            .lineLimit(1)
             .foregroundStyle(value.isEmpty ? Color.secondary.opacity(0.4) : .primary)
             .frame(width: width, height: height)
     }
