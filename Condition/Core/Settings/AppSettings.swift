@@ -242,6 +242,10 @@ final class AppSettings {
         if let arr = kvs.array(forKey: KVSKeys.settGraphs) as? [Int], !arr.isEmpty {
             graphPanelOrder = arr
         }
+        // 記録入力フィールドが graphPanelOrder に不足している場合は末尾に補完
+        for kind in GraphKind.allCases where kind.isRecordField && !graphPanelOrder.contains(kind.rawValue) {
+            graphPanelOrder.append(kind.rawValue)
+        }
         if let arr = kvs.array(forKey: KVSKeys.settFieldHidden) as? [Int] {
             hiddenFields = arr
         }
