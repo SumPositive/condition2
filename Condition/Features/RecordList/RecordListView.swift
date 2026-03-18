@@ -107,9 +107,16 @@ struct RecordListView: View {
 
     // MARK: - リスト
 
+    private var visibleRecordKinds: [GraphKind] {
+        let hidden = Set(settings.hiddenFields)
+        return settings.graphPanelOrder
+            .compactMap { GraphKind(rawValue: $0) }
+            .filter { $0.isRecordField && !hidden.contains($0.rawValue) }
+    }
+
     private var listContent: some View {
         VStack(spacing: 0) {
-            RecordColumnHeader()
+            RecordColumnHeader(visibleKinds: visibleRecordKinds)
                 .padding(.horizontal, 16)
                 .padding(.vertical, 3)
                 .background(.bar)
@@ -118,7 +125,7 @@ struct RecordListView: View {
                 ForEach(sections, id: \.yearMonth) { section in
                     Section(header: RecordSectionHeader(yearMonth: section.yearMonth)) {
                         ForEach(section.records) { record in
-                            RecordRowView(record: record, hkEnabled: settings.hkEnabled)
+                            RecordRowView(record: record, visibleKinds: visibleRecordKinds, hkEnabled: settings.hkEnabled)
                                 .contentShape(Rectangle())
                                 .onTapGesture { editTarget = record }
                                 .listRowInsets(EdgeInsets(top: 1, leading: 16, bottom: 1, trailing: 16))
@@ -274,34 +281,38 @@ struct RecordSectionHeader: View {
 /// 日付列の固定幅（ヘッダーと明細で共通。title3.bold "31" + spacing + icon 40pt + trailing 4pt）
 private let dateColumnWidth: CGFloat = 100
 
-nonisolated(unsafe) private let recordColumns: [(label: LocalizedStringKey, width: CGFloat)] = [
-    ("上",   36),
-    ("下",   36),
-    ("心拍数", 36),
-    ("体重", 52),
-    ("体温", 44),
-    ("歩数", 52),
-    ("体脂肪", 44),
-    ("骨格筋", 44),
-]
+private func subColumnWidths(for kind: GraphKind) -> [CGFloat] {
+    switch kind {
+    case .bp:       return [36, 36]
+    case .pulse:    return [36]
+    case .weight:   return [52]
+    case .temp:     return [44]
+    case .pedo:     return [52]
+    case .bodyFat:  return [44]
+    case .skMuscle: return [44]
+    default:        return []
+    }
+}
+
+private func computeColumnSpacing(availableWidth: CGFloat, kinds: [GraphKind]) -> CGFloat {
+    let allWidths = kinds.flatMap { subColumnWidths(for: $0) }
+    let sepCount = max(0, kinds.count - 1)
+    let totalFixed = allWidths.reduce(CGFloat(0), +) + CGFloat(sepCount)
+    let gapCount = allWidths.count - 1 + sepCount
+    guard gapCount > 0 else { return 4 }
+    return max(2, (availableWidth - 4 - totalFixed) / CGFloat(gapCount))
+}
 
 // MARK: - カラムヘッダー
 
 struct RecordColumnHeader: View {
-    var showActivity: Bool = true
-    @Environment(\.verticalSizeClass) private var verticalSizeClass
+    let visibleKinds: [GraphKind]
 
     var body: some View {
         GeometryReader { geo in
-            let compact = verticalSizeClass == .compact
             let measureWidth = geo.size.width - dateColumnWidth - 5
-            // 縦向き: 体温まで 5ギャップ（固定幅205）
-            // 横向き: 骨格筋まで 9ギャップ（固定幅346）
-            let spacing: CGFloat = compact
-                ? max(1, (measureWidth - 4 - 346) / 9)
-                : max(4, (measureWidth - 4 - 205) / 5)
+            let spacing = computeColumnSpacing(availableWidth: measureWidth, kinds: visibleKinds)
             HStack(spacing: 0) {
-                // 日時＋区分ヘッダー（明細と同じ固定幅）
                 HStack(spacing: 0) {
                     Text("日時")
                         .font(.caption2)
@@ -318,17 +329,8 @@ struct RecordColumnHeader: View {
                     .foregroundStyle(.separator)
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: spacing) {
-                        Text(recordColumns[0].label).minimumScaleFactor(0.6).lineLimit(1).frame(width: recordColumns[0].width)
-                        Text(recordColumns[1].label).minimumScaleFactor(0.6).lineLimit(1).frame(width: recordColumns[1].width)
-                        Text(recordColumns[2].label).minimumScaleFactor(0.6).lineLimit(1).frame(width: recordColumns[2].width)
-                        Rectangle().frame(width: 1, height: 14).foregroundStyle(.separator)
-                        Text(recordColumns[3].label).minimumScaleFactor(0.6).lineLimit(1).frame(width: recordColumns[3].width)
-                        Text(recordColumns[4].label).minimumScaleFactor(0.6).lineLimit(1).frame(width: recordColumns[4].width)
-                        if showActivity {
-                            Rectangle().frame(width: 1, height: 14).foregroundStyle(.separator)
-                            Text(recordColumns[5].label).minimumScaleFactor(0.6).lineLimit(1).frame(width: recordColumns[5].width)
-                            Text(recordColumns[6].label).minimumScaleFactor(0.6).lineLimit(1).frame(width: recordColumns[6].width)
-                            Text(recordColumns[7].label).minimumScaleFactor(0.6).lineLimit(1).frame(width: recordColumns[7].width)
+                        ForEach(Array(visibleKinds.enumerated()), id: \.element.id) { idx, kind in
+                            kindHeaderItems(kind, isFirst: idx == 0)
                         }
                     }
                     .padding(.leading, 4)
@@ -340,16 +342,45 @@ struct RecordColumnHeader: View {
         .font(.caption)
         .foregroundStyle(.secondary)
     }
+
+    @ViewBuilder
+    private func kindHeaderItems(_ kind: GraphKind, isFirst: Bool) -> some View {
+        if !isFirst {
+            Rectangle().frame(width: 1, height: 14).foregroundStyle(.separator)
+        }
+        kindHeaderCells(kind)
+    }
+
+    @ViewBuilder
+    private func kindHeaderCells(_ kind: GraphKind) -> some View {
+        switch kind {
+        case .bp:
+            Text("上").minimumScaleFactor(0.6).lineLimit(1).frame(width: 36)
+            Text("下").minimumScaleFactor(0.6).lineLimit(1).frame(width: 36)
+        case .pulse:
+            Text("心拍数").minimumScaleFactor(0.6).lineLimit(1).frame(width: 36)
+        case .weight:
+            Text("体重").minimumScaleFactor(0.6).lineLimit(1).frame(width: 52)
+        case .temp:
+            Text("体温").minimumScaleFactor(0.6).lineLimit(1).frame(width: 44)
+        case .pedo:
+            Text("歩数").minimumScaleFactor(0.6).lineLimit(1).frame(width: 52)
+        case .bodyFat:
+            Text("体脂肪").minimumScaleFactor(0.6).lineLimit(1).frame(width: 44)
+        case .skMuscle:
+            Text("骨格筋").minimumScaleFactor(0.6).lineLimit(1).frame(width: 44)
+        default:
+            EmptyView()
+        }
+    }
 }
 
 // MARK: - 行ビュー
 
 struct RecordRowView: View {
     let record: BodyRecord
-    var showActivity: Bool = true
+    let visibleKinds: [GraphKind]
     var hkEnabled: Bool = false
-
-    @Environment(\.verticalSizeClass) private var verticalSizeClass
 
     private static let dateFormatter: DateFormatter = {
         let f = DateFormatter()
@@ -433,30 +464,16 @@ struct RecordRowView: View {
                 Color.clear.frame(width: 1)
 
                 // 測定値＋メモ（メモは数値列と一緒にスクロール）
-                // memoSpace: メモ有時に日付列の下に追加した透明スペース分
                 GeometryReader { proxy in
                     let memoSpace: CGFloat = 6
                     let h = proxy.size.height
-                    let compact = verticalSizeClass == .compact
-                    // 縦向き: 体温まで 5ギャップ / 横向き: 骨格筋まで 9ギャップ
-                    let spacing: CGFloat = compact
-                        ? max(1, (proxy.size.width - 4 - 346) / 9)
-                        : max(4, (proxy.size.width - 4 - 205) / 5)
+                    let spacing = computeColumnSpacing(availableWidth: proxy.size.width, kinds: visibleKinds)
                     let cellH = h - memoSpace
                     ScrollView(.horizontal, showsIndicators: false) {
                         VStack(alignment: .leading, spacing: 0) {
                             HStack(spacing: spacing) {
-                                valueCell(record.displayBpHi,     width: recordColumns[0].width, height: cellH)
-                                valueCell(record.displayBpLo,     width: recordColumns[1].width, height: cellH)
-                                valueCell(record.displayPulse,    width: recordColumns[2].width, height: cellH)
-                                Divider().padding(.vertical, 8)
-                                valueCell(record.displayWeight,   width: recordColumns[3].width, height: cellH)
-                                valueCell(record.displayTemp,     width: recordColumns[4].width, height: cellH)
-                                if showActivity {
-                                    Divider().padding(.vertical, 8)
-                                    valueCell(record.displayPedo,     width: recordColumns[5].width, height: cellH)
-                                    valueCell(record.displayBodyFat,  width: recordColumns[6].width, height: cellH)
-                                    valueCell(record.displaySkMuscle, width: recordColumns[7].width, height: cellH)
+                                ForEach(Array(visibleKinds.enumerated()), id: \.element.id) { idx, kind in
+                                    kindValueItems(kind, isFirst: idx == 0, cellH: cellH)
                                 }
                             }
                             .padding(.leading, 4)
@@ -485,6 +502,37 @@ struct RecordRowView: View {
         }
         .font(.caption)
         .padding(.vertical, 1)
+    }
+
+    @ViewBuilder
+    private func kindValueItems(_ kind: GraphKind, isFirst: Bool, cellH: CGFloat) -> some View {
+        if !isFirst {
+            Divider().padding(.vertical, 8)
+        }
+        kindValueCells(kind, cellH: cellH)
+    }
+
+    @ViewBuilder
+    private func kindValueCells(_ kind: GraphKind, cellH: CGFloat) -> some View {
+        switch kind {
+        case .bp:
+            valueCell(record.displayBpHi, width: 36, height: cellH)
+            valueCell(record.displayBpLo, width: 36, height: cellH)
+        case .pulse:
+            valueCell(record.displayPulse, width: 36, height: cellH)
+        case .weight:
+            valueCell(record.displayWeight, width: 52, height: cellH)
+        case .temp:
+            valueCell(record.displayTemp, width: 44, height: cellH)
+        case .pedo:
+            valueCell(record.displayPedo, width: 52, height: cellH)
+        case .bodyFat:
+            valueCell(record.displayBodyFat, width: 44, height: cellH)
+        case .skMuscle:
+            valueCell(record.displaySkMuscle, width: 44, height: cellH)
+        default:
+            EmptyView()
+        }
     }
 
     @ViewBuilder
