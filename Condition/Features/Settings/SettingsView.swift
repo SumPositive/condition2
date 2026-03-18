@@ -245,7 +245,7 @@ struct FieldOrderSettingsView: View {
         List {
             Section {
                 ForEach(settings.graphPanelOrder, id: \.self) { raw in
-                    if let kind = GraphKind(rawValue: raw), kind != .bpAvg {
+                    if let kind = GraphKind(rawValue: raw), kind.isRecordField {
                         Toggle(isOn: Binding(
                             get: { !hiddenSet.contains(raw) },
                             set: { visible in

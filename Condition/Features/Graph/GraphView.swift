@@ -674,7 +674,7 @@ struct BpPpChartView: View {
         PanelContainer {
             // ヘッダー（血圧セクションと同スタイル）
             HStack(alignment: .firstTextBaseline) {
-                Text(GraphKind.bpAvg.title)
+                Text("脈圧")
                     .font(.subheadline.weight(.semibold))
                 Spacer()
                 if let avg = avgPP {
