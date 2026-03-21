@@ -10,6 +10,14 @@ struct SettingsView: View {
     @State private var healthKit = HealthKitService.shared
     @State private var showHKSettings = false
 
+    private var aboutURL: URL {
+        let isJapanese = Locale.preferredLanguages.first?.hasPrefix("ja") ?? false
+        let urlString = isJapanese
+            ? "https://docs.azukid.com/jp/sumpo/Condition/condition.html"
+            : "https://docs.azukid.com/en/sumpo/Condition/condition.html"
+        return URL(string: urlString)!
+    }
+
     var body: some View {
         NavigationStack {
             Form {
@@ -47,8 +55,8 @@ struct SettingsView: View {
                     HealthKitSettingsView()
                 }
 
-                // MARK: - カスタマイズ
-                Section(String(localized: "Settings_Graph", defaultValue: "カスタマイズ")) {
+                // MARK: - 分析
+                Section(String(localized: "Settings_Graph", defaultValue: "分析")) {
                     NavigationLink(String(localized: "Settings_GraphDetail", defaultValue: "グラフ設定")) {
                         GraphSettingsView()
                     }
@@ -59,11 +67,8 @@ struct SettingsView: View {
 
                 // MARK: - アプリ情報
                 Section {
-                    NavigationLink {
-                        AboutView()
-                    } label: {
-                        Text(String(localized: "Settings_About", defaultValue: "このアプリについて"))
-                    }
+                    Link(String(localized: "Settings_About", defaultValue: "このアプリについて"),
+                         destination: aboutURL)
                 }
             }
             .navigationTitle(String(localized: "Tab_Settings", defaultValue: "設定"))
@@ -503,7 +508,7 @@ struct HealthKitSettingsView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 Text(String(localized: "HKSett_Note2",
-                            defaultValue: "こちらからヘルスケアのデータは変更・削除できません。常に追加されるだけです。不要なデータがあればヘルスケア側で項目毎に「すべてのデータを表示」し、編集で削除してください"))
+                            defaultValue: "このアプリからヘルスケアのデータは変更・削除できません。常に追加されるだけです。不要なデータがあればヘルスケア側で項目毎に「すべてのデータを表示」し、編集にて削除してください"))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }

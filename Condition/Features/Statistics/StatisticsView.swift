@@ -97,12 +97,12 @@ struct StatisticsView: View {
         switch section {
         case .bpJsh:          BpJshView(records: targetRecords)
         case .bpRatio:        BpJshRatioView(records: targetRecords)
-        case .bpDateOptAvg:   BpDateOptAverageView(records: targetRecords)
+        case .bpDateOptCorr:  BpDateOptCorrView(records: targetRecords)
         case .bp24h:          Bp24HChartView(records: targetRecords)
         case .weightSummary:  WeightSummaryView(records: targetRecords)
-        case .weightWeekly:   WeightWeeklyChartView(records: targetRecords)
+        case .weightStepsCorr: WeightStepsCorrelationView(records: targetRecords)
         case .tempSummary:    TempSummaryView(records: targetRecords)
-        case .tempDateOptAvg: TempDateOptAverageView(records: targetRecords)
+        case .temp24h:        Temp24HChartView(records: targetRecords)
         case .tempHist:       TempHistogramView(records: targetRecords)
         }
     }
@@ -169,6 +169,10 @@ struct BpJshView: View {
 
     @State private var showJSHInfo = false
 
+    private var isJapanese: Bool {
+        Locale.preferredLanguages.first?.hasPrefix("ja") ?? true
+    }
+
     private var validRecords: [BodyRecord] {
         records.filter { $0.nBpHi_mmHg > 0 && $0.nBpLo_mmHg > 0 }
     }
@@ -185,14 +189,18 @@ struct BpJshView: View {
                     } label: {
                         HStack(spacing: 2) {
                             Image(systemName: "info.circle")
-                            Text("JSH基準")
+                            Text(isJapanese ? "JSH基準" : "ESC/ESH 2018")
                         }
                         .font(.caption2)
                         .foregroundStyle(.secondary)
                     }
                     .buttonStyle(.plain)
                     .popover(isPresented: $showJSHInfo, arrowEdge: .bottom) {
-                        JSHStandardsPopover()
+                        if isJapanese {
+                            JSHStandardsPopover()
+                        } else {
+                            ESHStandardsPopover()
+                        }
                     }
                 }
                 .padding(.horizontal)
@@ -336,13 +344,16 @@ struct BpJshView: View {
     // 各ゾーン中央にラベルを表示（Y軸寄り）
     @ChartContentBuilder
     private func jshZoneLabels() -> some ChartContent {
+        let names: [String] = isJapanese
+            ? ["正常血圧", "正常高値", "高値血圧", "高血圧I度", "高血圧II度", "高血圧III度"]
+            : ["Optimal",  "Normal",  "High Normal", "Grade 1", "Grade 2",  "Grade 3"]
         let labels: [(name: String, color: Color, y: Int)] = [
-            ("正常血圧",    Color(red: 0.20, green: 0.50, blue: 0.90),  95),
-            ("正常高値",    Color(red: 0.25, green: 0.72, blue: 0.35), 125),
-            ("高値血圧",    Color(white: 0.20), 135),
-            ("高血圧I度",   Color(red: 1.00, green: 0.55, blue: 0.00), 150),
-            ("高血圧II度",  Color(red: 0.95, green: 0.25, blue: 0.00), 170),
-            ("高血圧III度", Color(red: 0.80, green: 0.00, blue: 0.00), 195),
+            (names[0], Color(red: 0.20, green: 0.50, blue: 0.90),  95),
+            (names[1], Color(red: 0.25, green: 0.72, blue: 0.35), 125),
+            (names[2], Color(white: 0.20), 135),
+            (names[3], Color(red: 1.00, green: 0.55, blue: 0.00), 150),
+            (names[4], Color(red: 0.95, green: 0.25, blue: 0.00), 170),
+            (names[5], Color(red: 0.80, green: 0.00, blue: 0.00), 195),
         ]
         ForEach(labels, id: \.name) { label in
             PointMark(x: .value("", 41), y: .value("", label.y))
@@ -413,19 +424,87 @@ private struct JSHStandardsPopover: View {
     }
 }
 
+// MARK: - ESC/ESH 2018 基準ポップアップ（en 用）
+
+private struct ESHStandardsPopover: View {
+    private struct Row {
+        let name: String
+        let color: Color
+        let criteria: String
+    }
+    private let rows: [Row] = [
+        Row(name: "Grade 3 HT",  color: Color(red: 0.80, green: 0.00, blue: 0.00), criteria: "Systolic ≥180 or Diastolic ≥110"),
+        Row(name: "Grade 2 HT",  color: Color(red: 0.95, green: 0.25, blue: 0.00), criteria: "Systolic 160–179 or Diastolic 100–109"),
+        Row(name: "Grade 1 HT",  color: Color(red: 1.00, green: 0.55, blue: 0.00), criteria: "Systolic 140–159 or Diastolic 90–99"),
+        Row(name: "High Normal", color: Color(white: 0.55),                          criteria: "Systolic 130–139 or Diastolic 80–89"),
+        Row(name: "Normal",      color: Color(red: 0.25, green: 0.72, blue: 0.35),  criteria: "Systolic 120–129 and Diastolic <80"),
+        Row(name: "Optimal",     color: Color(red: 0.20, green: 0.50, blue: 0.90),  criteria: "Systolic <120 and Diastolic <80"),
+    ]
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 0) {
+                Text("ESC/ESH Hypertension Guidelines (2018)")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                    .padding(.horizontal, 16)
+                    .padding(.top, 14)
+                    .padding(.bottom, 8)
+                Divider()
+                ForEach(Array(rows.enumerated()), id: \.element.name) { index, row in
+                    HStack(spacing: 10) {
+                        RoundedRectangle(cornerRadius: 3)
+                            .fill(row.color.opacity(0.75))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 3)
+                                    .strokeBorder(.secondary.opacity(0.3), lineWidth: 0.5)
+                            )
+                            .frame(width: 18, height: 18)
+                        Text(row.name)
+                            .font(.subheadline)
+                        Spacer()
+                        Text(row.criteria)
+                            .font(.caption.monospacedDigit())
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 8)
+                    if index < rows.count - 1 {
+                        Divider().padding(.leading, 44)
+                    }
+                }
+                Spacer(minLength: 14)
+            }
+        }
+        .frame(minWidth: 300)
+        .presentationCompactAdaptation(.popover)
+    }
+}
+
 // MARK: - 血圧 JSH基準割合バー
 
 struct BpJshRatioView: View {
     let records: [BodyRecord]
 
-    private static let jshCategories: [(name: String, color: Color)] = [
-        ("正常血圧",    Color(red: 0.20, green: 0.50, blue: 0.90)),
-        ("正常高値",    Color(red: 0.25, green: 0.72, blue: 0.35)),
-        ("高値血圧",    Color(white: 0.55)),
-        ("高血圧I度",   Color(red: 1.00, green: 0.55, blue: 0.00)),
-        ("高血圧II度",  Color(red: 0.95, green: 0.25, blue: 0.00)),
-        ("高血圧III度", Color(red: 0.80, green: 0.00, blue: 0.00)),
+    private var isJapanese: Bool {
+        Locale.preferredLanguages.first?.hasPrefix("ja") ?? true
+    }
+
+    private static let categoryColors: [Color] = [
+        Color(red: 0.20, green: 0.50, blue: 0.90),
+        Color(red: 0.25, green: 0.72, blue: 0.35),
+        Color(white: 0.55),
+        Color(red: 1.00, green: 0.55, blue: 0.00),
+        Color(red: 0.95, green: 0.25, blue: 0.00),
+        Color(red: 0.80, green: 0.00, blue: 0.00),
     ]
+
+    private var categoryNames: [(name: String, color: Color)] {
+        let names: [String] = isJapanese
+            ? ["正常血圧", "正常高値", "高値血圧", "高血圧I度", "高血圧II度", "高血圧III度"]
+            : ["Optimal",  "Normal",  "High Normal", "Grade 1", "Grade 2",  "Grade 3"]
+        return zip(names, Self.categoryColors).map { ($0, $1) }
+    }
 
     private func jshIndex(hi: Int, lo: Int) -> Int {
         if hi >= 180 || lo >= 110 { return 5 }
@@ -456,7 +535,7 @@ struct BpJshRatioView: View {
                 GeometryReader { geo in
                     if total > 0 {
                         HStack(spacing: 0) {
-                            ForEach(Array(Self.jshCategories.enumerated()), id: \.offset) { i, cat in
+                            ForEach(Array(categoryNames.enumerated()), id: \.offset) { i, cat in
                                 if c[i] > 0 {
                                     Rectangle()
                                         .fill(cat.color)
@@ -477,7 +556,7 @@ struct BpJshRatioView: View {
                     columns: [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())],
                     spacing: 4
                 ) {
-                    ForEach(Array(Self.jshCategories.enumerated()), id: \.offset) { i, cat in
+                    ForEach(Array(categoryNames.enumerated()), id: \.offset) { i, cat in
                         HStack(spacing: 4) {
                             RoundedRectangle(cornerRadius: 3)
                                 .fill(cat.color)
@@ -501,107 +580,232 @@ struct BpJshRatioView: View {
     }
 }
 
-// MARK: - 区分別（DateOpt）平均値
+// MARK: - 血圧・区分 相関（ストリッププロット）
 
-struct BpDateOptAverageView: View {
+struct BpDateOptCorrView: View {
     let records: [BodyRecord]
 
-    private struct OptAvg {
-        let opt: DateOpt
+    private struct BpPoint: Identifiable {
+        let id: Int
+        let category: String
+        let value: Int
+        let isHi: Bool
+    }
+
+    private struct CatMean: Identifiable {
+        let id: String
+        let category: String
         let hiAvg: Double
         let loAvg: Double
     }
 
-    private let barMin = 40.0
-    private let barMax = 200.0
+    private var validRecords: [BodyRecord] {
+        records.filter { $0.nBpHi_mmHg > 0 && $0.nBpLo_mmHg > 0 }
+    }
 
-    private var data: [OptAvg] {
+    private var points: [BpPoint] {
+        var result: [BpPoint] = []
+        var idx = 0
+        for r in validRecords {
+            let cat = DateOpt(rawValue: r.nDateOpt)?.label ?? "その他"
+            result.append(BpPoint(id: idx,     category: cat, value: r.nBpHi_mmHg, isHi: true))
+            result.append(BpPoint(id: idx + 1, category: cat, value: r.nBpLo_mmHg, isHi: false))
+            idx += 2
+        }
+        return result
+    }
+
+    private var means: [CatMean] {
         DateOpt.allCases.compactMap { opt in
-            let filtered = records.filter {
-                $0.nDateOpt == opt.rawValue && $0.nBpHi_mmHg > 0 && $0.nBpLo_mmHg > 0
-            }
+            let filtered = validRecords.filter { $0.nDateOpt == opt.rawValue }
             guard !filtered.isEmpty else { return nil }
-            let hiAvg = Double(filtered.map { $0.nBpHi_mmHg }.reduce(0, +)) / Double(filtered.count)
-            let loAvg = Double(filtered.map { $0.nBpLo_mmHg }.reduce(0, +)) / Double(filtered.count)
-            return OptAvg(opt: opt, hiAvg: hiAvg, loAvg: loAvg)
+            let hi = Double(filtered.map { $0.nBpHi_mmHg }.reduce(0, +)) / Double(filtered.count)
+            let lo = Double(filtered.map { $0.nBpLo_mmHg }.reduce(0, +)) / Double(filtered.count)
+            return CatMean(id: opt.label, category: opt.label, hiAvg: hi, loAvg: lo)
         }
     }
 
-    var body: some View {
-        return AnyView(
-            VStack(alignment: .leading, spacing: 10) {
-                HStack {
-                    Text(String(localized: "Stat_DateOptAvg_Title", defaultValue: "血圧 区分別平均"))
-                        .font(.headline)
-                    Spacer()
-                    HStack(spacing: 10) {
-                        HStack(spacing: 4) {
-                            RoundedRectangle(cornerRadius: 2).fill(Color.red.opacity(0.8)).frame(width: 10, height: 10)
-                            Text("上").font(.caption2).foregroundStyle(.secondary)
-                        }
-                        HStack(spacing: 4) {
-                            RoundedRectangle(cornerRadius: 2).fill(Color.blue.opacity(0.8)).frame(width: 10, height: 10)
-                            Text("下").font(.caption2).foregroundStyle(.secondary)
-                        }
-                    }
-                }
-                .padding(.horizontal)
-
-                VStack(spacing: 8) {
-                    if data.isEmpty {
-                        Text(String(localized: "Stat_NoData", defaultValue: "期間内にデータがありません"))
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 8)
-                    }
-                    ForEach(data, id: \.opt) { item in
-                        HStack(alignment: .center, spacing: 8) {
-                            Label(item.opt.label, systemImage: item.opt.icon)
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                                .frame(width: 72, alignment: .leading)
-                                .lineLimit(1)
-
-                            VStack(spacing: 3) {
-                                barView(value: item.hiAvg, color: .red)
-                                barView(value: item.loAvg, color: .blue)
-                            }
-
-                            VStack(spacing: 3) {
-                                Text(String(format: "%.0f", item.hiAvg))
-                                    .font(.caption2.monospacedDigit())
-                                    .foregroundStyle(.red)
-                                    .frame(height: 14)
-                                Text(String(format: "%.0f", item.loAvg))
-                                    .font(.caption2.monospacedDigit())
-                                    .foregroundStyle(.blue)
-                                    .frame(height: 14)
-                            }
-                            .frame(width: 28, alignment: .trailing)
-                        }
-                    }
-                }
-                .padding(.horizontal)
-            }
-            .padding(.vertical, 8)
-            .background(.background.secondary)
-            .clipShape(RoundedRectangle(cornerRadius: 12))
-        )
+    private var categoryOrder: [String] {
+        DateOpt.allCases.map { $0.label }
     }
 
-    private func barView(value: Double, color: Color) -> some View {
-        let ratio = CGFloat((value - barMin) / (barMax - barMin))
-        return Color.secondary.opacity(0.1)
-            .frame(height: 14)
-            .clipShape(RoundedRectangle(cornerRadius: 3))
-            .overlay(alignment: .leading) {
-                GeometryReader { geo in
-                    RoundedRectangle(cornerRadius: 3)
-                        .fill(color.opacity(0.8))
-                        .frame(width: max(4, geo.size.width * ratio))
+    private var yDomain: ClosedRange<Int> {
+        guard !points.isEmpty else { return 50...180 }
+        let vals = points.map { $0.value }
+        let lower = max(30, (vals.min()! / 10) * 10 - 10)
+        let upper = min(260, ((vals.max()! + 9) / 10) * 10 + 10)
+        return lower...upper
+    }
+
+    @State private var showInfo = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text(String(localized: "Stat_BpDateOptCorr_Title", defaultValue: "血圧・区分 相関"))
+                    .font(.headline)
+                Button {
+                    showInfo = true
+                } label: {
+                    Image(systemName: "info.circle")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
+                .buttonStyle(.plain)
+                .popover(isPresented: $showInfo, arrowEdge: .bottom) {
+                    BpDateOptCorrInfoPopover()
+                }
+                Spacer()
+                HStack(spacing: 10) {
+                    HStack(spacing: 4) {
+                        Circle().fill(Color.red.opacity(0.8)).frame(width: 8, height: 8)
+                        Text("上").font(.caption2).foregroundStyle(.secondary)
+                    }
+                    HStack(spacing: 4) {
+                        Circle().fill(Color.blue.opacity(0.8)).frame(width: 8, height: 8)
+                        Text("下").font(.caption2).foregroundStyle(.secondary)
+                    }
                 }
             }
+            .padding(.horizontal)
+
+            if points.isEmpty {
+                Text(String(localized: "Stat_NoData", defaultValue: "期間内にデータがありません"))
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity)
+                    .padding()
+            } else {
+                chartContent
+                Text(String(localized: "Stat_DiamondMean", defaultValue: "◆ = 区分平均"))
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
+                    .frame(maxWidth: .infinity, alignment: .trailing)
+                    .padding(.trailing)
+            }
+        }
+        .padding(.vertical, 8)
+        .background(.background.secondary)
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+    }
+
+    private var chartContent: some View {
+        let ms = means
+        let order = categoryOrder
+        return Chart {
+            ForEach(points) { pt in
+                PointMark(
+                    x: .value("区分", pt.category),
+                    y: .value("mmHg", pt.value)
+                )
+                .symbol(.circle)
+                .symbolSize(16)
+                .foregroundStyle(pt.isHi ? Color.red.opacity(0.35) : Color.blue.opacity(0.35))
+            }
+            ForEach(ms) { m in
+                PointMark(
+                    x: .value("区分", m.category),
+                    y: .value("mmHg", m.hiAvg)
+                )
+                .symbol(.diamond)
+                .symbolSize(80)
+                .foregroundStyle(Color.red.opacity(0.9))
+
+                PointMark(
+                    x: .value("区分", m.category),
+                    y: .value("mmHg", m.loAvg)
+                )
+                .symbol(.diamond)
+                .symbolSize(80)
+                .foregroundStyle(Color.blue.opacity(0.9))
+            }
+        }
+        .chartXScale(domain: order)
+        .chartYScale(domain: yDomain)
+        .chartYAxisLabel("mmHg")
+        .chartXAxis {
+            AxisMarks { value in
+                AxisValueLabel {
+                    if let s = value.as(String.self) {
+                        Text(s).font(.system(size: 9))
+                    }
+                }
+            }
+        }
+        .frame(height: 240)
+        .padding(.horizontal)
+    }
+}
+
+// MARK: - 血圧・区分 相関 説明ポップアップ
+
+private struct BpDateOptCorrInfoPopover: View {
+    private var isJapanese: Bool {
+        Locale.preferredLanguages.first?.hasPrefix("ja") ?? true
+    }
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 0) {
+                Text(isJapanese ? "相関図の見方" : "How to Read This Chart")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                    .padding(.horizontal, 16)
+                    .padding(.top, 14)
+                    .padding(.bottom, 8)
+                Divider()
+
+                VStack(alignment: .leading, spacing: 10) {
+                    Label(
+                        isJapanese
+                            ? "各区分（起床・安静など）ごとに血圧値を縦に並べて表示します"
+                            : "Blood pressure values are plotted vertically for each category (e.g. morning, rest)",
+                        systemImage: "circle.fill"
+                    )
+                    .font(.caption).foregroundStyle(.secondary)
+                    Label(
+                        isJapanese ? "小さな円が個別の測定値です"
+                                   : "Small circles represent individual measurements",
+                        systemImage: "circle"
+                    )
+                    .font(.caption).foregroundStyle(.secondary)
+                    Label(
+                        isJapanese ? "ダイヤモンド◆がその区分の平均値です"
+                                   : "Diamond ◆ marks the category average",
+                        systemImage: "diamond.fill"
+                    )
+                    .font(.caption).foregroundStyle(.secondary)
+                    Label(
+                        isJapanese
+                            ? "区分間で◆の高さを比べると、時間帯による血圧の傾向がわかります"
+                            : "Comparing ◆ heights across categories reveals time-of-day BP patterns",
+                        systemImage: "arrow.left.arrow.right"
+                    )
+                    .font(.caption).foregroundStyle(.secondary)
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 12)
+
+                Divider()
+
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack(spacing: 8) {
+                        Circle().fill(Color.red.opacity(0.8)).frame(width: 10, height: 10)
+                        Text(isJapanese ? "赤 = 上（収縮期血圧）" : "Red = Systolic (Upper)")
+                            .font(.caption).foregroundStyle(.secondary)
+                    }
+                    HStack(spacing: 8) {
+                        Circle().fill(Color.blue.opacity(0.8)).frame(width: 10, height: 10)
+                        Text(isJapanese ? "青 = 下（拡張期血圧）" : "Blue = Diastolic (Lower)")
+                            .font(.caption).foregroundStyle(.secondary)
+                    }
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 12)
+            }
+        }
+        .frame(minWidth: 300)
+        .presentationCompactAdaptation(.popover)
     }
 }
 
@@ -622,9 +826,20 @@ struct Bp24HChartView: View {
             }
     }
 
+    /// データに合わせた Y 軸範囲（10mmHg グリッドに揃え、上下にパディング）
+    private var yDomain: ClosedRange<Int> {
+        guard !validRecords.isEmpty else { return 50...180 }
+        let allValues = validRecords.flatMap { [$0.lo, $0.hi] }
+        let dataMin = allValues.min()!
+        let dataMax = allValues.max()!
+        let lower = max(30, (dataMin / 10) * 10 - 10)
+        let upper = min(260, ((dataMax + 9) / 10) * 10 + 10)
+        return lower...upper
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(String(localized: "Stat_24H_Title", defaultValue: "血圧 24時間分散"))
+            Text(String(localized: "Stat_24H_Title", defaultValue: "血圧 24時間分布"))
                 .font(.headline)
                 .padding(.horizontal)
 
@@ -654,6 +869,7 @@ struct Bp24HChartView: View {
                 }
             }
             .chartXScale(domain: 0...23)
+            .chartYScale(domain: yDomain)
             .chartXAxisLabel(String(localized: "Stat_Hour", defaultValue: "時刻"))
             .chartYAxisLabel(String(localized: "Stat_mmHg", defaultValue: "mmHg"))
             .frame(height: 220)
@@ -726,63 +942,247 @@ struct WeightSummaryView: View {
     }
 }
 
-// MARK: - 体重 週次平均バーチャート
+// MARK: - 体重・歩数 相関散布図
 
-struct WeightWeeklyChartView: View {
+struct WeightStepsCorrelationView: View {
     let records: [BodyRecord]
 
-    private struct WeekAvg: Identifiable {
-        let weekStart: Date
-        let avg: Double
-        var id: Date { weekStart }
+    private struct DataPoint: Identifiable {
+        let id: Int
+        let steps: Int
+        let weight: Double
+        let optColor: Color
     }
 
-    private var weeklyData: [WeekAvg] {
-        let cal = Calendar(identifier: .iso8601)
-        var groups: [Date: [Double]] = [:]
-        for r in records where r.nWeight_10Kg > 0 {
-            guard let interval = cal.dateInterval(of: .weekOfYear, for: r.dateTime) else { continue }
-            groups[interval.start, default: []].append(Double(r.nWeight_10Kg) / 10.0)
-        }
-        return groups
-            .map { WeekAvg(weekStart: $0.key, avg: $0.value.reduce(0, +) / Double($0.value.count)) }
-            .sorted { $0.weekStart < $1.weekStart }
+    private struct CorrStats {
+        let r: Double
+        let slope: Double
+        let intercept: Double
+        let xMin: Int
+        let xMax: Int
     }
+
+    private var data: [DataPoint] {
+        records
+            .filter { $0.nWeight_10Kg > 0 && $0.nPedometer > 0 }
+            .enumerated()
+            .map { i, r in
+                DataPoint(
+                    id: i,
+                    steps: r.nPedometer,
+                    weight: Double(r.nWeight_10Kg) / 10.0,
+                    optColor: DateOpt(rawValue: r.nDateOpt)?.color ?? .secondary
+                )
+            }
+    }
+
+    private var corrStats: CorrStats? {
+        guard data.count >= 3 else { return nil }
+        let n = Double(data.count)
+        let xs = data.map { Double($0.steps) }
+        let ys = data.map { $0.weight }
+        let xAvg = xs.reduce(0, +) / n
+        let yAvg = ys.reduce(0, +) / n
+        let sxx = xs.map { pow($0 - xAvg, 2) }.reduce(0, +)
+        let syy = ys.map { pow($0 - yAvg, 2) }.reduce(0, +)
+        let sxy = zip(xs, ys).map { ($0 - xAvg) * ($1 - yAvg) }.reduce(0, +)
+        guard sxx > 0, syy > 0 else { return nil }
+        let xMin = data.map { $0.steps }.min()!
+        let xMax = data.map { $0.steps }.max()!
+        return CorrStats(
+            r: sxy / sqrt(sxx * syy),
+            slope: sxy / sxx,
+            intercept: yAvg - (sxy / sxx) * xAvg,
+            xMin: xMin,
+            xMax: xMax
+        )
+    }
+
+    private var trendPoints: [(x: Double, y: Double)] {
+        guard let s = corrStats else { return [] }
+        return [
+            (x: Double(s.xMin), y: s.slope * Double(s.xMin) + s.intercept),
+            (x: Double(s.xMax), y: s.slope * Double(s.xMax) + s.intercept),
+        ]
+    }
+
+    private func rColor(_ r: Double) -> Color {
+        let a = abs(r)
+        if a >= 0.7 { return .red }
+        if a >= 0.4 { return .orange }
+        return .secondary
+    }
+
+    @State private var showInfo = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(String(localized: "Stat_WeightWeekly_Title", defaultValue: "体重 週次平均"))
-                .font(.headline)
-                .padding(.horizontal)
+            HStack {
+                Text(String(localized: "Stat_WeightStepsCorr_Title", defaultValue: "体重・歩数 相関"))
+                    .font(.headline)
+                Button {
+                    showInfo = true
+                } label: {
+                    Image(systemName: "info.circle")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
+                .buttonStyle(.plain)
+                .popover(isPresented: $showInfo, arrowEdge: .bottom) {
+                    WeightStepsCorrInfoPopover()
+                }
+                Spacer()
+                if let s = corrStats {
+                    Text(String(format: "r = %.2f", s.r))
+                        .font(.caption.monospacedDigit())
+                        .foregroundStyle(rColor(s.r))
+                        .padding(.trailing, 4)
+                }
+            }
+            .padding(.horizontal)
 
-            let data = weeklyData
-            if data.isEmpty {
+            if data.count < 2 {
                 Text(String(localized: "Stat_NoData", defaultValue: "期間内にデータがありません"))
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity)
                     .padding()
             } else {
-                Chart(data) { item in
-                    BarMark(
-                        x: .value("週", item.weekStart, unit: .weekOfYear),
-                        y: .value("kg", item.avg)
-                    )
-                    .foregroundStyle(Color.blue.opacity(0.7))
-                }
-                .chartXAxis {
-                    AxisMarks(values: .automatic) {
-                        AxisValueLabel(format: .dateTime.month(.abbreviated).day())
-                    }
-                }
-                .chartYAxisLabel("kg")
-                .frame(height: 200)
-                .padding(.horizontal)
+                chartContent
             }
         }
         .padding(.vertical, 8)
         .background(.background.secondary)
         .clipShape(RoundedRectangle(cornerRadius: 12))
+    }
+
+    private var chartContent: some View {
+        let pts = trendPoints
+        return Chart {
+            ForEach(data) { point in
+                PointMark(
+                    x: .value("歩数", point.steps),
+                    y: .value("体重", point.weight)
+                )
+                .foregroundStyle(point.optColor.opacity(0.7))
+                .symbolSize(30)
+            }
+            ForEach(pts.indices, id: \.self) { i in
+                LineMark(
+                    x: .value("", pts[i].x),
+                    y: .value("", pts[i].y)
+                )
+                .foregroundStyle(Color.gray.opacity(0.5))
+                .lineStyle(StrokeStyle(lineWidth: 1.5, dash: [5, 3]))
+            }
+        }
+        .chartXAxisLabel(String(localized: "Stat_Steps", defaultValue: "歩"))
+        .chartYAxisLabel(String(localized: "Stat_Kg", defaultValue: "kg"))
+        .frame(height: 220)
+        .padding(.horizontal)
+    }
+}
+
+// MARK: - 体重・歩数 相関 説明ポップアップ
+
+private struct WeightStepsCorrInfoPopover: View {
+    private var isJapanese: Bool {
+        Locale.preferredLanguages.first?.hasPrefix("ja") ?? true
+    }
+
+    private struct RRow {
+        let range: String
+        let color: Color
+        let label: String
+    }
+    private var rows: [RRow] {
+        [
+            RRow(range: "0.7 – 1.0", color: .red,      label: isJapanese ? "強い相関"     : "Strong"),
+            RRow(range: "0.4 – 0.7", color: .orange,   label: isJapanese ? "中程度の相関" : "Moderate"),
+            RRow(range: "0.0 – 0.4", color: .secondary, label: isJapanese ? "弱い〜ほぼなし" : "Weak – Negligible"),
+        ]
+    }
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 0) {
+                Text(isJapanese ? "相関図の見方" : "How to Read This Chart")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                    .padding(.horizontal, 16)
+                    .padding(.top, 14)
+                    .padding(.bottom, 8)
+                Divider()
+
+                VStack(alignment: .leading, spacing: 10) {
+                    Label(
+                        isJapanese
+                            ? "各点は体重と歩数を両方記録した1件を表します"
+                            : "Each dot represents one record with both weight and step data",
+                        systemImage: "circle.fill"
+                    )
+                    .font(.caption).foregroundStyle(.secondary)
+                    Label(
+                        isJapanese
+                            ? "破線は回帰直線（データ全体の傾向線）です"
+                            : "The dashed line is the regression line (overall trend)",
+                        systemImage: "line.diagonal"
+                    )
+                    .font(.caption).foregroundStyle(.secondary)
+                    Label(
+                        isJapanese
+                            ? "右下がりの傾向 → 歩くほど体重が低い関係"
+                            : "A downward slope suggests more steps correlate with lower weight",
+                        systemImage: "arrow.down.right"
+                    )
+                    .font(.caption).foregroundStyle(.secondary)
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 12)
+
+                Divider()
+
+                Text(isJapanese ? "相関係数 r の目安（絶対値）" : "Correlation coefficient r (absolute value)")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                    .padding(.horizontal, 16)
+                    .padding(.top, 10)
+                    .padding(.bottom, 6)
+
+                ForEach(Array(rows.enumerated()), id: \.element.range) { index, row in
+                    HStack(spacing: 10) {
+                        RoundedRectangle(cornerRadius: 3)
+                            .fill(row.color.opacity(0.8))
+                            .frame(width: 18, height: 18)
+                        Text(row.range)
+                            .font(.caption.monospacedDigit())
+                            .frame(width: 90, alignment: .leading)
+                        Text(row.label)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                        Spacer()
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 7)
+                    if index < rows.count - 1 {
+                        Divider().padding(.leading, 44)
+                    }
+                }
+
+                Text(
+                    isJapanese
+                        ? "※ r はマイナスでも絶対値が大きいほど強い相関を示します"
+                        : "* A negative r with large absolute value still indicates a strong correlation"
+                )
+                .font(.caption2)
+                .foregroundStyle(.tertiary)
+                .padding(.horizontal, 16)
+                .padding(.top, 8)
+                .padding(.bottom, 14)
+            }
+        }
+        .frame(minWidth: 300)
+        .presentationCompactAdaptation(.popover)
     }
 }
 
@@ -847,76 +1247,65 @@ struct TempSummaryView: View {
     }
 }
 
-// MARK: - 体温 区分別平均
+// MARK: - 体温 24時間分布
 
-struct TempDateOptAverageView: View {
+struct Temp24HChartView: View {
     let records: [BodyRecord]
 
-    private struct OptAvg: Identifiable {
-        let opt: DateOpt
-        let avg: Double
-        var id: DateOpt { opt }
+    private var validRecords: [(hour: Int, temp: Double)] {
+        let cal = Calendar(identifier: .gregorian)
+        return records
+            .filter { $0.nTemp_10c > 0 }
+            .map { r in
+                let h = cal.component(.hour, from: r.dateTime)
+                return (hour: h, temp: Double(r.nTemp_10c) / 10.0)
+            }
     }
 
-    private let barMin = 35.0
-    private let barMax = 38.5
-
-    private var data: [OptAvg] {
-        DateOpt.allCases.compactMap { opt in
-            let filtered = records.filter { $0.nDateOpt == opt.rawValue && $0.nTemp_10c > 0 }
-            guard !filtered.isEmpty else { return nil }
-            let avg = Double(filtered.map { $0.nTemp_10c }.reduce(0, +)) / Double(filtered.count) / 10.0
-            return OptAvg(opt: opt, avg: avg)
-        }
+    /// データに合わせた Y 軸範囲（0.5℃ グリッドに揃え、上下にパディング）
+    private var yDomain: ClosedRange<Double> {
+        guard !validRecords.isEmpty else { return 35.5...37.5 }
+        let temps = validRecords.map { $0.temp }
+        let dataMin = temps.min()!
+        let dataMax = temps.max()!
+        let lower = (dataMin * 2).rounded(.down) / 2 - 0.5
+        let upper = (dataMax * 2).rounded(.up)   / 2 + 0.5
+        return max(34.0, lower)...min(42.0, upper)
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text(String(localized: "Stat_TempDateOptAvg_Title", defaultValue: "体温 区分別平均"))
+        VStack(alignment: .leading, spacing: 8) {
+            Text(String(localized: "Stat_Temp24H_Title", defaultValue: "体温 24時間分布"))
                 .font(.headline)
                 .padding(.horizontal)
 
-            VStack(spacing: 8) {
-                if data.isEmpty {
+            Chart {
+                ForEach(Array(validRecords.enumerated()), id: \.offset) { _, item in
+                    PointMark(
+                        x: .value("時刻", item.hour),
+                        y: .value("体温", item.temp)
+                    )
+                    .foregroundStyle(Color.pink.opacity(0.6))
+                    .symbolSize(35)
+                }
+            }
+            .chartXScale(domain: 0...23)
+            .chartYScale(domain: yDomain)
+            .chartXAxisLabel(String(localized: "Stat_Hour", defaultValue: "時刻"))
+            .chartYAxisLabel(String(localized: "Stat_Celsius", defaultValue: "°C"))
+            .frame(height: 220)
+            .padding(.horizontal)
+            .overlay {
+                if validRecords.isEmpty {
                     Text(String(localized: "Stat_NoData", defaultValue: "期間内にデータがありません"))
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 8)
-                }
-                ForEach(data) { item in
-                    HStack(alignment: .center, spacing: 8) {
-                        Label(item.opt.label, systemImage: item.opt.icon)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                            .frame(width: 72, alignment: .leading)
-                            .lineLimit(1)
-                        barView(value: item.avg, color: item.opt.color)
-                        Text(String(format: "%.1f", item.avg))
-                            .font(.caption2.monospacedDigit())
-                            .frame(width: 32, alignment: .trailing)
-                    }
                 }
             }
-            .padding(.horizontal)
         }
         .padding(.vertical, 8)
         .background(.background.secondary)
         .clipShape(RoundedRectangle(cornerRadius: 12))
-    }
-
-    private func barView(value: Double, color: Color) -> some View {
-        let ratio = CGFloat((value - barMin) / (barMax - barMin))
-        return Color.secondary.opacity(0.1)
-            .frame(height: 14)
-            .clipShape(RoundedRectangle(cornerRadius: 3))
-            .overlay(alignment: .leading) {
-                GeometryReader { geo in
-                    RoundedRectangle(cornerRadius: 3)
-                        .fill(color.opacity(0.8))
-                        .frame(width: max(4, geo.size.width * ratio))
-                }
-            }
     }
 }
 

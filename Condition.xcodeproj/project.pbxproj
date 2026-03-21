@@ -24,6 +24,7 @@
 		982998F6ABEDB9272F6A6BA1 /* ValueFormatter.swift in Sources */ = {isa = PBXBuildFile; fileRef = A14BB534396221BF4A8DD998 /* ValueFormatter.swift */; };
 		B01892399930A51751ED92F1 /* RecordEditView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C5B54F260937D2BF7A3B8E0 /* RecordEditView.swift */; };
 		C3166D342F63FDB000169223 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = C3166D332F63FDB000169223 /* Localizable.xcstrings */; };
+		A1B2C3D4E5F600001A2B3C4D /* InfoPlist.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F600001A2B3C4E /* InfoPlist.xcstrings */; };
 		CC257634A8AF415F5F40872E /* MigrationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = D11FAFC4E99DE815E66D2AEB /* MigrationService.swift */; };
 		D6C3A1A72F3E9B12734FC1FB /* GraphView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4066E230081BA97894E9514C /* GraphView.swift */; };
 		E88A92888F6AFD1FB7DFFC9F /* ModelContainer+Setup.swift in Sources */ = {isa = PBXBuildFile; fileRef = 86715F6F24A9840913D72CC6 /* ModelContainer+Setup.swift */; };
@@ -59,6 +60,7 @@
 		9E16A771447D302CDF593C00 /* DateOpt.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DateOpt.swift; sourceTree = "<group>"; };
 		A14BB534396221BF4A8DD998 /* ValueFormatter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ValueFormatter.swift; sourceTree = "<group>"; };
 		B6FE488F42254CBC37C55F0C /* Condition.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Condition.entitlements; sourceTree = "<group>"; };
+		A1B2C3D4E5F600001A2B3C4E /* InfoPlist.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = InfoPlist.xcstrings; sourceTree = "<group>"; };
 		C3166D332F63FDB000169223 /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
 		D11FAFC4E99DE815E66D2AEB /* MigrationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MigrationService.swift; sourceTree = "<group>"; };
 		DB9225443B8D3A26F9D99025 /* BodyRecord.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BodyRecord.swift; sourceTree = "<group>"; };
@@ -135,6 +137,7 @@
 		6D31027083D6D66B79C896D3 /* Resources */ = {
 			isa = PBXGroup;
 			children = (
+				A1B2C3D4E5F600001A2B3C4E /* InfoPlist.xcstrings */,
 				C3166D332F63FDB000169223 /* Localizable.xcstrings */,
 				631EC7DEF4838569597EA3C8 /* Assets.xcassets */,
 				B6FE488F42254CBC37C55F0C /* Condition.entitlements */,
@@ -322,6 +325,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A1B2C3D4E5F600001A2B3C4D /* InfoPlist.xcstrings in Resources */,
 				C3166D342F63FDB000169223 /* Localizable.xcstrings in Resources */,
 				94F8FFF55DB8A08ACB41B6C7 /* Assets.xcassets in Resources */,
 			);

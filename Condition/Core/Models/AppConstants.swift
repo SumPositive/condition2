@@ -138,12 +138,12 @@ enum GraphKind: Int, CaseIterable, Identifiable, Codable {
 enum StatSection: Int, CaseIterable, Identifiable {
     case bpJsh          = 0
     case bpRatio        = 1
-    case bpDateOptAvg   = 2
+    case bpDateOptCorr  = 2
     case bp24h          = 3
     case weightSummary  = 4
-    case weightWeekly   = 5
+    case weightStepsCorr = 5
     case tempSummary    = 6
-    case tempDateOptAvg = 7
+    case temp24h        = 7
     case tempHist       = 8
 
     var id: Int { rawValue }
@@ -152,12 +152,12 @@ enum StatSection: Int, CaseIterable, Identifiable {
         switch self {
         case .bpJsh:          return String(localized: "StatSection_BpJsh",          defaultValue: "血圧 分布")
         case .bpRatio:        return String(localized: "StatSection_BpRatio",        defaultValue: "血圧 JSH基準割合")
-        case .bpDateOptAvg:   return String(localized: "StatSection_BpDateOptAvg",   defaultValue: "血圧 区分別平均")
-        case .bp24h:          return String(localized: "StatSection_Bp24h",          defaultValue: "血圧 24時間分散")
+        case .bpDateOptCorr:  return String(localized: "StatSection_BpDateOptCorr",  defaultValue: "血圧・区分 相関")
+        case .bp24h:          return String(localized: "StatSection_Bp24h",          defaultValue: "血圧 24時間分布")
         case .weightSummary:  return String(localized: "StatSection_WeightSummary",  defaultValue: "体重 サマリー")
-        case .weightWeekly:   return String(localized: "StatSection_WeightWeekly",   defaultValue: "体重 週次平均")
+        case .weightStepsCorr: return String(localized: "StatSection_WeightStepsCorr", defaultValue: "体重・歩数 相関")
         case .tempSummary:    return String(localized: "StatSection_TempSummary",    defaultValue: "体温 サマリー")
-        case .tempDateOptAvg: return String(localized: "StatSection_TempDateOptAvg", defaultValue: "体温 区分別平均")
+        case .temp24h:        return String(localized: "StatSection_Temp24h",        defaultValue: "体温 24時間分布")
         case .tempHist:       return String(localized: "StatSection_TempHist",       defaultValue: "体温 分布")
         }
     }

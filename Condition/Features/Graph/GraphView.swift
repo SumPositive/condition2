@@ -240,15 +240,15 @@ struct BpZone {
 // MARK: - BMI区分（日本肥満学会 JASSO基準）
 
 struct BMIZone {
-    let min: Double; let max: Double; let color: Color; let swatch: Color; let label: String
+    let min: Double; let max: Double; let color: Color; let swatch: Color; let label: String; let enLabel: String
 }
 
 let bmiZones: [BMIZone] = [
-    .init(min:  0.0, max: 18.5, color: Color(red: 0.30, green: 0.60, blue: 0.95).opacity(0.13), swatch: Color(red: 0.30, green: 0.60, blue: 0.95), label: "低体重"),
-    .init(min: 18.5, max: 25.0, color: Color(red: 0.18, green: 0.65, blue: 0.28).opacity(0.11), swatch: Color(red: 0.18, green: 0.65, blue: 0.28), label: "普通体重"),
-    .init(min: 25.0, max: 30.0, color: Color(red: 0.90, green: 0.75, blue: 0.10).opacity(0.13), swatch: Color(red: 0.90, green: 0.75, blue: 0.10), label: "肥満度1"),
-    .init(min: 30.0, max: 35.0, color: Color(red: 0.95, green: 0.45, blue: 0.10).opacity(0.14), swatch: Color(red: 0.95, green: 0.45, blue: 0.10), label: "肥満度2"),
-    .init(min: 35.0, max: 60.0, color: Color(red: 0.80, green: 0.10, blue: 0.10).opacity(0.15), swatch: Color(red: 0.80, green: 0.10, blue: 0.10), label: "肥満度3以上"),
+    .init(min:  0.0, max: 18.5, color: Color(red: 0.30, green: 0.60, blue: 0.95).opacity(0.13), swatch: Color(red: 0.30, green: 0.60, blue: 0.95), label: "低体重",   enLabel: "Underweight"),
+    .init(min: 18.5, max: 25.0, color: Color(red: 0.18, green: 0.65, blue: 0.28).opacity(0.11), swatch: Color(red: 0.18, green: 0.65, blue: 0.28), label: "普通体重", enLabel: "Normal weight"),
+    .init(min: 25.0, max: 30.0, color: Color(red: 0.90, green: 0.75, blue: 0.10).opacity(0.13), swatch: Color(red: 0.90, green: 0.75, blue: 0.10), label: "肥満度1",  enLabel: "Obesity Class 1"),
+    .init(min: 30.0, max: 35.0, color: Color(red: 0.95, green: 0.45, blue: 0.10).opacity(0.14), swatch: Color(red: 0.95, green: 0.45, blue: 0.10), label: "肥満度2",  enLabel: "Obesity Class 2"),
+    .init(min: 35.0, max: 60.0, color: Color(red: 0.80, green: 0.10, blue: 0.10).opacity(0.15), swatch: Color(red: 0.80, green: 0.10, blue: 0.10), label: "肥満度3以上", enLabel: "Obesity Class 3+"),
 ]
 
 /// JSH 2019 基準による血圧区分カラー（上・下の高い方で分類）
@@ -976,6 +976,7 @@ private struct BMIChartView: View {
     @State private var selectedDate: Date?
     @State private var scrollPosition: Date = Date()
     @State private var showBMIInfo = false
+    private var isJapanese: Bool { Locale.preferredLanguages.first?.hasPrefix("ja") ?? true }
     @Environment(\.verticalSizeClass) private var verticalSizeClass
 
     private func dayStart(_ date: Date) -> Date { cal.startOfDay(for: date) }
@@ -1040,14 +1041,14 @@ private struct BMIChartView: View {
                 } label: {
                     HStack(spacing: 2) {
                         Image(systemName: "info.circle")
-                        Text("JASSO基準")
+                        Text(isJapanese ? "JASSO基準" : "WHO BMI")
                     }
                     .font(.caption2)
                     .foregroundStyle(.secondary)
                 }
                 .buttonStyle(.plain)
                 .popover(isPresented: $showBMIInfo, arrowEdge: .bottom) {
-                    BMIStandardsPopover()
+                    BMIStandardsPopover(isJapanese: isJapanese)
                 }
                 Spacer()
                 if let avg = avgValue {
@@ -1269,6 +1270,7 @@ struct WeightChangeChartView: View {
 // MARK: - BMI基準ポップアップ
 
 private struct BMIStandardsPopover: View {
+    let isJapanese: Bool
     private struct Row {
         let zone: BMIZone
         var rangeText: String {
@@ -1281,7 +1283,7 @@ private struct BMIStandardsPopover: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text("JASSO肥満度分類")
+            Text(isJapanese ? "JASSO肥満度分類" : "WHO BMI Classification")
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(.secondary)
                 .padding(.horizontal, 16)
@@ -1297,7 +1299,7 @@ private struct BMIStandardsPopover: View {
                                 .strokeBorder(.secondary.opacity(0.3), lineWidth: 0.5)
                         )
                         .frame(width: 18, height: 18)
-                    Text(row.zone.label)
+                    Text(isJapanese ? row.zone.label : row.zone.enLabel)
                         .font(.subheadline)
                     Spacer()
                     Text(row.rangeText)
