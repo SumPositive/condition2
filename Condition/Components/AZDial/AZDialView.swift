@@ -4,6 +4,26 @@
 
 import SwiftUI
 
+// MARK: - ダイアルスタイル
+
+enum DialStyle: Int, CaseIterable {
+    case soft = 0
+    case machined = 1
+    case chrome = 2
+    case fine = 3
+    case hairline = 4
+
+    var label: String {
+        switch self {
+        case .soft:     return String(localized: "DialStyle_Soft",     defaultValue: "ソフト")
+        case .machined: return String(localized: "DialStyle_Machined", defaultValue: "マシン")
+        case .chrome:   return String(localized: "DialStyle_Chrome",   defaultValue: "クローム")
+        case .fine:     return String(localized: "DialStyle_Fine",     defaultValue: "ファイン")
+        case .hairline: return String(localized: "DialStyle_Hairline", defaultValue: "ヘアライン")
+        }
+    }
+}
+
 // MARK: - AZDialView（公開コンポーネント）
 
 struct AZDialView: View {
@@ -53,8 +73,8 @@ private struct AZDialScrollArea: View {
 
     /// 1ステップあたりのドラッグ感度（px）
     private let pitch: CGFloat = 15.0
-    /// 目盛りの視覚ピッチ（px）—pitch と異なる値にすることで余りが毎ステップ変化する
-    private let tickGap: CGFloat = 16.0
+    /// 目盛りの視覚ピッチ（px）
+    private let tickGap: CGFloat = 10.0
 
     /// ドラッグ累積スクロール量（px）。AZDialBack に直接渡す
     @State private var scrollOffset: CGFloat = 0
@@ -63,57 +83,66 @@ private struct AZDialScrollArea: View {
 
     @Environment(\.colorScheme) private var colorScheme
 
-    /// ダークモードほど影を濃くし、ハイライトを明るくする
-    private var shadowOpacity: CGFloat { colorScheme == .dark ? 0.45 : 0.25 }
-    private var rimOpacity:    CGFloat { colorScheme == .dark ? 0.28 : 0.08 }
+    private var shadowOpacity: CGFloat { colorScheme == .dark ? 0.55 : 0.30 }
+    private var rimBright:     CGFloat { colorScheme == .dark ? 0.55 : 0.50 }
+    private var rimSoft:       CGFloat { colorScheme == .dark ? 0.18 : 0.12 }
 
     var body: some View {
+        let currentStyle = DialStyle(rawValue: AppSettings.shared.dialStyle) ?? .machined
         ZStack {
-            // ── AZDialBack がスクロールオフセットに応じてリアルタイムに流れる ──
-            AZDialBack(offset: scrollOffset, tickGap: tickGap)
-                .clipShape(RoundedRectangle(cornerRadius: 5))
+            // ── スクロールする目盛り背景 ──
+            AZDialBack(offset: scrollOffset, tickGap: tickGap, style: currentStyle)
+                .clipShape(RoundedRectangle(cornerRadius: 10))
 
-            // ── 左右フェード（端の沈み込み）──
+            // ── 左右エッジフェード（深い沈み込み）──
             HStack(spacing: 0) {
                 LinearGradient(
-                    colors: [Color.black.opacity(0.50), Color.clear],
+                    colors: [Color.black.opacity(0.72), Color.clear],
                     startPoint: .leading, endPoint: .trailing
                 )
-                .frame(width: 28)
+                .frame(width: 44)
                 Spacer()
                 LinearGradient(
-                    colors: [Color.clear, Color.black.opacity(0.50)],
+                    colors: [Color.clear, Color.black.opacity(0.72)],
                     startPoint: .leading, endPoint: .trailing
                 )
-                .frame(width: 28)
+                .frame(width: 44)
             }
-            .clipShape(RoundedRectangle(cornerRadius: 5))
+            .clipShape(RoundedRectangle(cornerRadius: 10))
 
-            // ── 上端リムハイライト＋下端内側シャドウ ──
+            // ── 上下の内側シャドウ＋リムライン ──
             VStack(spacing: 0) {
-                // 上端：明るいリム（ダークモードで特に有効）
+                // 上端：鋭いスペキュラーライン＋フェード
                 LinearGradient(
-                    colors: [Color.white.opacity(rimOpacity), Color.clear],
+                    stops: [
+                        .init(color: Color.white.opacity(rimBright), location: 0.00),
+                        .init(color: Color.white.opacity(rimSoft),   location: 0.20),
+                        .init(color: .clear,                          location: 1.00),
+                    ],
                     startPoint: .top, endPoint: .bottom
                 )
-                .frame(height: 5)
+                .frame(height: 9)
                 Spacer()
                 // 下端：内側シャドウ
                 LinearGradient(
-                    colors: [Color.clear, Color.black.opacity(0.30)],
+                    stops: [
+                        .init(color: .clear,                          location: 0.00),
+                        .init(color: Color.black.opacity(0.20),       location: 0.50),
+                        .init(color: Color.black.opacity(0.48),       location: 1.00),
+                    ],
                     startPoint: .top, endPoint: .bottom
                 )
-                .frame(height: 8)
+                .frame(height: 12)
             }
-            .clipShape(RoundedRectangle(cornerRadius: 5))
+            .clipShape(RoundedRectangle(cornerRadius: 10))
         }
-        // ── 弧形ドロップシャドウ（中央が高い接触影＝円柱が台に乗る感）──
+        // ── 楕円ドロップシャドウ（円柱が台に接触する影）──
         .overlay(alignment: .bottom) {
             Ellipse()
                 .fill(Color.black.opacity(shadowOpacity))
-                .frame(height: 24)
-                .blur(radius: 5)
-                .padding(.horizontal, 6)
+                .frame(height: 18)
+                .blur(radius: 8)
+                .padding(.horizontal, 2)
                 .offset(y: 10)
         }
         .gesture(
@@ -174,38 +203,73 @@ private struct AZDialScrollArea: View {
 struct AZDialBack: View {
     let offset: CGFloat
     var tickGap: CGFloat = 16.0
+    var style: DialStyle = .machined
 
     @Environment(\.colorScheme) private var colorScheme
 
-    // MARK: - カラースキーム別パレット
+    // MARK: - カラースキーム×スタイル別パレット
 
-    private var bgEdge: Color {
-        colorScheme == .dark
-            ? Color(white: 0.18)
-            : Color(white: 0.58)
+    // 溝（背景）
+    private var groove: Color {
+        switch style {
+        case .soft:
+            return colorScheme == .dark ? Color(white: 0.20) : Color(white: 0.62)
+        case .machined:
+            return colorScheme == .dark ? Color(white: 0.05) : Color(white: 0.52)
+        case .chrome:
+            return colorScheme == .dark ? Color(white: 0.03) : Color(white: 0.42)
+        case .fine:
+            return colorScheme == .dark ? Color(white: 0.05) : Color(white: 0.52)
+        case .hairline:
+            return colorScheme == .dark ? Color(white: 0.02) : Color(white: 0.38)
+        }
     }
-    private var bgCenter: Color {
-        colorScheme == .dark
-            ? Color(white: 0.48)
-            : Color(white: 0.92)
+    // リッジ側面（暗い）
+    private var ridgeDark: Color {
+        switch style {
+        case .soft:
+            return colorScheme == .dark ? Color(white: 0.32) : Color(white: 0.70)
+        case .machined:
+            return colorScheme == .dark ? Color(white: 0.11) : Color(white: 0.62)
+        case .chrome:
+            return colorScheme == .dark ? Color(white: 0.10) : Color(white: 0.52)
+        case .fine:
+            return colorScheme == .dark ? Color(white: 0.11) : Color(white: 0.62)
+        case .hairline:
+            return colorScheme == .dark ? Color(white: 0.30) : Color(white: 0.65)
+        }
     }
-    private var hEdgeOpacity: CGFloat { colorScheme == .dark ? 0.38 : 0.22 }
-    private var hMidOpacity:  CGFloat { colorScheme == .dark ? 0.10 : 0.05 }
-
-    private var tickShadowColor: Color {
-        colorScheme == .dark
-            ? Color.black.opacity(0.90)
-            : Color.black.opacity(0.55)
+    // リッジ正面中央（凸面の最明部）
+    private var ridgeBright: Color {
+        switch style {
+        case .soft:
+            return colorScheme == .dark ? Color(white: 0.62) : Color(white: 0.84)
+        case .machined:
+            return colorScheme == .dark ? Color(white: 0.52) : Color(white: 0.80)
+        case .chrome:
+            return colorScheme == .dark
+                ? Color(red: 0.84, green: 0.87, blue: 0.92)
+                : Color(red: 0.90, green: 0.93, blue: 0.97)
+        case .fine:
+            return colorScheme == .dark ? Color(white: 0.52) : Color(white: 0.80)
+        case .hairline:
+            return colorScheme == .dark ? Color(white: 0.78) : Color(white: 0.95)
+        }
     }
-    private var tickBodyColor: Color {
-        colorScheme == .dark
-            ? Color(white: 0.72).opacity(0.85)
-            : Color(white: 0.95).opacity(0.90)
-    }
-    private var tickHiColor: Color {
-        colorScheme == .dark
-            ? Color.white.opacity(0.40)
-            : Color.white.opacity(0.80)
+    // リッジ頂面エッジ（鋭いハイライト線）
+    private var ridgeEdge: Color {
+        switch style {
+        case .soft:
+            return colorScheme == .dark ? Color(white: 0.72) : Color(white: 0.92)
+        case .machined:
+            return colorScheme == .dark ? Color(white: 0.80) : Color.white
+        case .chrome:
+            return Color.white
+        case .fine:
+            return colorScheme == .dark ? Color(white: 0.80) : Color.white
+        case .hairline:
+            return Color.white
+        }
     }
 
     var body: some View {
@@ -213,70 +277,130 @@ struct AZDialBack: View {
             let w = size.width
             let h = size.height
 
-            // ── ベース：上下端を暗くした小豆色（垂直方向の丸み感）──
-            let bgGrad = Gradient(stops: [
-                .init(color: bgEdge,   location: 0.00),
-                .init(color: bgCenter, location: 0.35),
-                .init(color: bgCenter, location: 0.65),
-                .init(color: bgEdge,   location: 1.00),
-            ])
-            ctx.fill(
-                Path(CGRect(origin: .zero, size: size)),
-                with: .linearGradient(bgGrad, startPoint: .zero, endPoint: CGPoint(x: 0, y: h))
-            )
+            // ── 溝色で全面塗り（溝＝背景）──
+            ctx.fill(Path(CGRect(origin: .zero, size: size)), with: .color(groove))
 
-            // ── 水平方向の立体感：左右端を暗くし中央を明るく（固定）──
-            ctx.fill(
-                Path(CGRect(origin: .zero, size: size)),
-                with: .linearGradient(
-                    Gradient(stops: [
-                        .init(color: Color.black.opacity(hEdgeOpacity), location: 0.00),
-                        .init(color: Color.black.opacity(hMidOpacity),  location: 0.28),
-                        .init(color: .clear,                            location: 0.50),
-                        .init(color: Color.black.opacity(hMidOpacity),  location: 0.72),
-                        .init(color: Color.black.opacity(hEdgeOpacity), location: 1.00),
-                    ]),
-                    startPoint: CGPoint(x: 0, y: h / 2),
-                    endPoint:   CGPoint(x: w, y: h / 2)
-                )
-            )
-
-            // ── 目盛り ──
-            let topY = h * 0.22
-            let tickH = h * 0.56
+            // ── リッジ ──
+            let topY:  CGFloat = 0
+            let tickH: CGFloat = h
 
             var x = (-offset).truncatingRemainder(dividingBy: tickGap)
             if x > 0 { x -= tickGap }
 
             while x < w {
-                drawOneTick(ctx: ctx, x: x, topY: topY, tickH: tickH)
+                drawOneRidge(ctx: ctx, x: x, topY: topY, h: tickH)
                 x += tickGap
             }
         }
     }
 
-    private func drawOneTick(ctx: GraphicsContext, x: CGFloat, topY: CGFloat, tickH: CGFloat) {
-        let w: CGFloat = 7.0
-        let r: CGFloat = w / 2
+    /// スタイル別リッジ描画
+    private func drawOneRidge(ctx: GraphicsContext, x: CGFloat, topY: CGFloat, h: CGFloat) {
+        switch style {
 
-        // 影（少し右下にオフセット）
-        let shadowRect = CGRect(x: x - r + 1.5, y: topY + 1.0, width: w, height: tickH)
-        ctx.fill(Path(ellipseIn: shadowRect), with: .color(tickShadowColor))
-
-        // 本体楕円（左右グラデーション）
-        let bodyRect = CGRect(x: x - r, y: topY, width: w, height: tickH)
-        ctx.fill(
-            Path(ellipseIn: bodyRect),
-            with: .linearGradient(
-                Gradient(colors: [tickShadowColor, tickBodyColor, tickShadowColor]),
-                startPoint: CGPoint(x: x - r, y: topY + tickH / 2),
-                endPoint:   CGPoint(x: x + r, y: topY + tickH / 2)
+        case .soft:
+            // 幅広・ソフトグラデーション（ハイライト線なし）
+            let rw = tickGap * 0.58
+            let rx = x - rw / 2
+            ctx.fill(
+                Path(CGRect(x: rx, y: topY, width: rw, height: h)),
+                with: .linearGradient(
+                    Gradient(stops: [
+                        .init(color: ridgeDark,   location: 0.00),
+                        .init(color: ridgeBright, location: 0.50),
+                        .init(color: ridgeDark,   location: 1.00),
+                    ]),
+                    startPoint: CGPoint(x: rx,      y: topY + h / 2),
+                    endPoint:   CGPoint(x: rx + rw, y: topY + h / 2)
+                )
             )
-        )
 
-        // ハイライト（左寄り）
-        let hiRect = CGRect(x: x - r + 0.5, y: topY, width: w * 0.35, height: tickH)
-        ctx.fill(Path(ellipseIn: hiRect), with: .color(tickHiColor))
+        case .machined:
+            // 機械加工されたナーリングリッジ（矩形＋横グラデ＋頂面ハイライト）
+            let rw = tickGap * 0.46
+            let rx = x - rw / 2
+            let ridgeRect = CGRect(x: rx, y: topY, width: rw, height: h)
+            ctx.fill(
+                Path(ridgeRect),
+                with: .linearGradient(
+                    Gradient(stops: [
+                        .init(color: ridgeDark,   location: 0.00),
+                        .init(color: ridgeBright, location: 0.50),
+                        .init(color: ridgeDark,   location: 1.00),
+                    ]),
+                    startPoint: CGPoint(x: rx,      y: topY + h / 2),
+                    endPoint:   CGPoint(x: rx + rw, y: topY + h / 2)
+                )
+            )
+            // 頂面ハイライト線
+            ctx.fill(
+                Path(CGRect(x: rx + rw * 0.15, y: topY, width: rw * 0.70, height: 1.2)),
+                with: .color(ridgeEdge)
+            )
+
+        case .chrome:
+            // ポリッシュクローム（高コントラスト、鋭いエッジ＋中央スペキュラー）
+            let rw = tickGap * 0.42
+            let rx = x - rw / 2
+            ctx.fill(
+                Path(CGRect(x: rx, y: topY, width: rw, height: h)),
+                with: .linearGradient(
+                    Gradient(stops: [
+                        .init(color: ridgeDark,   location: 0.00),
+                        .init(color: ridgeBright, location: 0.40),
+                        .init(color: Color.white, location: 0.50),
+                        .init(color: ridgeBright, location: 0.60),
+                        .init(color: ridgeDark,   location: 1.00),
+                    ]),
+                    startPoint: CGPoint(x: rx,      y: topY + h / 2),
+                    endPoint:   CGPoint(x: rx + rw, y: topY + h / 2)
+                )
+            )
+            // 頂面ハイライト線（幅広、鮮明）
+            ctx.fill(
+                Path(CGRect(x: rx + rw * 0.10, y: topY, width: rw * 0.80, height: 1.5)),
+                with: .color(ridgeEdge)
+            )
+
+        case .fine:
+            // 細めの精密リッジ（マシンと同系・幅0.28）
+            let rw = tickGap * 0.28
+            let rx = x - rw / 2
+            ctx.fill(
+                Path(CGRect(x: rx, y: topY, width: rw, height: h)),
+                with: .linearGradient(
+                    Gradient(stops: [
+                        .init(color: ridgeDark,   location: 0.00),
+                        .init(color: ridgeBright, location: 0.50),
+                        .init(color: ridgeDark,   location: 1.00),
+                    ]),
+                    startPoint: CGPoint(x: rx,      y: topY + h / 2),
+                    endPoint:   CGPoint(x: rx + rw, y: topY + h / 2)
+                )
+            )
+            // 頂面ハイライト線
+            ctx.fill(
+                Path(CGRect(x: rx + rw * 0.15, y: topY, width: rw * 0.70, height: 1.0)),
+                with: .color(ridgeEdge)
+            )
+
+        case .hairline:
+            // 極細ヘアライン（幅0.16・グラデーションなし単色）
+            let rw = tickGap * 0.16
+            let rx = x - rw / 2
+            ctx.fill(
+                Path(CGRect(x: rx, y: topY, width: rw, height: h)),
+                with: .linearGradient(
+                    Gradient(stops: [
+                        .init(color: ridgeDark,   location: 0.00),
+                        .init(color: ridgeBright, location: 0.50),
+                        .init(color: ridgeDark,   location: 1.00),
+                    ]),
+                    startPoint: CGPoint(x: rx,      y: topY + h / 2),
+                    endPoint:   CGPoint(x: rx + rw, y: topY + h / 2)
+                )
+            )
+        }
     }
 }
 

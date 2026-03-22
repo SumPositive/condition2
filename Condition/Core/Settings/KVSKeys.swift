@@ -15,6 +15,7 @@ enum KVSKeys {
     static let settGraphBMI          = "KVS_SettGraphBMI"           // BMIグラフ表示
     static let settGraphWeightMA     = "KVS_SettGraphWeightMA"       // 体重移動平均
     static let settGraphWeightChange = "KVS_SettGraphWeightChange"   // 体重変化量
+    static let settDialStyle         = "KVS_SettDialStyle"           // ダイアルスタイル (DialStyle.rawValue)
 
     // MARK: - 統計設定
     static let settStatType            = "KVS_SettStatType"           // 統計タイプ (0=Hi-Lo, 1=24H)

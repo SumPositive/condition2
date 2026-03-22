@@ -82,6 +82,9 @@ final class AppSettings {
     var graphWeightChange: Bool = true {
         didSet { kvs.set(graphWeightChange, forKey: KVSKeys.settGraphWeightChange) }
     }
+    var dialStyle: Int = 3 {
+        didSet { kvs.set(dialStyle, forKey: KVSKeys.settDialStyle) }
+    }
 
     // MARK: - 統計設定
     var statType: Int = 0 {
@@ -259,6 +262,7 @@ final class AppSettings {
         if tall > 0 { graphBMITall = Int(tall) }
         if kvs.object(forKey: KVSKeys.settGraphWeightMA)     != nil { graphWeightMA     = kvs.bool(forKey: KVSKeys.settGraphWeightMA) }
         if kvs.object(forKey: KVSKeys.settGraphWeightChange) != nil { graphWeightChange = kvs.bool(forKey: KVSKeys.settGraphWeightChange) }
+        if kvs.object(forKey: KVSKeys.settDialStyle)         != nil { dialStyle         = Int(kvs.longLong(forKey: KVSKeys.settDialStyle)) }
 
         let sd = kvs.longLong(forKey: KVSKeys.settStatDays)
         if sd > 0 { statDays = Int(sd) }
