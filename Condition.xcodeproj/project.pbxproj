@@ -22,6 +22,7 @@
 		8C1D4F9E3A6B5C2D0E7F9A1B /* HealthKitService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F7A3E9C1B2D5F8A6E0C4B7D /* HealthKitService.swift */; };
 		94F8FFF55DB8A08ACB41B6C7 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 631EC7DEF4838569597EA3C8 /* Assets.xcassets */; };
 		982998F6ABEDB9272F6A6BA1 /* ValueFormatter.swift in Sources */ = {isa = PBXBuildFile; fileRef = A14BB534396221BF4A8DD998 /* ValueFormatter.swift */; };
+		B2C3D4E5F6A700001B2C3D4F /* NumpadValueText.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2C3D4E5F6A700001B2C3D4E /* NumpadValueText.swift */; };
 		B01892399930A51751ED92F1 /* RecordEditView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C5B54F260937D2BF7A3B8E0 /* RecordEditView.swift */; };
 		C3166D342F63FDB000169223 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = C3166D332F63FDB000169223 /* Localizable.xcstrings */; };
 		A1B2C3D4E5F600001A2B3C4D /* InfoPlist.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F600001A2B3C4E /* InfoPlist.xcstrings */; };
@@ -59,6 +60,7 @@
 		90D068752225DE01C4F4BE92 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		9E16A771447D302CDF593C00 /* DateOpt.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DateOpt.swift; sourceTree = "<group>"; };
 		A14BB534396221BF4A8DD998 /* ValueFormatter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ValueFormatter.swift; sourceTree = "<group>"; };
+		B2C3D4E5F6A700001B2C3D4E /* NumpadValueText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NumpadValueText.swift; sourceTree = "<group>"; };
 		B6FE488F42254CBC37C55F0C /* Condition.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Condition.entitlements; sourceTree = "<group>"; };
 		A1B2C3D4E5F600001A2B3C4E /* InfoPlist.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = InfoPlist.xcstrings; sourceTree = "<group>"; };
 		C3166D332F63FDB000169223 /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
@@ -85,6 +87,7 @@
 			isa = PBXGroup;
 			children = (
 				A14BB534396221BF4A8DD998 /* ValueFormatter.swift */,
+				B2C3D4E5F6A700001B2C3D4E /* NumpadValueText.swift */,
 			);
 			path = Common;
 			sourceTree = "<group>";
@@ -356,6 +359,7 @@
 				26B161A5280A5687C622C649 /* SettingsView.swift in Sources */,
 				6A6487B27CC55B3970DF9411 /* StatisticsView.swift in Sources */,
 				982998F6ABEDB9272F6A6BA1 /* ValueFormatter.swift in Sources */,
+				B2C3D4E5F6A700001B2C3D4F /* NumpadValueText.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -349,9 +349,7 @@ struct RecordEditView: View {
                     .font(.callout)
                 Spacer()
                 if enabled.wrappedValue {
-                    Text(ValueFormatter.format(value.wrappedValue, decimals: decimals))
-                        .font(.title.bold().monospacedDigit())
-                        .foregroundStyle(color)
+                    NumpadValueText(value: value, min: spec.min, max: spec.max, decimals: decimals, color: color)
                     Text(unit)
                         .font(.callout.weight(.semibold))
                         .foregroundStyle(color.opacity(0.7))
