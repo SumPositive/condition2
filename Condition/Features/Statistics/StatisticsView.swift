@@ -5,6 +5,24 @@ import SwiftUI
 import SwiftData
 import Charts
 
+// MARK: - チャート幅 Environment
+
+struct ChartAvailableWidthKey: EnvironmentKey {
+    static let defaultValue: CGFloat = 390
+}
+extension EnvironmentValues {
+    var chartAvailableWidth: CGFloat {
+        get { self[ChartAvailableWidthKey.self] }
+        set { self[ChartAvailableWidthKey.self] = newValue }
+    }
+}
+
+/// 利用可能幅に応じてチャート高さを拡大する（幅が広いほど高さも増やす）
+func adaptiveChartHeight(base: CGFloat, width: CGFloat) -> CGFloat {
+    guard width > 390 else { return base }
+    return base * (width / 390)
+}
+
 struct StatisticsView: View {
 
     @Query(
@@ -16,6 +34,7 @@ struct StatisticsView: View {
 
     private var settings: AppSettings { AppSettings.shared }
     @State private var showSettings = false
+    @State private var chartWidth: CGFloat = 390
 
     private var periodBinding: Binding<GraphPeriod> {
         Binding(
@@ -89,7 +108,9 @@ struct StatisticsView: View {
                 }
             }
             .padding()
+            .onGeometryChange(for: CGFloat.self, of: { $0.size.width }) { chartWidth = $0 }
         }
+        .environment(\.chartAvailableWidth, chartWidth)
     }
 
     @ViewBuilder
@@ -167,6 +188,7 @@ struct StatisticsView: View {
 struct BpJshView: View {
     let records: [BodyRecord]
 
+    @Environment(\.chartAvailableWidth) private var chartWidth
     @State private var showJSHInfo = false
 
     private var isJapanese: Bool {
@@ -282,7 +304,7 @@ struct BpJshView: View {
                         }
                     }
                 }
-                .frame(height: 330)
+                .frame(height: adaptiveChartHeight(base: 330, width: chartWidth))
                 .padding(.horizontal, 4)
                 .overlay {
                     if validRecords.isEmpty {
@@ -594,6 +616,8 @@ struct BpJshRatioView: View {
 struct BpDateOptCorrView: View {
     let records: [BodyRecord]
 
+    @Environment(\.chartAvailableWidth) private var chartWidth
+
     private struct BpPoint: Identifiable {
         let id: Int
         let category: String
@@ -744,7 +768,7 @@ struct BpDateOptCorrView: View {
                 }
             }
         }
-        .frame(height: 240)
+        .frame(height: adaptiveChartHeight(base: 240, width: chartWidth))
         .padding(.horizontal)
     }
 }
@@ -826,6 +850,7 @@ private struct BpDateOptCorrInfoPopover: View {
 struct Bp24HChartView: View {
     let records: [BodyRecord]
 
+    @Environment(\.chartAvailableWidth) private var chartWidth
     private var settings: AppSettings { AppSettings.shared }
 
     private var validRecords: [(hour: Int, hi: Int, lo: Int)] {
@@ -884,7 +909,7 @@ struct Bp24HChartView: View {
             .chartYScale(domain: yDomain)
             .chartXAxisLabel(String(localized: "Stat_Hour", defaultValue: "時刻"))
             .chartYAxisLabel(String(localized: "Stat_mmHg", defaultValue: "mmHg"))
-            .frame(height: 220)
+            .frame(height: adaptiveChartHeight(base: 220, width: chartWidth))
             .padding(.horizontal)
         }
         .padding(.vertical, 8)
@@ -958,6 +983,8 @@ struct WeightSummaryView: View {
 
 struct WeightStepsCorrelationView: View {
     let records: [BodyRecord]
+
+    @Environment(\.chartAvailableWidth) private var chartWidth
 
     private struct DataPoint: Identifiable {
         let id: Int
@@ -1093,7 +1120,7 @@ struct WeightStepsCorrelationView: View {
         }
         .chartXAxisLabel(String(localized: "Stat_Steps", defaultValue: "歩"))
         .chartYAxisLabel(String(localized: "Stat_Kg", defaultValue: "kg"))
-        .frame(height: 220)
+        .frame(height: adaptiveChartHeight(base: 220, width: chartWidth))
         .padding(.horizontal)
     }
 }
@@ -1267,6 +1294,8 @@ struct TempSummaryView: View {
 struct Temp24HChartView: View {
     let records: [BodyRecord]
 
+    @Environment(\.chartAvailableWidth) private var chartWidth
+
     private var validRecords: [(hour: Int, temp: Double)] {
         let cal = Calendar(identifier: .gregorian)
         return records
@@ -1308,7 +1337,7 @@ struct Temp24HChartView: View {
             .chartYScale(domain: yDomain)
             .chartXAxisLabel(String(localized: "Stat_Hour", defaultValue: "時刻"))
             .chartYAxisLabel(String(localized: "Stat_Celsius", defaultValue: "°C"))
-            .frame(height: 220)
+            .frame(height: adaptiveChartHeight(base: 220, width: chartWidth))
             .padding(.horizontal)
             .overlay {
                 if validRecords.isEmpty {
@@ -1328,6 +1357,8 @@ struct Temp24HChartView: View {
 
 struct TempHistogramView: View {
     let records: [BodyRecord]
+
+    @Environment(\.chartAvailableWidth) private var chartWidth
 
     private struct Bin: Identifiable {
         let lower: Double
@@ -1383,7 +1414,7 @@ struct TempHistogramView: View {
             }
             .chartXAxisLabel("°C")
             .chartYAxisLabel(String(localized: "Stat_Count", defaultValue: "件数"))
-            .frame(height: 180)
+            .frame(height: adaptiveChartHeight(base: 180, width: chartWidth))
             .padding(.horizontal)
 
             LazyVGrid(columns: [GridItem(.fixed(130)), GridItem(.fixed(130))], alignment: .center) {

@@ -76,6 +76,7 @@ private struct GraphContentView: View {
     @Binding var period: GraphPeriod
 
     private var settings: AppSettings { AppSettings.shared }
+    @State private var chartWidth: CGFloat = 390
 
     init(cutoffDate: Date, period: Binding<GraphPeriod>) {
         let predicate = #Predicate<BodyRecord> {
@@ -117,7 +118,9 @@ private struct GraphContentView: View {
             }
             .padding(.horizontal)
             .padding(.vertical, 12)
+            .onGeometryChange(for: CGFloat.self, of: { $0.size.width }) { chartWidth = $0 }
         }
+        .environment(\.chartAvailableWidth, chartWidth)
     }
 
     @ViewBuilder
@@ -448,7 +451,7 @@ struct BpChartView: View {
     private var settings: AppSettings { AppSettings.shared }
     @State private var selectedDate: Date?
     @State private var scrollPosition: Date = Date()
-    @Environment(\.verticalSizeClass) private var verticalSizeClass
+    @Environment(\.chartAvailableWidth) private var chartWidth
 
     private var validRecords: [BodyRecord] {
         records.filter { $0.nBpHi_mmHg > 0 && $0.nBpLo_mmHg > 0 }
@@ -602,7 +605,7 @@ struct BpChartView: View {
             }
             .tapToSelectDay($selectedDate, validDays: Set(validRecords.map { dayStart($0.dateTime) }))
             .standardXAxis(period: period, scrollPosition: $scrollPosition, oldestDate: validRecords.first?.dateTime)
-            .frame(height: verticalSizeClass == .compact ? 300 : 150)
+            .frame(height: adaptiveChartHeight(base: 150, width: chartWidth))
             .padding(.horizontal, 8)
             .padding(.bottom, 4)
 
@@ -634,7 +637,7 @@ struct BpPpChartView: View {
     private let cal = Calendar.current
     @State private var selectedDate: Date?
     @State private var scrollPosition: Date = Date()
-    @Environment(\.verticalSizeClass) private var verticalSizeClass
+    @Environment(\.chartAvailableWidth) private var chartWidth
 
     private func dayStart(_ date: Date) -> Date { cal.startOfDay(for: date) }
 
@@ -742,7 +745,7 @@ struct BpPpChartView: View {
             }
             .tapToSelectDay($selectedDate, validDays: Set(validRecords.map { dayStart($0.dateTime) }))
             .standardXAxis(period: period, scrollPosition: $scrollPosition, oldestDate: validRecords.first?.dateTime)
-            .frame(height: verticalSizeClass == .compact ? 240 : 120)
+            .frame(height: adaptiveChartHeight(base: 120, width: chartWidth))
             .padding(.horizontal, 8)
             .padding(.bottom, 4)
 
@@ -803,7 +806,7 @@ struct LineChartView: View {
     private let cal = Calendar.current
     @State private var selectedDate: Date?
     @State private var scrollPosition: Date = Date()
-    @Environment(\.verticalSizeClass) private var verticalSizeClass
+    @Environment(\.chartAvailableWidth) private var chartWidth
 
     private func dayStart(_ date: Date) -> Date { cal.startOfDay(for: date) }
 
@@ -949,7 +952,7 @@ struct LineChartView: View {
             }
             .tapToSelectDay($selectedDate, validDays: Set(validRecords.map { dayStart($0.dateTime) }))
             .standardXAxis(period: period, scrollPosition: $scrollPosition, oldestDate: validRecords.first?.dateTime)
-            .frame(height: verticalSizeClass == .compact ? 240 : 120)
+            .frame(height: adaptiveChartHeight(base: 120, width: chartWidth))
             .padding(.horizontal, 8)
             .padding(.bottom, 4)
 
@@ -981,7 +984,7 @@ private struct BMIChartView: View {
     @State private var scrollPosition: Date = Date()
     @State private var showBMIInfo = false
     private var isJapanese: Bool { Locale.preferredLanguages.first?.hasPrefix("ja") ?? true }
-    @Environment(\.verticalSizeClass) private var verticalSizeClass
+    @Environment(\.chartAvailableWidth) private var chartWidth
 
     private func dayStart(_ date: Date) -> Date { cal.startOfDay(for: date) }
 
@@ -1138,7 +1141,7 @@ private struct BMIChartView: View {
             }
             .tapToSelectDay($selectedDate, validDays: Set(validRecords.map { dayStart($0.dateTime) }))
             .standardXAxis(period: period, scrollPosition: $scrollPosition, oldestDate: validRecords.first?.dateTime)
-            .frame(height: verticalSizeClass == .compact ? 240 : 120)
+            .frame(height: adaptiveChartHeight(base: 120, width: chartWidth))
             .padding(.horizontal, 8)
             .padding(.bottom, 4)
 
@@ -1174,7 +1177,7 @@ struct WeightChangeChartView: View {
     private let cal = Calendar.current
     @State private var selectedDate: Date?
     @State private var scrollPosition: Date = Date()
-    @Environment(\.verticalSizeClass) private var verticalSizeClass
+    @Environment(\.chartAvailableWidth) private var chartWidth
 
     private func dayStart(_ date: Date) -> Date { cal.startOfDay(for: date) }
 
@@ -1253,7 +1256,7 @@ struct WeightChangeChartView: View {
             }
             .tapToSelectDay($selectedDate, validDays: validDays)
             .standardXAxis(period: period, scrollPosition: $scrollPosition, oldestDate: changeValues.first?.date)
-            .frame(height: verticalSizeClass == .compact ? 200 : 100)
+            .frame(height: adaptiveChartHeight(base: 100, width: chartWidth))
             .padding(.horizontal, 8)
             .padding(.bottom, 4)
 

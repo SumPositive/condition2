@@ -322,12 +322,7 @@ private func subColumnWidths(for kind: GraphKind) -> [CGFloat] {
 }
 
 private func computeColumnSpacing(availableWidth: CGFloat, kinds: [GraphKind]) -> CGFloat {
-    let allWidths = kinds.flatMap { subColumnWidths(for: $0) }
-    let sepCount = max(0, kinds.count - 1)
-    let totalFixed = allWidths.reduce(CGFloat(0), +) + CGFloat(sepCount)
-    let gapCount = allWidths.count - 1 + sepCount
-    guard gapCount > 0 else { return 4 }
-    return max(2, (availableWidth - 4 - totalFixed) / CGFloat(gapCount))
+    return 4
 }
 
 // MARK: - カラムヘッダー
