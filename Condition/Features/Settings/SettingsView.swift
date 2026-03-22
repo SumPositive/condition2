@@ -93,10 +93,10 @@ struct DateOptMatrixView: View {
                     ForEach(kinds, id: \.rawValue) { kind in
                         VStack(spacing: 1) {
                             Image(systemName: kind.icon)
-                                .font(.caption2)
+                                .font(.caption)
                                 .foregroundStyle(kind.color)
                             Text(kind.label)
-                                .font(.system(size: 9))
+                                .font(.system(size: 10))
                                 .lineLimit(1)
                                 .minimumScaleFactor(0.5)
                         }
@@ -112,7 +112,7 @@ struct DateOptMatrixView: View {
                 ForEach(0..<24, id: \.self) { hour in
                     HStack(spacing: 1) {
                         Text(String(format: "%d", hour))
-                            .font(.system(size: 11).monospacedDigit())
+                            .font(.system(size: 12).monospacedDigit())
                             .foregroundStyle(.secondary)
                             .frame(width: 28, alignment: .trailing)
                             .padding(.trailing, 2)
@@ -123,7 +123,7 @@ struct DateOptMatrixView: View {
                                     .fill(isOn ? kind.color : Color(.systemFill))
                                 if isOn {
                                     Image(systemName: kind.icon)
-                                        .font(.system(size: 9))
+                                        .font(.system(size: 10))
                                         .foregroundStyle(.white)
                                 }
                             }
@@ -170,7 +170,7 @@ struct GraphSettingsView: View {
                 VStack(alignment: .leading, spacing: 4) {
                     HStack {
                         Text(String(localized: "GraphSett_Tall", defaultValue: "身長（BMI 計算用）"))
-                            .font(.subheadline)
+                            .font(.callout)
                         Spacer()
                         TextField("160", value: $settings.graphBMITall, format: .number)
                             .keyboardType(.numberPad)
@@ -407,18 +407,18 @@ struct GoalSettingsView: View {
         )
         VStack(alignment: .leading, spacing: 4) {
             HStack {
-                Text(title).font(.subheadline)
+                Text(title).font(.callout)
                 Spacer()
                 if enabled.wrappedValue {
                     Text(ValueFormatter.format(value.wrappedValue, decimals: decimals))
-                        .font(.title2.bold().monospacedDigit())
+                        .font(.title.bold().monospacedDigit())
                         .foregroundStyle(color)
                     Text(unit)
-                        .font(.subheadline.weight(.semibold))
+                        .font(.callout.weight(.semibold))
                         .foregroundStyle(color.opacity(0.7))
                 } else {
                     Text("－")
-                        .font(.title2)
+                        .font(.title)
                         .foregroundStyle(.tertiary)
                 }
                 Toggle("", isOn: enabled)
@@ -470,7 +470,7 @@ struct HealthKitSettingsView: View {
                             Task { await hkService.requestAuthorization() }
                         }
                     }
-                    .font(.caption)
+                    .font(.footnote)
                     .buttonStyle(.bordered)
                     .buttonBorderShape(.capsule)
                 }
@@ -505,11 +505,11 @@ struct HealthKitSettingsView: View {
             Section {
                 Text(String(localized: "HKSett_Note",
                             defaultValue: "連携対象：上・下血圧、心拍数、体重、体温、歩数、体脂肪率"))
-                    .font(.caption)
+                    .font(.footnote)
                     .foregroundStyle(.secondary)
                 Text(String(localized: "HKSett_Note2",
                             defaultValue: "このアプリからヘルスケアのデータは変更・削除できません。常に追加されるだけです。不要なデータがあればヘルスケア側で項目毎に「すべてのデータを表示」し、編集にて削除してください"))
-                    .font(.caption)
+                    .font(.footnote)
                     .foregroundStyle(.secondary)
             }
         }
@@ -550,15 +550,15 @@ struct AboutView: View {
                     Spacer()
                     VStack(spacing: 8) {
                         Image(systemName: "heart.text.square.fill")
-                            .font(.system(size: 60))
+                            .font(.system(size: 68))
                             .foregroundStyle(Color.azuki)
                         Text(String(localized: "App_Name", defaultValue: "体調メモ"))
-                            .font(.title2.bold())
+                            .font(.title.bold())
                         Text(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "")
-                            .font(.caption)
+                            .font(.footnote)
                             .foregroundStyle(.secondary)
                         Text(AppConstants.copyright)
-                            .font(.caption2)
+                            .font(.caption)
                             .foregroundStyle(.tertiary)
                     }
                     Spacer()

@@ -122,28 +122,28 @@ struct StatisticsView: View {
         return AnyView(
             VStack(spacing: 8) {
                 Text(String(localized: "Stat_Summary", defaultValue: "血圧サマリー"))
-                    .font(.headline)
+                    .font(.title3)
 
                 Grid(horizontalSpacing: 16, verticalSpacing: 4) {
                     GridRow {
                         Text("").frame(width: 40)
-                        Text(String(localized: "Stat_Avg", defaultValue: "平均")).font(.caption).foregroundStyle(.secondary)
+                        Text(String(localized: "Stat_Avg", defaultValue: "平均")).font(.footnote).foregroundStyle(.secondary)
                         if settings.statShowAvg {
-                            Text("±SD").font(.caption).foregroundStyle(.secondary)
+                            Text("±SD").font(.footnote).foregroundStyle(.secondary)
                         }
                     }
                     GridRow {
                         Text(String(localized: "Stat_BpHi", defaultValue: "上")).foregroundStyle(.red)
-                        Text(String(format: "%.1f", hiAvg)).font(.title3.monospacedDigit())
+                        Text(String(format: "%.1f", hiAvg)).font(.title2.monospacedDigit())
                         if settings.statShowAvg {
-                            Text(String(format: "%.1f", hiStd)).font(.caption).foregroundStyle(.secondary)
+                            Text(String(format: "%.1f", hiStd)).font(.footnote).foregroundStyle(.secondary)
                         }
                     }
                     GridRow {
                         Text(String(localized: "Stat_BpLo", defaultValue: "下")).foregroundStyle(.blue)
-                        Text(String(format: "%.1f", loAvg)).font(.title3.monospacedDigit())
+                        Text(String(format: "%.1f", loAvg)).font(.title2.monospacedDigit())
                         if settings.statShowAvg {
-                            Text(String(format: "%.1f", loStd)).font(.caption).foregroundStyle(.secondary)
+                            Text(String(format: "%.1f", loStd)).font(.footnote).foregroundStyle(.secondary)
                         }
                     }
                 }
@@ -182,17 +182,21 @@ struct BpJshView: View {
             VStack(alignment: .leading, spacing: 10) {
                 HStack {
                     Text(String(localized: "Stat_JshDist_Title", defaultValue: "血圧 分布"))
-                        .font(.headline)
+                        .font(.title3)
                     Spacer()
                     Button {
                         showJSHInfo = true
                     } label: {
-                        HStack(spacing: 2) {
+                        HStack(spacing: 4) {
                             Image(systemName: "info.circle")
+                                .font(.title3)
                             Text(isJapanese ? "JSH基準" : "ESC/ESH 2018")
+                                .font(.footnote)
                         }
-                        .font(.caption2)
                         .foregroundStyle(.secondary)
+                        .padding(.vertical, 6)
+                        .padding(.horizontal, 4)
+                        .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
                     .popover(isPresented: $showJSHInfo, arrowEdge: .bottom) {
@@ -248,11 +252,11 @@ struct BpJshView: View {
                             if let v = value.as(Int.self) {
                                 if v == 120 {
                                     HStack(spacing: 2) {
-                                        Text("\(v)").font(.caption2)
-                                        Text("下").font(.caption2).foregroundStyle(.secondary)
+                                        Text("\(v)").font(.caption)
+                                        Text("下").font(.caption).foregroundStyle(.secondary)
                                     }
                                 } else {
-                                    Text("\(v)").font(.caption2)
+                                    Text("\(v)").font(.caption)
                                 }
                             }
                         }
@@ -265,11 +269,11 @@ struct BpJshView: View {
                             if let v = value.as(Int.self) {
                                 if v == 200 {
                                     VStack(spacing: 0) {
-                                        Text("上").font(.caption2).foregroundStyle(.secondary)
-                                        Text("\(v)").font(.caption2)
+                                        Text("上").font(.caption).foregroundStyle(.secondary)
+                                        Text("\(v)").font(.caption)
                                     }
                                 } else {
-                                    Text("\(v)").font(.caption2)
+                                    Text("\(v)").font(.caption)
                                 }
                             }
                         }
@@ -280,7 +284,7 @@ struct BpJshView: View {
                 .overlay {
                     if validRecords.isEmpty {
                         Text(String(localized: "Stat_NoData", defaultValue: "期間内にデータがありません"))
-                            .font(.subheadline)
+                            .font(.callout)
                             .foregroundStyle(.secondary)
                     }
                 }
@@ -294,10 +298,10 @@ struct BpJshView: View {
                                 .fill(opt.color)
                                 .frame(width: 8, height: 8)
                             Image(systemName: opt.icon)
-                                .font(.caption2)
+                                .font(.caption)
                                 .foregroundStyle(.secondary)
                             Text(opt.label)
-                                .font(.caption2)
+                                .font(.caption)
                                 .foregroundStyle(.secondary)
                         }
                     }
@@ -360,7 +364,7 @@ struct BpJshView: View {
                 .symbolSize(0)
                 .annotation(position: .trailing, alignment: .leading, spacing: 3) {
                     Text(label.name)
-                        .font(.system(size: 9))
+                        .font(.system(size: 10))
                         .foregroundStyle(label.color.opacity(0.85))
                 }
         }
@@ -388,7 +392,7 @@ private struct JSHStandardsPopover: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
                 Text("JSH血圧分類基準（2019）")
-                    .font(.caption.weight(.semibold))
+                    .font(.footnote.weight(.semibold))
                     .foregroundStyle(.secondary)
                     .padding(.horizontal, 16)
                     .padding(.top, 14)
@@ -404,10 +408,10 @@ private struct JSHStandardsPopover: View {
                             )
                             .frame(width: 18, height: 18)
                         Text(row.name)
-                            .font(.subheadline)
+                            .font(.callout)
                         Spacer()
                         Text(row.criteria)
-                            .font(.caption.monospacedDigit())
+                            .font(.footnote.monospacedDigit())
                             .foregroundStyle(.secondary)
                     }
                     .padding(.horizontal, 16)
@@ -445,7 +449,7 @@ private struct ESHStandardsPopover: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
                 Text("ESC/ESH Hypertension Guidelines (2018)")
-                    .font(.caption.weight(.semibold))
+                    .font(.footnote.weight(.semibold))
                     .foregroundStyle(.secondary)
                     .padding(.horizontal, 16)
                     .padding(.top, 14)
@@ -461,10 +465,10 @@ private struct ESHStandardsPopover: View {
                             )
                             .frame(width: 18, height: 18)
                         Text(row.name)
-                            .font(.subheadline)
+                            .font(.callout)
                         Spacer()
                         Text(row.criteria)
-                            .font(.caption.monospacedDigit())
+                            .font(.footnote.monospacedDigit())
                             .foregroundStyle(.secondary)
                     }
                     .padding(.horizontal, 16)
@@ -529,7 +533,7 @@ struct BpJshRatioView: View {
         return AnyView(
             VStack(alignment: .leading, spacing: 10) {
                 Text(String(localized: "Stat_JshRatio_Title", defaultValue: "血圧 JSH基準割合"))
-                    .font(.headline)
+                    .font(.title3)
                     .padding(.horizontal)
 
                 GeometryReader { geo in
@@ -561,12 +565,12 @@ struct BpJshRatioView: View {
                             RoundedRectangle(cornerRadius: 3)
                                 .fill(cat.color)
                                 .frame(width: 10, height: 10)
-                            Text(LocalizedStringKey(cat.name)).font(.caption2).foregroundStyle(.secondary)
+                            Text(LocalizedStringKey(cat.name)).font(.caption).foregroundStyle(.secondary)
                             Spacer()
                             Text(c[i] > 0
                                  ? String(format: "%.0f%%", Double(c[i]) / Double(total) * 100)
                                  : "-")
-                                .font(.caption2.monospacedDigit())
+                                .font(.caption.monospacedDigit())
                                 .foregroundStyle(c[i] > 0 ? .primary : .tertiary)
                         }
                     }
@@ -643,13 +647,16 @@ struct BpDateOptCorrView: View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
                 Text(String(localized: "Stat_BpDateOptCorr_Title", defaultValue: "血圧・区分 相関"))
-                    .font(.headline)
+                    .font(.title3)
                 Button {
                     showInfo = true
                 } label: {
                     Image(systemName: "info.circle")
-                        .font(.caption2)
+                        .font(.title3)
                         .foregroundStyle(.secondary)
+                        .padding(.vertical, 6)
+                        .padding(.horizontal, 4)
+                        .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
                 .popover(isPresented: $showInfo, arrowEdge: .bottom) {
@@ -659,11 +666,11 @@ struct BpDateOptCorrView: View {
                 HStack(spacing: 10) {
                     HStack(spacing: 4) {
                         Circle().fill(Color.red.opacity(0.8)).frame(width: 8, height: 8)
-                        Text("上").font(.caption2).foregroundStyle(.secondary)
+                        Text("上").font(.caption).foregroundStyle(.secondary)
                     }
                     HStack(spacing: 4) {
                         Circle().fill(Color.blue.opacity(0.8)).frame(width: 8, height: 8)
-                        Text("下").font(.caption2).foregroundStyle(.secondary)
+                        Text("下").font(.caption).foregroundStyle(.secondary)
                     }
                 }
             }
@@ -671,14 +678,14 @@ struct BpDateOptCorrView: View {
 
             if points.isEmpty {
                 Text(String(localized: "Stat_NoData", defaultValue: "期間内にデータがありません"))
-                    .font(.subheadline)
+                    .font(.callout)
                     .foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity)
                     .padding()
             } else {
                 chartContent
                 Text(String(localized: "Stat_DiamondMean", defaultValue: "◆ = 区分平均"))
-                    .font(.caption2)
+                    .font(.caption)
                     .foregroundStyle(.tertiary)
                     .frame(maxWidth: .infinity, alignment: .trailing)
                     .padding(.trailing)
@@ -727,7 +734,7 @@ struct BpDateOptCorrView: View {
             AxisMarks { value in
                 AxisValueLabel {
                     if let s = value.as(String.self) {
-                        Text(s).font(.system(size: 9))
+                        Text(s).font(.system(size: 10))
                     }
                 }
             }
@@ -748,7 +755,7 @@ private struct BpDateOptCorrInfoPopover: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
                 Text(isJapanese ? "相関図の見方" : "How to Read This Chart")
-                    .font(.caption.weight(.semibold))
+                    .font(.footnote.weight(.semibold))
                     .foregroundStyle(.secondary)
                     .padding(.horizontal, 16)
                     .padding(.top, 14)
@@ -762,26 +769,26 @@ private struct BpDateOptCorrInfoPopover: View {
                             : "Blood pressure values are plotted vertically for each category (e.g. morning, rest)",
                         systemImage: "circle.fill"
                     )
-                    .font(.caption).foregroundStyle(.secondary)
+                    .font(.footnote).foregroundStyle(.secondary)
                     Label(
                         isJapanese ? "小さな円が個別の測定値です"
                                    : "Small circles represent individual measurements",
                         systemImage: "circle"
                     )
-                    .font(.caption).foregroundStyle(.secondary)
+                    .font(.footnote).foregroundStyle(.secondary)
                     Label(
                         isJapanese ? "ダイヤモンド◆がその区分の平均値です"
                                    : "Diamond ◆ marks the category average",
                         systemImage: "diamond.fill"
                     )
-                    .font(.caption).foregroundStyle(.secondary)
+                    .font(.footnote).foregroundStyle(.secondary)
                     Label(
                         isJapanese
                             ? "区分間で◆の高さを比べると、時間帯による血圧の傾向がわかります"
                             : "Comparing ◆ heights across categories reveals time-of-day BP patterns",
                         systemImage: "arrow.left.arrow.right"
                     )
-                    .font(.caption).foregroundStyle(.secondary)
+                    .font(.footnote).foregroundStyle(.secondary)
                 }
                 .padding(.horizontal, 16)
                 .padding(.vertical, 12)
@@ -792,12 +799,12 @@ private struct BpDateOptCorrInfoPopover: View {
                     HStack(spacing: 8) {
                         Circle().fill(Color.red.opacity(0.8)).frame(width: 10, height: 10)
                         Text(isJapanese ? "赤 = 上（収縮期血圧）" : "Red = Systolic (Upper)")
-                            .font(.caption).foregroundStyle(.secondary)
+                            .font(.footnote).foregroundStyle(.secondary)
                     }
                     HStack(spacing: 8) {
                         Circle().fill(Color.blue.opacity(0.8)).frame(width: 10, height: 10)
                         Text(isJapanese ? "青 = 下（拡張期血圧）" : "Blue = Diastolic (Lower)")
-                            .font(.caption).foregroundStyle(.secondary)
+                            .font(.footnote).foregroundStyle(.secondary)
                     }
                 }
                 .padding(.horizontal, 16)
@@ -840,7 +847,7 @@ struct Bp24HChartView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(String(localized: "Stat_24H_Title", defaultValue: "血圧 24時間分布"))
-                .font(.headline)
+                .font(.title3)
                 .padding(.horizontal)
 
             Chart {
@@ -900,38 +907,38 @@ struct WeightSummaryView: View {
 
         return VStack(spacing: 8) {
             Text(String(localized: "Stat_WeightSummary_Title", defaultValue: "体重 サマリー"))
-                .font(.headline)
+                .font(.title3)
 
             if values.isEmpty {
                 Text(String(localized: "Stat_NoData", defaultValue: "期間内にデータがありません"))
-                    .font(.subheadline)
+                    .font(.callout)
                     .foregroundStyle(.secondary)
             } else {
                 Grid(horizontalSpacing: 12, verticalSpacing: 4) {
                     GridRow {
-                        Text("").frame(width: 32)
                         Text(String(localized: "Stat_Avg", defaultValue: "平均"))
-                            .font(.caption).foregroundStyle(.secondary)
+                            .font(.footnote).foregroundStyle(.secondary)
                         Text(String(localized: "Stat_Min", defaultValue: "最小"))
-                            .font(.caption).foregroundStyle(.secondary)
+                            .font(.footnote).foregroundStyle(.secondary)
                         Text(String(localized: "Stat_Max", defaultValue: "最大"))
-                            .font(.caption).foregroundStyle(.secondary)
+                            .font(.footnote).foregroundStyle(.secondary)
                         Text(String(localized: "Stat_Change", defaultValue: "変化"))
-                            .font(.caption).foregroundStyle(.secondary)
+                            .font(.footnote).foregroundStyle(.secondary)
+                        Text("").frame(width: 24)
                     }
                     GridRow {
-                        Text("kg").font(.caption).foregroundStyle(.secondary)
-                        Text(String(format: "%.1f", avg)).font(.title3.monospacedDigit())
-                        Text(String(format: "%.1f", minVal)).font(.title3.monospacedDigit())
-                        Text(String(format: "%.1f", maxVal)).font(.title3.monospacedDigit())
+                        Text(String(format: "%.1f", avg)).font(.title2.monospacedDigit())
+                        Text(String(format: "%.1f", minVal)).font(.title2.monospacedDigit())
+                        Text(String(format: "%.1f", maxVal)).font(.title2.monospacedDigit())
                         HStack(spacing: 2) {
                             Image(systemName: change > 0.05 ? "arrow.up" : change < -0.05 ? "arrow.down" : "minus")
                                 .foregroundStyle(change > 0.05 ? .red : change < -0.05 ? .blue : .secondary)
-                                .font(.caption)
+                                .font(.footnote)
                             Text(String(format: "%.1f", abs(change)))
-                                .font(.title3.monospacedDigit())
+                                .font(.title2.monospacedDigit())
                                 .foregroundStyle(change > 0.05 ? .red : change < -0.05 ? .blue : .secondary)
                         }
+                        Text("kg").font(.footnote).foregroundStyle(.secondary)
                     }
                 }
             }
@@ -1019,13 +1026,16 @@ struct WeightStepsCorrelationView: View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
                 Text(String(localized: "Stat_WeightStepsCorr_Title", defaultValue: "体重・歩数 相関"))
-                    .font(.headline)
+                    .font(.title3)
                 Button {
                     showInfo = true
                 } label: {
                     Image(systemName: "info.circle")
-                        .font(.caption2)
+                        .font(.title3)
                         .foregroundStyle(.secondary)
+                        .padding(.vertical, 6)
+                        .padding(.horizontal, 4)
+                        .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
                 .popover(isPresented: $showInfo, arrowEdge: .bottom) {
@@ -1034,7 +1044,7 @@ struct WeightStepsCorrelationView: View {
                 Spacer()
                 if let s = corrStats {
                     Text(String(format: "r = %.2f", s.r))
-                        .font(.caption.monospacedDigit())
+                        .font(.footnote.monospacedDigit())
                         .foregroundStyle(rColor(s.r))
                         .padding(.trailing, 4)
                 }
@@ -1043,7 +1053,7 @@ struct WeightStepsCorrelationView: View {
 
             if data.count < 2 {
                 Text(String(localized: "Stat_NoData", defaultValue: "期間内にデータがありません"))
-                    .font(.subheadline)
+                    .font(.callout)
                     .foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity)
                     .padding()
@@ -1107,7 +1117,7 @@ private struct WeightStepsCorrInfoPopover: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
                 Text(isJapanese ? "相関図の見方" : "How to Read This Chart")
-                    .font(.caption.weight(.semibold))
+                    .font(.footnote.weight(.semibold))
                     .foregroundStyle(.secondary)
                     .padding(.horizontal, 16)
                     .padding(.top, 14)
@@ -1121,21 +1131,21 @@ private struct WeightStepsCorrInfoPopover: View {
                             : "Each dot represents one record with both weight and step data",
                         systemImage: "circle.fill"
                     )
-                    .font(.caption).foregroundStyle(.secondary)
+                    .font(.footnote).foregroundStyle(.secondary)
                     Label(
                         isJapanese
                             ? "破線は回帰直線（データ全体の傾向線）です"
                             : "The dashed line is the regression line (overall trend)",
                         systemImage: "line.diagonal"
                     )
-                    .font(.caption).foregroundStyle(.secondary)
+                    .font(.footnote).foregroundStyle(.secondary)
                     Label(
                         isJapanese
                             ? "右下がりの傾向 → 歩くほど体重が低い関係"
                             : "A downward slope suggests more steps correlate with lower weight",
                         systemImage: "arrow.down.right"
                     )
-                    .font(.caption).foregroundStyle(.secondary)
+                    .font(.footnote).foregroundStyle(.secondary)
                 }
                 .padding(.horizontal, 16)
                 .padding(.vertical, 12)
@@ -1143,7 +1153,7 @@ private struct WeightStepsCorrInfoPopover: View {
                 Divider()
 
                 Text(isJapanese ? "相関係数 r の目安（絶対値）" : "Correlation coefficient r (absolute value)")
-                    .font(.caption.weight(.semibold))
+                    .font(.footnote.weight(.semibold))
                     .foregroundStyle(.secondary)
                     .padding(.horizontal, 16)
                     .padding(.top, 10)
@@ -1155,10 +1165,10 @@ private struct WeightStepsCorrInfoPopover: View {
                             .fill(row.color.opacity(0.8))
                             .frame(width: 18, height: 18)
                         Text(row.range)
-                            .font(.caption.monospacedDigit())
+                            .font(.footnote.monospacedDigit())
                             .frame(width: 90, alignment: .leading)
                         Text(row.label)
-                            .font(.caption)
+                            .font(.footnote)
                             .foregroundStyle(.secondary)
                         Spacer()
                     }
@@ -1174,7 +1184,7 @@ private struct WeightStepsCorrInfoPopover: View {
                         ? "※ r はマイナスでも絶対値が大きいほど強い相関を示します"
                         : "* A negative r with large absolute value still indicates a strong correlation"
                 )
-                .font(.caption2)
+                .font(.caption)
                 .foregroundStyle(.tertiary)
                 .padding(.horizontal, 16)
                 .padding(.top, 8)
@@ -1209,34 +1219,34 @@ struct TempSummaryView: View {
 
         return VStack(spacing: 8) {
             Text(String(localized: "Stat_TempSummary_Title", defaultValue: "体温 サマリー"))
-                .font(.headline)
+                .font(.title3)
 
             if values.isEmpty {
                 Text(String(localized: "Stat_NoData", defaultValue: "期間内にデータがありません"))
-                    .font(.subheadline)
+                    .font(.callout)
                     .foregroundStyle(.secondary)
             } else {
                 Grid(horizontalSpacing: 12, verticalSpacing: 4) {
                     GridRow {
-                        Text("").frame(width: 32)
                         Text(String(localized: "Stat_Avg", defaultValue: "平均"))
-                            .font(.caption).foregroundStyle(.secondary)
+                            .font(.footnote).foregroundStyle(.secondary)
                         if settings.statShowAvg {
-                            Text("±SD").font(.caption).foregroundStyle(.secondary)
+                            Text("±SD").font(.footnote).foregroundStyle(.secondary)
                         }
                         Text(String(localized: "Stat_Min", defaultValue: "最小"))
-                            .font(.caption).foregroundStyle(.secondary)
+                            .font(.footnote).foregroundStyle(.secondary)
                         Text(String(localized: "Stat_Max", defaultValue: "最大"))
-                            .font(.caption).foregroundStyle(.secondary)
+                            .font(.footnote).foregroundStyle(.secondary)
+                        Text("").frame(width: 24)
                     }
                     GridRow {
-                        Text("°C").font(.caption).foregroundStyle(.secondary)
-                        Text(String(format: "%.1f", avg)).font(.title3.monospacedDigit())
+                        Text(String(format: "%.1f", avg)).font(.title2.monospacedDigit())
                         if settings.statShowAvg {
-                            Text(String(format: "%.2f", sd)).font(.caption).foregroundStyle(.secondary)
+                            Text(String(format: "%.2f", sd)).font(.footnote).foregroundStyle(.secondary)
                         }
-                        Text(String(format: "%.1f", minVal)).font(.title3.monospacedDigit())
-                        Text(String(format: "%.1f", maxVal)).font(.title3.monospacedDigit())
+                        Text(String(format: "%.1f", minVal)).font(.title2.monospacedDigit())
+                        Text(String(format: "%.1f", maxVal)).font(.title2.monospacedDigit())
+                        Text("°C").font(.footnote).foregroundStyle(.secondary)
                     }
                 }
             }
@@ -1276,7 +1286,7 @@ struct Temp24HChartView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(String(localized: "Stat_Temp24H_Title", defaultValue: "体温 24時間分布"))
-                .font(.headline)
+                .font(.title3)
                 .padding(.horizontal)
 
             Chart {
@@ -1298,7 +1308,7 @@ struct Temp24HChartView: View {
             .overlay {
                 if validRecords.isEmpty {
                     Text(String(localized: "Stat_NoData", defaultValue: "期間内にデータがありません"))
-                        .font(.subheadline)
+                        .font(.callout)
                         .foregroundStyle(.secondary)
                 }
             }
@@ -1338,13 +1348,13 @@ struct TempHistogramView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(String(localized: "Stat_TempHist_Title", defaultValue: "体温 分布"))
-                .font(.headline)
+                .font(.title3)
                 .padding(.horizontal)
             if hasData {
                 chartContent
             } else {
                 Text(String(localized: "Stat_NoData", defaultValue: "期間内にデータがありません"))
-                    .font(.subheadline)
+                    .font(.callout)
                     .foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity)
                     .padding()
@@ -1389,7 +1399,7 @@ struct TempHistogramView: View {
     private func legendItem(color: Color, label: String) -> some View {
         HStack(spacing: 4) {
             RoundedRectangle(cornerRadius: 2).fill(color.opacity(0.8)).frame(width: 10, height: 10)
-            Text(label).font(.caption2).foregroundStyle(.secondary)
+            Text(label).font(.caption).foregroundStyle(.secondary)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }

@@ -191,10 +191,10 @@ private struct StatCell: View {
     var body: some View {
         HStack(spacing: 3) {
             Text(label)
-                .font(.caption2)
+                .font(.caption)
                 .foregroundStyle(.tertiary)
             Text(value)
-                .font(.caption2.monospacedDigit())
+                .font(.caption.monospacedDigit())
                 .foregroundStyle(.secondary)
         }
     }
@@ -225,7 +225,7 @@ private struct SelectionDetailRow: View {
                 .bold()
         }
         .foregroundStyle(color)
-        .font(.caption)
+        .font(.footnote)
         .padding(.horizontal, 16)
         .padding(.vertical, 8)
     }
@@ -299,7 +299,7 @@ struct BpDistributionBar: View {
     var body: some View {
         HStack(spacing: 8) {
             Text(label)
-                .font(.caption2.bold())
+                .font(.caption.bold())
                 .foregroundStyle(color)
                 .frame(width: 14, alignment: .center)
 
@@ -402,7 +402,7 @@ private extension View {
                         if let date = value.as(Date.self) {
                             let m = Calendar.current.component(.month, from: date)
                             let d = Calendar.current.component(.day, from: date)
-                            Text("\(m)/\(d)").font(.caption2)
+                            Text("\(m)/\(d)").font(.caption)
                         }
                     }
                 }
@@ -503,7 +503,7 @@ struct BpChartView: View {
             // ヘッダー
             HStack(alignment: .firstTextBaseline) {
                 Text(GraphKind.bp.title)
-                    .font(.subheadline.weight(.semibold))
+                    .font(.callout.weight(.semibold))
                 Spacer()
                 if settings.graphBpMean, let map = avgMap {
                     StatCell(label: "平均血圧", value: "\(map)")
@@ -514,7 +514,7 @@ struct BpChartView: View {
                    let mxLo = periodRecords.map(\.nBpLo_mmHg).max() {
                     StatCell(label: "範囲", value: "\(mnHi)–\(mxHi)／\(mnLo)–\(mxLo)")
                 }
-                Text("mmHg").font(.subheadline.weight(.semibold)).foregroundStyle(.red)
+                Text("mmHg").font(.callout.weight(.semibold)).foregroundStyle(.red)
             }
             .padding(.horizontal, 16)
             .padding(.top, 14)
@@ -593,7 +593,7 @@ struct BpChartView: View {
             .chartYAxis {
                 AxisMarks(position: .leading) { value in
                     AxisGridLine().foregroundStyle(.gray.opacity(0.2))
-                    AxisValueLabel { if let v = value.as(Double.self) { Text(String(Int(v.rounded()))).font(.caption2) } }
+                    AxisValueLabel { if let v = value.as(Double.self) { Text(String(Int(v.rounded()))).font(.caption) } }
                 }
             }
             .tapToSelectDay($selectedDate, validDays: Set(validRecords.map { dayStart($0.dateTime) }))
@@ -675,7 +675,7 @@ struct BpPpChartView: View {
             // ヘッダー（血圧セクションと同スタイル）
             HStack(alignment: .firstTextBaseline) {
                 Text("脈圧")
-                    .font(.subheadline.weight(.semibold))
+                    .font(.callout.weight(.semibold))
                 Spacer()
                 if let avg = avgPP {
                     StatCell(label: "平均", value: "\(avg)")
@@ -683,7 +683,7 @@ struct BpPpChartView: View {
                 if let mn = minPP, let mx = maxPP {
                     StatCell(label: "範囲", value: "\(mn)–\(mx)")
                 }
-                Text("mmHg").font(.subheadline.weight(.semibold)).foregroundStyle(.orange)
+                Text("mmHg").font(.callout.weight(.semibold)).foregroundStyle(.orange)
             }
             .padding(.horizontal, 16)
             .padding(.top, 14)
@@ -733,7 +733,7 @@ struct BpPpChartView: View {
             .chartYAxis {
                 AxisMarks(position: .leading) { value in
                     AxisGridLine().foregroundStyle(.gray.opacity(0.2))
-                    AxisValueLabel { if let v = value.as(Double.self) { Text(String(Int(v.rounded()))).font(.caption2) } }
+                    AxisValueLabel { if let v = value.as(Double.self) { Text(String(Int(v.rounded()))).font(.caption) } }
                 }
             }
             .tapToSelectDay($selectedDate, validDays: Set(validRecords.map { dayStart($0.dateTime) }))
@@ -860,7 +860,7 @@ struct LineChartView: View {
         PanelContainer {
             // ヘッダー
             HStack(alignment: .firstTextBaseline) {
-                Text(title).font(.subheadline.weight(.semibold))
+                Text(title).font(.callout.weight(.semibold))
                 Spacer()
                 if let avg = avgValue {
                     StatCell(label: "平均", value: "\(fmt(avg))")
@@ -868,7 +868,7 @@ struct LineChartView: View {
                 if let mn = minValue, let mx = maxValue {
                     StatCell(label: "範囲", value: "\(fmt(mn))–\(fmt(mx))")
                 }
-                Text(unit).font(.subheadline.weight(.semibold)).foregroundStyle(color)
+                Text(unit).font(.callout.weight(.semibold)).foregroundStyle(color)
             }
             .padding(.horizontal, 16)
             .padding(.top, 14)
@@ -938,7 +938,7 @@ struct LineChartView: View {
                     AxisGridLine().foregroundStyle(.gray.opacity(0.2))
                     AxisValueLabel {
                         if let v = value.as(Double.self) {
-                            Text(fmt(Int(v.rounded()))).font(.caption2)
+                            Text(fmt(Int(v.rounded()))).font(.caption)
                         }
                     }
                 }
@@ -1035,16 +1035,20 @@ private struct BMIChartView: View {
         PanelContainer {
             // ヘッダー
             HStack(alignment: .firstTextBaseline) {
-                Text("BMI").font(.subheadline.weight(.semibold))
+                Text("BMI").font(.callout.weight(.semibold))
                 Button {
                     showBMIInfo = true
                 } label: {
-                    HStack(spacing: 2) {
+                    HStack(spacing: 4) {
                         Image(systemName: "info.circle")
+                            .font(.title3)
                         Text(isJapanese ? "JASSO基準" : "WHO BMI")
+                            .font(.footnote)
                     }
-                    .font(.caption2)
                     .foregroundStyle(.secondary)
+                    .padding(.vertical, 6)
+                    .padding(.horizontal, 4)
+                    .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
                 .popover(isPresented: $showBMIInfo, arrowEdge: .bottom) {
@@ -1123,7 +1127,7 @@ private struct BMIChartView: View {
                     AxisGridLine().foregroundStyle(.gray.opacity(0.2))
                     AxisValueLabel {
                         if let v = value.as(Double.self) {
-                            Text(fmt(v)).font(.caption2)
+                            Text(fmt(v)).font(.caption)
                         }
                     }
                 }
@@ -1207,9 +1211,9 @@ struct WeightChangeChartView: View {
     var body: some View {
         PanelContainer {
             HStack(alignment: .firstTextBaseline) {
-                Text("体重変化量").font(.subheadline.weight(.semibold))
+                Text("体重変化量").font(.callout.weight(.semibold))
                 Spacer()
-                Text("kg").font(.subheadline.weight(.semibold)).foregroundStyle(.indigo)
+                Text("kg").font(.callout.weight(.semibold)).foregroundStyle(.indigo)
             }
             .padding(.horizontal, 16)
             .padding(.top, 14)
@@ -1238,7 +1242,7 @@ struct WeightChangeChartView: View {
                     AxisGridLine().foregroundStyle(.gray.opacity(0.2))
                     AxisValueLabel {
                         if let v = value.as(Double.self) {
-                            Text(String(format: "%+.1f", v)).font(.caption2)
+                            Text(String(format: "%+.1f", v)).font(.caption)
                         }
                     }
                 }
@@ -1253,10 +1257,10 @@ struct WeightChangeChartView: View {
                 Divider()
                 HStack(spacing: 6) {
                     Image(systemName: ch.change >= 0 ? "arrow.up" : "arrow.down")
-                        .font(.caption.weight(.semibold))
+                        .font(.footnote.weight(.semibold))
                         .foregroundStyle(ch.change >= 0 ? .orange : .teal)
                     Text(String(format: "%+.1f kg", ch.change))
-                        .font(.callout.monospacedDigit())
+                        .font(.body.monospacedDigit())
                         .foregroundStyle(ch.change >= 0 ? Color.orange : Color.teal)
                     Spacer()
                 }
@@ -1284,7 +1288,7 @@ private struct BMIStandardsPopover: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             Text(isJapanese ? "JASSO肥満度分類" : "WHO BMI Classification")
-                .font(.caption.weight(.semibold))
+                .font(.footnote.weight(.semibold))
                 .foregroundStyle(.secondary)
                 .padding(.horizontal, 16)
                 .padding(.top, 14)
@@ -1300,10 +1304,10 @@ private struct BMIStandardsPopover: View {
                         )
                         .frame(width: 18, height: 18)
                     Text(isJapanese ? row.zone.label : row.zone.enLabel)
-                        .font(.subheadline)
+                        .font(.callout)
                     Spacer()
                     Text(row.rangeText)
-                        .font(.subheadline.monospacedDigit())
+                        .font(.callout.monospacedDigit())
                         .foregroundStyle(.secondary)
                 }
                 .padding(.horizontal, 16)

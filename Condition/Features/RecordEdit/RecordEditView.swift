@@ -196,7 +196,7 @@ struct RecordEditView: View {
                         Image(systemName: vm.dataSource.icon)
                             .foregroundStyle(vm.dataSource.color)
                         Text(vm.dataSource.label)
-                            .font(.subheadline)
+                            .font(.callout)
                             .foregroundStyle(.secondary)
                     }
                 }
@@ -346,18 +346,18 @@ struct RecordEditView: View {
         VStack(alignment: .leading, spacing: 4) {
             HStack {
                 Text(title)
-                    .font(.subheadline)
+                    .font(.callout)
                 Spacer()
                 if enabled.wrappedValue {
                     Text(ValueFormatter.format(value.wrappedValue, decimals: decimals))
-                        .font(.title2.bold().monospacedDigit())
+                        .font(.title.bold().monospacedDigit())
                         .foregroundStyle(color)
                     Text(unit)
-                        .font(.subheadline.weight(.semibold))
+                        .font(.callout.weight(.semibold))
                         .foregroundStyle(color.opacity(0.7))
                 } else {
                     Text("－")
-                        .font(.title2)
+                        .font(.title)
                         .foregroundStyle(.tertiary)
                 }
                 Toggle("", isOn: enabled)
@@ -382,7 +382,7 @@ struct RecordEditView: View {
     private func noteRow(title: String, text: Binding<String>) -> some View {
         HStack {
             Text(title)
-                .font(.subheadline)
+                .font(.callout)
             TextField("", text: text)
                 .multilineTextAlignment(.trailing)
                 .onChange(of: text.wrappedValue) { _, _ in vm.isModified = true }

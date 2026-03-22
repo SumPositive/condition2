@@ -219,7 +219,7 @@ struct HKToastView: View {
 
     var body: some View {
         Label(message, systemImage: "checkmark.circle.fill")
-            .font(.subheadline.weight(.medium))
+            .font(.callout.weight(.medium))
             .foregroundStyle(.white)
             .padding(.horizontal, 16)
             .padding(.vertical, 10)
@@ -237,7 +237,7 @@ struct HKProgressView: View {
             ProgressView()
                 .tint(.white)
             Text(message)
-                .font(.subheadline.weight(.medium))
+                .font(.callout.weight(.medium))
                 .foregroundStyle(.white)
         }
         .padding(.horizontal, 16)
@@ -267,7 +267,7 @@ struct RecordSectionHeader: View {
 
     var body: some View {
         Text(text)
-            .font(.caption.bold())
+            .font(.footnote.bold())
             .foregroundStyle(.secondary)
             .padding(.vertical, 2)
             .padding(.horizontal, 6)
@@ -278,18 +278,18 @@ struct RecordSectionHeader: View {
 
 // MARK: - 列幅定義
 
-/// 日付列の固定幅（ヘッダーと明細で共通。title3.bold "31" + spacing + icon 40pt + trailing 4pt）
-private let dateColumnWidth: CGFloat = 100
+/// 日付列の固定幅（ヘッダーと明細で共通。title2.bold "31" + spacing + icon 44pt + trailing 4pt）
+private let dateColumnWidth: CGFloat = 110
 
 private func subColumnWidths(for kind: GraphKind) -> [CGFloat] {
     switch kind {
-    case .bp:       return [36, 36]
-    case .pulse:    return [36]
-    case .weight:   return [52]
-    case .temp:     return [44]
-    case .pedo:     return [52]
-    case .bodyFat:  return [44]
-    case .skMuscle: return [44]
+    case .bp:       return [42, 42]
+    case .pulse:    return [42]
+    case .weight:   return [60]
+    case .temp:     return [52]
+    case .pedo:     return [62]
+    case .bodyFat:  return [52]
+    case .skMuscle: return [52]
     default:        return []
     }
 }
@@ -315,7 +315,7 @@ struct RecordColumnHeader: View {
             HStack(spacing: 0) {
                 HStack(spacing: 0) {
                     Text("日時")
-                        .font(.caption2)
+                        .font(.caption)
                     Spacer()
                     Text("区分")
                         .minimumScaleFactor(0.6)
@@ -325,7 +325,7 @@ struct RecordColumnHeader: View {
                 .frame(width: dateColumnWidth, alignment: .leading)
                 .padding(.trailing, 4)
                 Rectangle()
-                    .frame(width: 1, height: 14)
+                    .frame(width: 1, height: 16)
                     .foregroundStyle(.separator)
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: spacing) {
@@ -335,18 +335,18 @@ struct RecordColumnHeader: View {
                     }
                     .padding(.leading, 4)
                 }
-                .frame(height: 14)
+                .frame(height: 16)
             }
         }
-        .frame(height: 14)
-        .font(.caption)
+        .frame(height: 16)
+        .font(.footnote)
         .foregroundStyle(.secondary)
     }
 
     @ViewBuilder
     private func kindHeaderItems(_ kind: GraphKind, isFirst: Bool) -> some View {
         if !isFirst {
-            Rectangle().frame(width: 1, height: 14).foregroundStyle(.separator)
+            Rectangle().frame(width: 1, height: 16).foregroundStyle(.separator)
         }
         kindHeaderCells(kind)
     }
@@ -355,20 +355,20 @@ struct RecordColumnHeader: View {
     private func kindHeaderCells(_ kind: GraphKind) -> some View {
         switch kind {
         case .bp:
-            Text("上").minimumScaleFactor(0.6).lineLimit(1).frame(width: 36)
-            Text("下").minimumScaleFactor(0.6).lineLimit(1).frame(width: 36)
+            Text("上").minimumScaleFactor(0.6).lineLimit(1).frame(width: 42)
+            Text("下").minimumScaleFactor(0.6).lineLimit(1).frame(width: 42)
         case .pulse:
-            Text("心拍数").minimumScaleFactor(0.6).lineLimit(1).frame(width: 36)
+            Text("心拍数").minimumScaleFactor(0.6).lineLimit(1).frame(width: 42)
         case .weight:
-            Text("体重").minimumScaleFactor(0.6).lineLimit(1).frame(width: 52)
+            Text("体重").minimumScaleFactor(0.6).lineLimit(1).frame(width: 60)
         case .temp:
-            Text("体温").minimumScaleFactor(0.6).lineLimit(1).frame(width: 44)
+            Text("体温").minimumScaleFactor(0.6).lineLimit(1).frame(width: 52)
         case .pedo:
-            Text("歩数").minimumScaleFactor(0.6).lineLimit(1).frame(width: 52)
+            Text("歩数").minimumScaleFactor(0.6).lineLimit(1).frame(width: 62)
         case .bodyFat:
-            Text("体脂肪").minimumScaleFactor(0.6).lineLimit(1).frame(width: 44)
+            Text("体脂肪").minimumScaleFactor(0.6).lineLimit(1).frame(width: 52)
         case .skMuscle:
-            Text("骨格筋").minimumScaleFactor(0.6).lineLimit(1).frame(width: 44)
+            Text("骨格筋").minimumScaleFactor(0.6).lineLimit(1).frame(width: 52)
         default:
             EmptyView()
         }
@@ -414,17 +414,17 @@ struct RecordRowView: View {
                     VStack(alignment: .leading, spacing: 0) {
                         HStack(alignment: .firstTextBaseline, spacing: 2) {
                             Text(dayString)
-                                .font(.title3.bold().monospacedDigit())
+                                .font(.title2.bold().monospacedDigit())
                                 .foregroundStyle(.primary)
                                 .lineLimit(1)
                                 .fixedSize(horizontal: true, vertical: false)
                             Text(Self.weekdayFormatter.string(from: record.dateTime))
-                                .font(.caption)
+                                .font(.footnote)
                                 .foregroundStyle(.secondary)
                                 .fixedSize(horizontal: true, vertical: false)
                         }
                         Text(Self.timeFormatter.string(from: record.dateTime))
-                            .font(.footnote.monospacedDigit())
+                            .font(.subheadline.monospacedDigit())
                             .foregroundStyle(.secondary)
                             .lineLimit(1)
                             .fixedSize(horizontal: true, vertical: false)
@@ -434,12 +434,12 @@ struct RecordRowView: View {
                     // 右：区分アイコン＋データソースアイコン（注意フラグは overlay）
                     VStack(spacing: 3) {
                         Image(systemName: record.dateOpt.icon)
-                            .font(.system(size: 15))
+                            .font(.system(size: 17))
                             .foregroundStyle(.secondary)
                             .offset(y: 8)
                         if hkEnabled {
                             Image(systemName: record.dataSource.icon)
-                                .font(.system(size: 10))
+                                .font(.system(size: 11))
                                 .foregroundStyle(record.dataSource.color)
                                 .offset(x: -22)
                         }
@@ -450,7 +450,7 @@ struct RecordRowView: View {
                     .overlay(alignment: .bottom) {
                         if record.bCaution {
                             Image(systemName: "flag.fill")
-                                .font(.system(size: 9))
+                                .font(.system(size: 10))
                                 .foregroundStyle(.orange)
                                 .offset(x: hkEnabled ? -22 : 0)
                                 .padding(.bottom, hkEnabled ? 22 : 0)
@@ -479,7 +479,7 @@ struct RecordRowView: View {
                             .padding(.leading, 4)
                             if !notes.isEmpty {
                                 Text(notes)
-                                    .font(.caption2)
+                                    .font(.caption)
                                     .foregroundStyle(.tertiary)
                                     .lineLimit(1)
                                     .padding(.leading, 4)
@@ -500,7 +500,7 @@ struct RecordRowView: View {
                 Spacer()
             }
         }
-        .font(.caption)
+        .font(.footnote)
         .padding(.vertical, 1)
     }
 
@@ -516,20 +516,20 @@ struct RecordRowView: View {
     private func kindValueCells(_ kind: GraphKind, cellH: CGFloat) -> some View {
         switch kind {
         case .bp:
-            valueCell(record.displayBpHi, width: 36, height: cellH)
-            valueCell(record.displayBpLo, width: 36, height: cellH)
+            valueCell(record.displayBpHi, width: 42, height: cellH)
+            valueCell(record.displayBpLo, width: 42, height: cellH)
         case .pulse:
-            valueCell(record.displayPulse, width: 36, height: cellH)
+            valueCell(record.displayPulse, width: 42, height: cellH)
         case .weight:
-            valueCell(record.displayWeight, width: 52, height: cellH)
+            valueCell(record.displayWeight, width: 60, height: cellH)
         case .temp:
-            valueCell(record.displayTemp, width: 44, height: cellH)
+            valueCell(record.displayTemp, width: 52, height: cellH)
         case .pedo:
-            valueCell(record.displayPedo, width: 52, height: cellH)
+            valueCell(record.displayPedo, width: 62, height: cellH)
         case .bodyFat:
-            valueCell(record.displayBodyFat, width: 44, height: cellH)
+            valueCell(record.displayBodyFat, width: 52, height: cellH)
         case .skMuscle:
-            valueCell(record.displaySkMuscle, width: 44, height: cellH)
+            valueCell(record.displaySkMuscle, width: 52, height: cellH)
         default:
             EmptyView()
         }
@@ -538,7 +538,7 @@ struct RecordRowView: View {
     @ViewBuilder
     private func valueCell(_ value: String, width: CGFloat, height: CGFloat = 32) -> some View {
         Text(value.isEmpty ? "-" : value)
-            .font(.body.monospacedDigit())
+            .font(.title3.monospacedDigit())
             .minimumScaleFactor(0.6)
             .lineLimit(1)
             .foregroundStyle(value.isEmpty ? Color.secondary.opacity(0.4) : .primary)

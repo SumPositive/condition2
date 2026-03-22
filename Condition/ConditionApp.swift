@@ -50,18 +50,18 @@ private struct MigrationProgressView: View {
     var body: some View {
         VStack(spacing: 20) {
             Image(systemName: "heart.text.square.fill")
-                .font(.system(size: 60))
+                .font(.system(size: 68))
                 .foregroundStyle(Color.azuki)
 
             Text(String(localized: "Migration_Title", defaultValue: "データを移行中..."))
-                .font(.headline)
+                .font(.title3)
 
             ProgressView(value: progress)
                 .progressViewStyle(.linear)
                 .frame(width: 240)
 
             Text(String(format: "%.0f%%", progress * 100))
-                .font(.caption)
+                .font(.footnote)
                 .foregroundStyle(.secondary)
         }
         .padding(40)
@@ -77,14 +77,14 @@ private struct MigrationErrorView: View {
     var body: some View {
         VStack(spacing: 20) {
             Image(systemName: "exclamationmark.triangle")
-                .font(.system(size: 48))
+                .font(.system(size: 54))
                 .foregroundStyle(.orange)
 
             Text(String(localized: "Migration_Error", defaultValue: "データ移行に失敗しました"))
-                .font(.headline)
+                .font(.title3)
 
             Text(message)
-                .font(.caption)
+                .font(.footnote)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal)
@@ -93,7 +93,7 @@ private struct MigrationErrorView: View {
                 .buttonStyle(.borderedProminent)
 
             Text(String(localized: "Migration_Note", defaultValue: "元のデータは保護されています"))
-                .font(.caption2)
+                .font(.caption)
                 .foregroundStyle(.tertiary)
         }
         .padding(40)
