@@ -20,22 +20,26 @@
 	<string>2.0.0</string>
 	<key>CFBundleVersion</key>
 	<string>1</string>
-<key>NSHealthShareUsageDescription</key>
+	<key>GADApplicationIdentifier</key>
+	<string>ca-app-pub-7576639777972199~8822933495</string>
+	<key>NSCalendarsUsageDescription</key>
+	<string>健康データをカレンダーに記録するために使用します。</string>
+	<key>NSHealthShareUsageDescription</key>
 	<string>ヘルスケアの記録を読み取り、記録画面に自動入力するために使用します。</string>
 	<key>NSHealthUpdateUsageDescription</key>
 	<string>記録した健康データをヘルスケアアプリに書き込むために使用します。</string>
 	<key>NSRemindersUsageDescription</key>
 	<string>健康データのリマインダーに使用します。</string>
+	<key>NSUserTrackingUsageDescription</key>
+	<string>広告の効果測定と改善のために使用します。</string>
 	<key>UILaunchScreen</key>
 	<dict/>
-	<key>UIStatusBarStyle</key>
-	<string></string>
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
-		<string>UIInterfaceOrientationLandscapeLeft</string>
-		<string>UIInterfaceOrientationLandscapeRight</string>
 		<string>UIInterfaceOrientationPortrait</string>
 		<string>UIInterfaceOrientationPortraitUpsideDown</string>
+		<string>UIInterfaceOrientationLandscapeLeft</string>
+		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
 </dict>
 </plist>

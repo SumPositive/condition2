@@ -11,7 +11,10 @@
       "Bash(grep -v \"^$\")",
       "Bash(DEVELOPER_DIR=/Applications/Xcode26.0.1.app/Contents/Developer xcodebuild -scheme Condition -destination 'generic/platform=iOS Simulator' build)",
       "Bash(python3 -c \":*)",
-      "Bash(python3:*)"
+      "Bash(python3:*)",
+      "Bash(ls /Users/sumpositive/GitLocal/Condition2/*.xcodeproj/)",
+      "Bash(xcodegen version:*)",
+      "Bash(xcodegen generate:*)"
     ]
   }
 }

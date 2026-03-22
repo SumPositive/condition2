@@ -1,0 +1,60 @@
+{
+  "identifier" : "F0A1B2C3-D4E5-F6A7-B8C9-D0E1F2A3B4C5",
+  "nonConsumableProducts" : [
+
+  ],
+  "nonRenewingSubscriptionProducts" : [
+
+  ],
+  "consumableProducts" : [
+    {
+      "displayPrice" : "0.99",
+      "familySharable" : false,
+      "internalID" : "A1B2C3D4-E5F6-A7B8-C9D0-E1F2A3B4C5D6",
+      "localizations" : [
+        {
+          "description" : "開発者への少額サポートです",
+          "displayName" : "投げ銭 小",
+          "locale" : "ja_JP"
+        },
+        {
+          "description" : "A small tip to support the developer.",
+          "displayName" : "Small Tip",
+          "locale" : "en_US"
+        }
+      ],
+      "productID" : "Tips_1",
+      "referenceName" : "Tips_1",
+      "type" : "Consumable"
+    },
+    {
+      "displayPrice" : "4.99",
+      "familySharable" : false,
+      "internalID" : "B2C3D4E5-F6A7-B8C9-D0E1-F2A3B4C5D6E7",
+      "localizations" : [
+        {
+          "description" : "開発者への大きなサポートです",
+          "displayName" : "投げ銭 大",
+          "locale" : "ja_JP"
+        },
+        {
+          "description" : "A larger tip to support the developer.",
+          "displayName" : "Large Tip",
+          "locale" : "en_US"
+        }
+      ],
+      "productID" : "Tips_5",
+      "referenceName" : "Tips_5",
+      "type" : "Consumable"
+    }
+  ],
+  "autoRenewableSubscriptionProducts" : [
+
+  ],
+  "version" : {
+    "major" : 2,
+    "minor" : 0
+  },
+  "storefront" : "JPN",
+  "storeforontRegion" : "JPN"
+}

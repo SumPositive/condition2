@@ -253,8 +253,29 @@ final class RecordEditViewModel {
         }
 
         try context.save()
+        try enforceStepsConstraintForDay(of: dateTime, context: context)
         writeToHealthKitIfAutomatic()
         isModified = false
+    }
+
+    /// 歩数は1日の最終時刻レコードにのみ有効。同日の他レコードをゼロクリアする
+    private func enforceStepsConstraintForDay(of date: Date, context: ModelContext) throws {
+        let cal = Calendar.current
+        let day = cal.startOfDay(for: date)
+        let nextDay = cal.date(byAdding: .day, value: 1, to: day)!
+        var descriptor = FetchDescriptor<BodyRecord>(
+            predicate: #Predicate { $0.dateTime >= day && $0.dateTime < nextDay },
+            sortBy: [SortDescriptor(\.dateTime)]
+        )
+        descriptor.includePendingChanges = true
+        let dayRecords = try context.fetch(descriptor)
+        guard let last = dayRecords.last else { return }
+        for record in dayRecords where record.persistentModelID != last.persistentModelID {
+            if record.nPedometer != 0 {
+                record.nPedometer = 0
+            }
+        }
+        if dayRecords.count > 1 { try context.save() }
     }
 
     private func writeToHealthKitIfAutomatic() {

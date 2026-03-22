@@ -188,8 +188,35 @@ struct RecordListView: View {
         }
         if addedCount > 0 {
             try? context.save()
+            enforceStepsConstraintAfterImport(in: oneYearAgo...now, context: context)
             showImportToast(count: addedCount)
         }
+    }
+
+    /// バルクインポート後、対象期間内の各日について歩数を最終時刻レコードにのみ残す
+    private func enforceStepsConstraintAfterImport(in range: ClosedRange<Date>, context: ModelContext) {
+        let cal = Calendar.current
+        var descriptor = FetchDescriptor<BodyRecord>(
+            predicate: #Predicate { $0.dateTime >= range.lowerBound && $0.dateTime <= range.upperBound },
+            sortBy: [SortDescriptor(\.dateTime)]
+        )
+        descriptor.includePendingChanges = true
+        guard let allRecords = try? context.fetch(descriptor) else { return }
+
+        // 日ごとにグループ化して最終時刻以外の歩数をゼロクリア
+        let grouped = Dictionary(grouping: allRecords) { cal.startOfDay(for: $0.dateTime) }
+        var changed = false
+        for dayRecords in grouped.values {
+            let sorted = dayRecords.sorted { $0.dateTime < $1.dateTime }
+            guard let last = sorted.last else { continue }
+            for record in sorted where record.persistentModelID != last.persistentModelID {
+                if record.nPedometer != 0 {
+                    record.nPedometer = 0
+                    changed = true
+                }
+            }
+        }
+        if changed { try? context.save() }
     }
 
     private func showImportToast(count: Int) {

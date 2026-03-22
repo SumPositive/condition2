@@ -3,6 +3,7 @@
 
 import SwiftUI
 import SwiftData
+import StoreKit
 
 struct SettingsView: View {
 
@@ -70,11 +71,152 @@ struct SettingsView: View {
                     Link(String(localized: "Settings_About", defaultValue: "このアプリについて"),
                          destination: aboutURL)
                 }
+
+                // MARK: - 開発者を応援する
+                Section {
+                    SupportDeveloperView()
+                }
             }
             .navigationTitle(String(localized: "Tab_Settings", defaultValue: "設定"))
         }
     }
 
+}
+
+// MARK: - 開発者を応援する
+
+private struct SupportDeveloperView: View {
+    @State private var store = TipStore.shared
+    @State private var showTip = false
+    @State private var showAd = false
+    @State private var showAdThankYou = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Label {
+                Text(String(localized: "Support_Title", defaultValue: "開発者を応援する"))
+                    .font(.body.weight(.medium))
+            } icon: {
+                Image(systemName: "heart.fill")
+                    .symbolRenderingMode(.hierarchical)
+                    .foregroundStyle(.red)
+                    .symbolEffect(.breathe.pulse.byLayer, options: .repeat(.periodic(delay: 0.0)))
+            }
+
+            Button {
+                showTip = true
+            } label: {
+                Text(String(localized: "Support_Tip", defaultValue: "投げ銭　寄付する"))
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.borderedProminent)
+            .tint(.teal)
+            .sheet(isPresented: $showTip) {
+                TipSheetView()
+            }
+
+            Button {
+                showAd = true
+            } label: {
+                Text(String(localized: "Support_WatchAd", defaultValue: "広告を見て応援"))
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.borderedProminent)
+            .tint(.brown)
+            .sheet(isPresented: $showAd) {
+                AdMobAdSheetView {
+                    showAdThankYou = true
+                }
+            }
+        }
+        .padding(.vertical, 4)
+        .task { await store.loadProducts() }
+        .alert(
+            String(localized: "Support_ThankYou", defaultValue: "ありがとうございます！"),
+            isPresented: $showAdThankYou
+        ) {
+            Button("OK") {}
+        } message: {
+            Text(String(localized: "Support_AdThankYouMessage",
+                        defaultValue: "広告をご覧いただきありがとうございます。これからも改善を続けてまいります！"))
+        }
+    }
+}
+
+private struct TipSheetView: View {
+    @Environment(\.dismiss) private var dismiss
+    @State private var store = TipStore.shared
+    @State private var showThankYou = false
+
+    var body: some View {
+        NavigationView {
+            VStack(spacing: 20) {
+                Image(systemName: "heart.fill")
+                    .font(.system(size: 48))
+                    .foregroundStyle(.pink)
+                    .symbolEffect(.breathe.pulse.byLayer, options: .repeat(.periodic(delay: 0.0)))
+
+                Text(String(localized: "Support_TipMessage",
+                            defaultValue: "このアプリの開発を応援していただけると励みになります。"))
+                    .font(.callout)
+                    .multilineTextAlignment(.center)
+                    .foregroundStyle(.secondary)
+                    .padding(.horizontal)
+
+                if store.isLoadingProducts {
+                    ProgressView()
+                } else if store.products.isEmpty {
+                    Text(String(localized: "Support_TipUnavailable",
+                                defaultValue: "現在ご利用いただけません。"))
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                } else {
+                    HStack(spacing: 12) {
+                        ForEach(store.products, id: \.id) { product in
+                            Button {
+                                Task {
+                                    if await store.purchase(product) {
+                                        showThankYou = true
+                                    }
+                                }
+                            } label: {
+                                Text(product.displayPrice)
+                                    .frame(maxWidth: .infinity)
+                            }
+                            .buttonStyle(.borderedProminent)
+                            .tint(.pink)
+                            .disabled(store.isPurchasing)
+                        }
+                    }
+                    .padding(.horizontal)
+                }
+
+                Spacer()
+            }
+            .padding(.top, 32)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button {
+                        dismiss()
+                    } label: {
+                        Image(systemName: "chevron.down")
+                            .imageScale(.large)
+                            .symbolRenderingMode(.hierarchical)
+                    }
+                }
+            }
+            .alert(
+                String(localized: "Support_ThankYou", defaultValue: "ありがとうございます！"),
+                isPresented: $showThankYou
+            ) {
+                Button("OK") { dismiss() }
+            } message: {
+                Text(String(localized: "Support_ThankYouMessage",
+                            defaultValue: "応援いただきありがとうございます。これからも改善を続けてまいります！"))
+            }
+        }
+    }
 }
 
 // MARK: - 時間帯と区分の初期値マトリックス

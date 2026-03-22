@@ -2473,6 +2473,182 @@
         }
       }
     },
+    "Support_ThankYou" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Thank You!" }
+        },
+        "ja" : {
+          "stringUnit" : { "state" : "translated", "value" : "ありがとうございます！" }
+        }
+      }
+    },
+    "Support_ThankYouMessage" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Thank you for your support! We will continue to improve the app." }
+        },
+        "ja" : {
+          "stringUnit" : { "state" : "translated", "value" : "応援いただきありがとうございます。これからも改善を続けてまいります！" }
+        }
+      }
+    },
+    "Support_Title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Support the Developer" }
+        },
+        "ja" : {
+          "stringUnit" : { "state" : "translated", "value" : "開発者を応援する" }
+        }
+      }
+    },
+    "Support_Tip" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Donate a Tip" }
+        },
+        "ja" : {
+          "stringUnit" : { "state" : "translated", "value" : "投げ銭　寄付する" }
+        }
+      }
+    },
+    "Support_TipMessage" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Your support helps keep this app improving." }
+        },
+        "ja" : {
+          "stringUnit" : { "state" : "translated", "value" : "このアプリの開発を応援していただけると励みになります。" }
+        }
+      }
+    },
+    "Support_TipUnavailable" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Not available at this time." }
+        },
+        "ja" : {
+          "stringUnit" : { "state" : "translated", "value" : "現在ご利用いただけません。" }
+        }
+      }
+    },
+    "Support_WatchAd" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Watch an Ad to Support" }
+        },
+        "ja" : {
+          "stringUnit" : { "state" : "translated", "value" : "広告を見て応援" }
+        }
+      }
+    },
+    "Support_AdThankYouMessage" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Thank you for watching the ad. We'll keep making improvements!" }
+        },
+        "ja" : {
+          "stringUnit" : { "state" : "translated", "value" : "広告をご覧いただきありがとうございます。これからも改善を続けてまいります！" }
+        }
+      }
+    },
+    "Ad_Unavailable" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "No ads available right now. Please try again later." }
+        },
+        "ja" : {
+          "stringUnit" : { "state" : "translated", "value" : "現在、特典付きの広告がありません。後ほどお試しください" }
+        }
+      }
+    },
+    "Ad_VideoAd" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Video Ad" }
+        },
+        "ja" : {
+          "stringUnit" : { "state" : "translated", "value" : "動画広告" }
+        }
+      }
+    },
+    "Ad_SoundWarning" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Sound will play" }
+        },
+        "ja" : {
+          "stringUnit" : { "state" : "translated", "value" : "音が出ます" }
+        }
+      }
+    },
+    "Ad_WatchToEnd" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Watch to the end to see the close [×] button" }
+        },
+        "ja" : {
+          "stringUnit" : { "state" : "translated", "value" : "最後まで視聴すると閉じる【×】ボタンが現れます" }
+        }
+      }
+    },
+    "Ad_Loading" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Loading ad..." }
+        },
+        "ja" : {
+          "stringUnit" : { "state" : "translated", "value" : "広告を読み込み中..." }
+        }
+      }
+    },
+    "Ad_PlayButton" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Play Ad" }
+        },
+        "ja" : {
+          "stringUnit" : { "state" : "translated", "value" : "広告を再生する" }
+        }
+      }
+    },
+    "Ad_Reload" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Reload" }
+        },
+        "ja" : {
+          "stringUnit" : { "state" : "translated", "value" : "再読み込み" }
+        }
+      }
+    },
+    "Ad_RewardEarned" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Thank you for watching!" }
+        },
+        "ja" : {
+          "stringUnit" : { "state" : "translated", "value" : "広告視聴ありがとうございます！" }
+        }
+      }
+    },
     "Settings_Calendar" : {
       "extractionState" : "manual",
       "localizations" : {

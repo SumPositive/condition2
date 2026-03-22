@@ -3,11 +3,16 @@
 
 import SwiftUI
 import SwiftData
+@preconcurrency import GoogleMobileAds
 
 @main
 struct ConditionApp: App {
 
     @State private var migrationService = MigrationService()
+
+    init() {
+        MobileAds.shared.start()
+    }
 
     var body: some Scene {
         WindowGroup {

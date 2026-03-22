@@ -9,23 +9,26 @@
 /* Begin PBXBuildFile section */
 		04F485DCB1ADFC0859E7298C /* AppConstants.swift in Sources */ = {isa = PBXBuildFile; fileRef = 332C7D7242BE0FB4EF8FAFFA /* AppConstants.swift */; };
 		1051435A3366B5694C9B71EC /* RecordListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 031D6782445FA50A16B167EC /* RecordListView.swift */; };
+		20F1765DAAFD7152D5629C7C /* NumpadValueText.swift in Sources */ = {isa = PBXBuildFile; fileRef = E674CD6C1A3BCD2A7D5D8EC3 /* NumpadValueText.swift */; };
+		22D5E84A1E28C0A1784D9244 /* HealthKitService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C7CBA484995B66668A9235C /* HealthKitService.swift */; };
 		26B161A5280A5687C622C649 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB4C0FF51DDBC65C235DF2ED /* SettingsView.swift */; };
 		2CCB75F6B884B4807D49F2DD /* KVSKeys.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5D0A6B773C8E379750D8D5B /* KVSKeys.swift */; };
 		307BEA02A0CE7F10B77FFC4A /* AppSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = E0E6E18224DAB54321E46951 /* AppSettings.swift */; };
 		35CFF3F641C21C1669ADC898 /* BodyRecord.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB9225443B8D3A26F9D99025 /* BodyRecord.swift */; };
+		3ED314445BE3B57864296DA3 /* InfoPlist.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = 3BEC1D090470BE0FB0C3E7C2 /* InfoPlist.xcstrings */; };
 		42832198D0789A3EEE5E6B66 /* RecordEditViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 037CD7BBB175D96B6BA9D41C /* RecordEditViewModel.swift */; };
 		44C6FAA140856CAAEA0D1BF7 /* ConditionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7168A998F0F394E7BE741CF8 /* ConditionTests.swift */; };
+		546717AE8E7EBCAB0248C456 /* AdMobViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7CD6F6F207C0904FC1AAF8A2 /* AdMobViews.swift */; };
 		6A6487B27CC55B3970DF9411 /* StatisticsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EFEF1236779D72BC224C618E /* StatisticsView.swift */; };
 		8206959AD5C6A8FA4D0CF941 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 90D068752225DE01C4F4BE92 /* ContentView.swift */; };
 		82BEB0597976A364B0796572 /* ConditionApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E36777C3625DABE02E40FBA /* ConditionApp.swift */; };
 		8932430F64468911DF2F4947 /* AZDialView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C90E168B96A53E7B7A773C3 /* AZDialView.swift */; };
-		8C1D4F9E3A6B5C2D0E7F9A1B /* HealthKitService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F7A3E9C1B2D5F8A6E0C4B7D /* HealthKitService.swift */; };
+		92DD1CE7BA9A6B6D06918258 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = F6931DD60054ABF712D5455D /* Localizable.xcstrings */; };
 		94F8FFF55DB8A08ACB41B6C7 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 631EC7DEF4838569597EA3C8 /* Assets.xcassets */; };
 		982998F6ABEDB9272F6A6BA1 /* ValueFormatter.swift in Sources */ = {isa = PBXBuildFile; fileRef = A14BB534396221BF4A8DD998 /* ValueFormatter.swift */; };
-		B2C3D4E5F6A700001B2C3D4F /* NumpadValueText.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2C3D4E5F6A700001B2C3D4E /* NumpadValueText.swift */; };
+		9AEA2B0965601F94C251CA2F /* GoogleMobileAds in Frameworks */ = {isa = PBXBuildFile; productRef = E34D8E33BC77DA54E6C61D52 /* GoogleMobileAds */; };
 		B01892399930A51751ED92F1 /* RecordEditView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C5B54F260937D2BF7A3B8E0 /* RecordEditView.swift */; };
-		C3166D342F63FDB000169223 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = C3166D332F63FDB000169223 /* Localizable.xcstrings */; };
-		A1B2C3D4E5F600001A2B3C4D /* InfoPlist.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F600001A2B3C4E /* InfoPlist.xcstrings */; };
+		BFF8BE17437CFD77E63A1B44 /* TipStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 132A076B61B2C635E9A5FADA /* TipStore.swift */; };
 		CC257634A8AF415F5F40872E /* MigrationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = D11FAFC4E99DE815E66D2AEB /* MigrationService.swift */; };
 		D6C3A1A72F3E9B12734FC1FB /* GraphView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4066E230081BA97894E9514C /* GraphView.swift */; };
 		E88A92888F6AFD1FB7DFFC9F /* ModelContainer+Setup.swift in Sources */ = {isa = PBXBuildFile; fileRef = 86715F6F24A9840913D72CC6 /* ModelContainer+Setup.swift */; };
@@ -45,32 +48,45 @@
 /* Begin PBXFileReference section */
 		031D6782445FA50A16B167EC /* RecordListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordListView.swift; sourceTree = "<group>"; };
 		037CD7BBB175D96B6BA9D41C /* RecordEditViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordEditViewModel.swift; sourceTree = "<group>"; };
+		132A076B61B2C635E9A5FADA /* TipStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TipStore.swift; sourceTree = "<group>"; };
 		1B00938D5C29ADB460EE55EA /* Condition.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Condition.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		1C90E168B96A53E7B7A773C3 /* AZDialView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AZDialView.swift; sourceTree = "<group>"; };
 		2C5B54F260937D2BF7A3B8E0 /* RecordEditView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordEditView.swift; sourceTree = "<group>"; };
 		332C7D7242BE0FB4EF8FAFFA /* AppConstants.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppConstants.swift; sourceTree = "<group>"; };
 		37C42276B20297B0CE85AC5E /* ConditionTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = ConditionTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		3BEC1D090470BE0FB0C3E7C2 /* InfoPlist.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = InfoPlist.xcstrings; sourceTree = "<group>"; };
 		3E36777C3625DABE02E40FBA /* ConditionApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConditionApp.swift; sourceTree = "<group>"; };
 		4066E230081BA97894E9514C /* GraphView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GraphView.swift; sourceTree = "<group>"; };
-		4F7A3E9C1B2D5F8A6E0C4B7D /* HealthKitService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthKitService.swift; sourceTree = "<group>"; };
 		61169D4A225123BB0FD81A90 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		631EC7DEF4838569597EA3C8 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		7168A998F0F394E7BE741CF8 /* ConditionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConditionTests.swift; sourceTree = "<group>"; };
+		7CD6F6F207C0904FC1AAF8A2 /* AdMobViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdMobViews.swift; sourceTree = "<group>"; };
 		86715F6F24A9840913D72CC6 /* ModelContainer+Setup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ModelContainer+Setup.swift"; sourceTree = "<group>"; };
 		90D068752225DE01C4F4BE92 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		9C7CBA484995B66668A9235C /* HealthKitService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthKitService.swift; sourceTree = "<group>"; };
 		9E16A771447D302CDF593C00 /* DateOpt.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DateOpt.swift; sourceTree = "<group>"; };
 		A14BB534396221BF4A8DD998 /* ValueFormatter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ValueFormatter.swift; sourceTree = "<group>"; };
-		B2C3D4E5F6A700001B2C3D4E /* NumpadValueText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NumpadValueText.swift; sourceTree = "<group>"; };
 		B6FE488F42254CBC37C55F0C /* Condition.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Condition.entitlements; sourceTree = "<group>"; };
-		A1B2C3D4E5F600001A2B3C4E /* InfoPlist.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = InfoPlist.xcstrings; sourceTree = "<group>"; };
-		C3166D332F63FDB000169223 /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
 		D11FAFC4E99DE815E66D2AEB /* MigrationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MigrationService.swift; sourceTree = "<group>"; };
 		DB9225443B8D3A26F9D99025 /* BodyRecord.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BodyRecord.swift; sourceTree = "<group>"; };
 		E0E6E18224DAB54321E46951 /* AppSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSettings.swift; sourceTree = "<group>"; };
 		E5D0A6B773C8E379750D8D5B /* KVSKeys.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KVSKeys.swift; sourceTree = "<group>"; };
+		E674CD6C1A3BCD2A7D5D8EC3 /* NumpadValueText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NumpadValueText.swift; sourceTree = "<group>"; };
 		EB4C0FF51DDBC65C235DF2ED /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		EFEF1236779D72BC224C618E /* StatisticsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatisticsView.swift; sourceTree = "<group>"; };
+		F6931DD60054ABF712D5455D /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
 /* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		2F112753C952D7B00999C08D /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				9AEA2B0965601F94C251CA2F /* GoogleMobileAds in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
 		06A0B05E77F7430C9454F28D /* Models */ = {
@@ -86,8 +102,8 @@
 		0C542E511B57079E742EC24F /* Common */ = {
 			isa = PBXGroup;
 			children = (
+				E674CD6C1A3BCD2A7D5D8EC3 /* NumpadValueText.swift */,
 				A14BB534396221BF4A8DD998 /* ValueFormatter.swift */,
-				B2C3D4E5F6A700001B2C3D4E /* NumpadValueText.swift */,
 			);
 			path = Common;
 			sourceTree = "<group>";
@@ -140,11 +156,11 @@
 		6D31027083D6D66B79C896D3 /* Resources */ = {
 			isa = PBXGroup;
 			children = (
-				A1B2C3D4E5F600001A2B3C4E /* InfoPlist.xcstrings */,
-				C3166D332F63FDB000169223 /* Localizable.xcstrings */,
 				631EC7DEF4838569597EA3C8 /* Assets.xcassets */,
 				B6FE488F42254CBC37C55F0C /* Condition.entitlements */,
 				61169D4A225123BB0FD81A90 /* Info.plist */,
+				3BEC1D090470BE0FB0C3E7C2 /* InfoPlist.xcstrings */,
+				F6931DD60054ABF712D5455D /* Localizable.xcstrings */,
 			);
 			path = Resources;
 			sourceTree = "<group>";
@@ -174,6 +190,7 @@
 		7BD46B28A1391105D149BAFD /* Settings */ = {
 			isa = PBXGroup;
 			children = (
+				7CD6F6F207C0904FC1AAF8A2 /* AdMobViews.swift */,
 				EB4C0FF51DDBC65C235DF2ED /* SettingsView.swift */,
 			);
 			path = Settings;
@@ -193,6 +210,7 @@
 			children = (
 				E0E6E18224DAB54321E46951 /* AppSettings.swift */,
 				E5D0A6B773C8E379750D8D5B /* KVSKeys.swift */,
+				132A076B61B2C635E9A5FADA /* TipStore.swift */,
 			);
 			path = Settings;
 			sourceTree = "<group>";
@@ -229,7 +247,7 @@
 		DD27FB837464EED7ACADE894 /* Services */ = {
 			isa = PBXGroup;
 			children = (
-				4F7A3E9C1B2D5F8A6E0C4B7D /* HealthKitService.swift */,
+				9C7CBA484995B66668A9235C /* HealthKitService.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -259,6 +277,7 @@
 			buildPhases = (
 				EBD078822FE98A94479EB3FA /* Sources */,
 				77D7F48C56DE5B4BBAA4F624 /* Resources */,
+				2F112753C952D7B00999C08D /* Frameworks */,
 			);
 			buildRules = (
 			);
@@ -266,6 +285,7 @@
 			);
 			name = Condition;
 			packageProductDependencies = (
+				E34D8E33BC77DA54E6C61D52 /* GoogleMobileAds */,
 			);
 			productName = Condition;
 			productReference = 1B00938D5C29ADB460EE55EA /* Condition.app */;
@@ -309,9 +329,13 @@
 			knownRegions = (
 				Base,
 				en,
+				ja,
 			);
 			mainGroup = BD45214EEC2E1959D4D1B997;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				BC598EFC28CA017618D0E615 /* XCRemoteSwiftPackageReference "swift-package-manager-google-mobile-ads" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 758C2EFE3946876AA265CABE /* Products */;
 			projectDirPath = "";
@@ -328,9 +352,9 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				A1B2C3D4E5F600001A2B3C4D /* InfoPlist.xcstrings in Resources */,
-				C3166D342F63FDB000169223 /* Localizable.xcstrings in Resources */,
 				94F8FFF55DB8A08ACB41B6C7 /* Assets.xcassets in Resources */,
+				3ED314445BE3B57864296DA3 /* InfoPlist.xcstrings in Resources */,
+				92DD1CE7BA9A6B6D06918258 /* Localizable.xcstrings in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -342,24 +366,26 @@
 			buildActionMask = 2147483647;
 			files = (
 				8932430F64468911DF2F4947 /* AZDialView.swift in Sources */,
+				546717AE8E7EBCAB0248C456 /* AdMobViews.swift in Sources */,
 				04F485DCB1ADFC0859E7298C /* AppConstants.swift in Sources */,
 				307BEA02A0CE7F10B77FFC4A /* AppSettings.swift in Sources */,
 				35CFF3F641C21C1669ADC898 /* BodyRecord.swift in Sources */,
-				8C1D4F9E3A6B5C2D0E7F9A1B /* HealthKitService.swift in Sources */,
 				82BEB0597976A364B0796572 /* ConditionApp.swift in Sources */,
 				8206959AD5C6A8FA4D0CF941 /* ContentView.swift in Sources */,
 				F15A862490DED9463FCB6F26 /* DateOpt.swift in Sources */,
 				D6C3A1A72F3E9B12734FC1FB /* GraphView.swift in Sources */,
+				22D5E84A1E28C0A1784D9244 /* HealthKitService.swift in Sources */,
 				2CCB75F6B884B4807D49F2DD /* KVSKeys.swift in Sources */,
 				CC257634A8AF415F5F40872E /* MigrationService.swift in Sources */,
 				E88A92888F6AFD1FB7DFFC9F /* ModelContainer+Setup.swift in Sources */,
+				20F1765DAAFD7152D5629C7C /* NumpadValueText.swift in Sources */,
 				B01892399930A51751ED92F1 /* RecordEditView.swift in Sources */,
 				42832198D0789A3EEE5E6B66 /* RecordEditViewModel.swift in Sources */,
 				1051435A3366B5694C9B71EC /* RecordListView.swift in Sources */,
 				26B161A5280A5687C622C649 /* SettingsView.swift in Sources */,
 				6A6487B27CC55B3970DF9411 /* StatisticsView.swift in Sources */,
+				BFF8BE17437CFD77E63A1B44 /* TipStore.swift in Sources */,
 				982998F6ABEDB9272F6A6BA1 /* ValueFormatter.swift in Sources */,
-				B2C3D4E5F6A700001B2C3D4F /* NumpadValueText.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -610,6 +636,25 @@
 			defaultConfigurationName = Debug;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		BC598EFC28CA017618D0E615 /* XCRemoteSwiftPackageReference "swift-package-manager-google-mobile-ads" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/googleads/swift-package-manager-google-mobile-ads.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 12.0.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		E34D8E33BC77DA54E6C61D52 /* GoogleMobileAds */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = BC598EFC28CA017618D0E615 /* XCRemoteSwiftPackageReference "swift-package-manager-google-mobile-ads" */;
+			productName = GoogleMobileAds;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 7C4B5E01F5500F0B29D483B9 /* Project object */;
 }
