@@ -64,8 +64,10 @@ struct AZDialView: View {
                     }
             }
             AZDialScrollArea(value: $value, min: min, max: max, step: step)
+                .frame(width: 220)
         }
         .frame(height: 44)
+        .frame(maxWidth: .infinity, alignment: .trailing)
     }
 }
 
