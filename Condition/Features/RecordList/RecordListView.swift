@@ -342,7 +342,7 @@ struct RecordColumnHeader: View {
                     Text("区分")
                         .minimumScaleFactor(0.6)
                         .lineLimit(1)
-                        .frame(width: 44, alignment: .center)
+                        .frame(width: 40, alignment: .center)
                 }
                 .frame(width: dateColumnWidth, alignment: .leading)
                 .padding(.trailing, 4)
@@ -431,7 +431,7 @@ struct RecordRowView: View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 0) {
                 // 日付＋区分
-                HStack(alignment: .bottom, spacing: 2) {
+                HStack(alignment: .center, spacing: 2) {
                     // 左：日付・時刻
                     VStack(alignment: .leading, spacing: 0) {
                         HStack(alignment: .firstTextBaseline, spacing: 2) {
@@ -450,34 +450,27 @@ struct RecordRowView: View {
                             .foregroundStyle(.secondary)
                             .lineLimit(1)
                             .fixedSize(horizontal: true, vertical: false)
-                        // 常に 6pt スペーサーを確保（メモあり行と位置を揃える）
                         Color.clear.frame(height: 6)
                     }
-                    // 右：区分アイコン＋データソースアイコン（注意フラグは overlay）
-                    VStack(spacing: 3) {
-                        Image(systemName: record.dateOpt.icon)
-                            .font(.system(size: 17))
-                            .foregroundStyle(.secondary)
-                            .offset(y: 8)
-                        if hkEnabled {
-                            Image(systemName: record.dataSource.icon)
-                                .font(.system(size: 11))
-                                .foregroundStyle(record.dataSource.color)
-                                .offset(x: -22)
-                        }
-                        // 左 VStack と同量のスペーサーで底揃え位置を一致させる
-                        Color.clear.frame(height: 6)
-                    }
-                    .frame(width: 44, alignment: .center)
-                    .overlay(alignment: .bottom) {
+                    // 中：フラグ・データソース（center揃えで自動縦中央）
+                    VStack(spacing: 1) {
                         if record.bCaution {
                             Image(systemName: "flag.fill")
-                                .font(.system(size: 10))
+                                .font(.system(size: 15))
                                 .foregroundStyle(.orange)
-                                .offset(x: hkEnabled ? -22 : 0)
-                                .padding(.bottom, hkEnabled ? 22 : 0)
+                        }
+                        if hkEnabled {
+                            Image(systemName: record.dataSource.icon)
+                                .font(.system(size: 16))
+                                .foregroundStyle(record.dataSource.color)
                         }
                     }
+                    .padding(.leading, 2)
+                    // 右：区分アイコン
+                    Image(systemName: record.dateOpt.icon)
+                        .font(.system(size: 19))
+                        .foregroundStyle(.secondary)
+                        .frame(width: 40, alignment: .center)
                 }
                 .frame(width: dateColumnWidth, alignment: .leading)
                 .padding(.trailing, 4)
