@@ -197,30 +197,35 @@ struct GraphSettingsView: View {
             }
 
             Section(String(localized: "GraphSett_DialStyle", defaultValue: "ダイアルデザイン")) {
-                HStack(spacing: 12) {
-                    ForEach(DialStyle.allCases, id: \.rawValue) { style in
-                        let selected = settings.dialStyle == style.rawValue
-                        Button {
-                            settings.dialStyle = style.rawValue
-                        } label: {
-                            VStack(spacing: 6) {
-                                AZDialBack(offset: 5, tickGap: 10, style: style)
-                                    .frame(height: 40)
-                                    .clipShape(RoundedRectangle(cornerRadius: 8))
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 8)
-                                            .stroke(
-                                                selected ? Color.accentColor : Color.secondary.opacity(0.3),
-                                                lineWidth: selected ? 2 : 1
+                VStack(spacing: 10) {
+                    ForEach([Array(DialStyle.allCases.prefix(5)),
+                             Array(DialStyle.allCases.dropFirst(5))], id: \.first?.rawValue) { row in
+                        HStack(spacing: 12) {
+                            ForEach(row, id: \.rawValue) { style in
+                                let selected = settings.dialStyle == style.rawValue
+                                Button {
+                                    settings.dialStyle = style.rawValue
+                                } label: {
+                                    VStack(spacing: 6) {
+                                        AZDialBack(offset: 5, tickGap: 10, style: style)
+                                            .frame(height: 40)
+                                            .clipShape(RoundedRectangle(cornerRadius: 8))
+                                            .overlay(
+                                                RoundedRectangle(cornerRadius: 8)
+                                                    .stroke(
+                                                        selected ? Color.accentColor : Color.secondary.opacity(0.3),
+                                                        lineWidth: selected ? 2 : 1
+                                                    )
                                             )
-                                    )
-                                Text(style.label)
-                                    .font(.caption)
-                                    .foregroundStyle(selected ? .primary : .secondary)
+                                        Text(style.label)
+                                            .font(.caption)
+                                            .foregroundStyle(selected ? .primary : .secondary)
+                                    }
+                                    .frame(maxWidth: .infinity)
+                                }
+                                .buttonStyle(.plain)
                             }
-                            .frame(maxWidth: .infinity)
                         }
-                        .buttonStyle(.plain)
                     }
                 }
                 .padding(.vertical, 4)
@@ -420,7 +425,7 @@ struct GoalSettingsView: View {
 
     @ViewBuilder
     private func goalDialRow(
-        title: String,
+        title: LocalizedStringKey,
         value: Binding<Int>,
         spec: MeasureSpec,
         recordVal: Int?,

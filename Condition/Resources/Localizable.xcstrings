@@ -629,6 +629,94 @@
         }
       }
     },
+    "DialStyle_Chrome" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Chrome" }
+        },
+        "ja" : {
+          "stringUnit" : { "state" : "translated", "value" : "クローム" }
+        }
+      }
+    },
+    "DialStyle_Fine" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Fine" }
+        },
+        "ja" : {
+          "stringUnit" : { "state" : "translated", "value" : "ファイン" }
+        }
+      }
+    },
+    "DialStyle_Gold" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Gold" }
+        },
+        "ja" : {
+          "stringUnit" : { "state" : "translated", "value" : "ゴールド" }
+        }
+      }
+    },
+    "DialStyle_Hairline" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Hairline" }
+        },
+        "ja" : {
+          "stringUnit" : { "state" : "translated", "value" : "ヘアライン" }
+        }
+      }
+    },
+    "DialStyle_Machined" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Machined" }
+        },
+        "ja" : {
+          "stringUnit" : { "state" : "translated", "value" : "マシン" }
+        }
+      }
+    },
+    "DialStyle_Rubber" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Rubber" }
+        },
+        "ja" : {
+          "stringUnit" : { "state" : "translated", "value" : "ラバー" }
+        }
+      }
+    },
+    "DialStyle_Soft" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Soft" }
+        },
+        "ja" : {
+          "stringUnit" : { "state" : "translated", "value" : "ソフト" }
+        }
+      }
+    },
+    "DialStyle_Vintage" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Vintage" }
+        },
+        "ja" : {
+          "stringUnit" : { "state" : "translated", "value" : "ヴィンテージ" }
+        }
+      }
+    },
     "Delete" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -1378,6 +1466,17 @@
             "state" : "translated",
             "value" : "脈圧（上ー下）ｘｘｘ"
           }
+        }
+      }
+    },
+    "GraphSett_DialStyle" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Dial Design" }
+        },
+        "ja" : {
+          "stringUnit" : { "state" : "translated", "value" : "ダイアルデザイン" }
         }
       }
     },

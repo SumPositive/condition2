@@ -12,6 +12,9 @@ enum DialStyle: Int, CaseIterable {
     case chrome = 2
     case fine = 3
     case hairline = 4
+    case rubber = 5
+    case gold = 6
+    case vintage = 7
 
     var label: String {
         switch self {
@@ -20,6 +23,9 @@ enum DialStyle: Int, CaseIterable {
         case .chrome:   return String(localized: "DialStyle_Chrome",   defaultValue: "クローム")
         case .fine:     return String(localized: "DialStyle_Fine",     defaultValue: "ファイン")
         case .hairline: return String(localized: "DialStyle_Hairline", defaultValue: "ヘアライン")
+        case .rubber:   return String(localized: "DialStyle_Rubber",   defaultValue: "ラバー")
+        case .gold:     return String(localized: "DialStyle_Gold",     defaultValue: "ゴールド")
+        case .vintage:  return String(localized: "DialStyle_Vintage",  defaultValue: "ヴィンテージ")
         }
     }
 }
@@ -222,6 +228,16 @@ struct AZDialBack: View {
             return colorScheme == .dark ? Color(white: 0.05) : Color(white: 0.52)
         case .hairline:
             return colorScheme == .dark ? Color(white: 0.02) : Color(white: 0.38)
+        case .rubber:
+            return colorScheme == .dark ? Color(white: 0.07) : Color(white: 0.30)
+        case .gold:
+            return colorScheme == .dark
+                ? Color(red: 0.08, green: 0.06, blue: 0.02)
+                : Color(red: 0.30, green: 0.22, blue: 0.08)
+        case .vintage:
+            return colorScheme == .dark
+                ? Color(red: 0.14, green: 0.12, blue: 0.10)
+                : Color(red: 0.48, green: 0.43, blue: 0.38)
         }
     }
     // リッジ側面（暗い）
@@ -237,6 +253,16 @@ struct AZDialBack: View {
             return colorScheme == .dark ? Color(white: 0.11) : Color(white: 0.62)
         case .hairline:
             return colorScheme == .dark ? Color(white: 0.30) : Color(white: 0.65)
+        case .rubber:
+            return colorScheme == .dark ? Color(white: 0.16) : Color(white: 0.44)
+        case .gold:
+            return colorScheme == .dark
+                ? Color(red: 0.35, green: 0.26, blue: 0.06)
+                : Color(red: 0.50, green: 0.38, blue: 0.12)
+        case .vintage:
+            return colorScheme == .dark
+                ? Color(red: 0.22, green: 0.18, blue: 0.14)
+                : Color(red: 0.58, green: 0.52, blue: 0.46)
         }
     }
     // リッジ正面中央（凸面の最明部）
@@ -254,6 +280,17 @@ struct AZDialBack: View {
             return colorScheme == .dark ? Color(white: 0.52) : Color(white: 0.80)
         case .hairline:
             return colorScheme == .dark ? Color(white: 0.78) : Color(white: 0.95)
+        case .rubber:
+            // マット感：明暗差を小さく抑える
+            return colorScheme == .dark ? Color(white: 0.30) : Color(white: 0.62)
+        case .gold:
+            return colorScheme == .dark
+                ? Color(red: 0.88, green: 0.72, blue: 0.28)
+                : Color(red: 0.95, green: 0.82, blue: 0.40)
+        case .vintage:
+            return colorScheme == .dark
+                ? Color(red: 0.50, green: 0.44, blue: 0.38)
+                : Color(red: 0.80, green: 0.74, blue: 0.66)
         }
     }
     // リッジ頂面エッジ（鋭いハイライト線）
@@ -269,6 +306,16 @@ struct AZDialBack: View {
             return colorScheme == .dark ? Color(white: 0.80) : Color.white
         case .hairline:
             return Color.white
+        case .rubber:
+            return colorScheme == .dark ? Color(white: 0.38) : Color(white: 0.72)
+        case .gold:
+            return colorScheme == .dark
+                ? Color(red: 1.0, green: 0.95, blue: 0.65)
+                : Color(red: 1.0, green: 0.97, blue: 0.75)
+        case .vintage:
+            return colorScheme == .dark
+                ? Color(red: 0.65, green: 0.58, blue: 0.50)
+                : Color(red: 0.92, green: 0.87, blue: 0.80)
         }
     }
 
@@ -399,6 +446,70 @@ struct AZDialBack: View {
                     startPoint: CGPoint(x: rx,      y: topY + h / 2),
                     endPoint:   CGPoint(x: rx + rw, y: topY + h / 2)
                 )
+            )
+
+        case .rubber:
+            // ラバーグリップ（幅広・マット・低コントラスト・ハイライト線なし）
+            let rw = tickGap * 0.65
+            let rx = x - rw / 2
+            ctx.fill(
+                Path(CGRect(x: rx, y: topY, width: rw, height: h)),
+                with: .linearGradient(
+                    Gradient(stops: [
+                        .init(color: ridgeDark,   location: 0.00),
+                        .init(color: ridgeBright, location: 0.50),
+                        .init(color: ridgeDark,   location: 1.00),
+                    ]),
+                    startPoint: CGPoint(x: rx,      y: topY + h / 2),
+                    endPoint:   CGPoint(x: rx + rw, y: topY + h / 2)
+                )
+            )
+
+        case .gold:
+            // ゴールド（幅広リッジ・狭い溝・中央に鋭い輝きのピーク）
+            let rw = tickGap * 0.75
+            let rx = x - rw / 2
+            ctx.fill(
+                Path(CGRect(x: rx, y: topY, width: rw, height: h)),
+                with: .linearGradient(
+                    Gradient(stops: [
+                        .init(color: ridgeDark,   location: 0.00),
+                        .init(color: ridgeBright, location: 0.40),
+                        .init(color: ridgeEdge,   location: 0.50),
+                        .init(color: ridgeBright, location: 0.60),
+                        .init(color: ridgeDark,   location: 1.00),
+                    ]),
+                    startPoint: CGPoint(x: rx,      y: topY + h / 2),
+                    endPoint:   CGPoint(x: rx + rw, y: topY + h / 2)
+                )
+            )
+            // 頂面エッジ（細いゴールドライン）
+            ctx.fill(
+                Path(CGRect(x: rx + rw * 0.15, y: topY, width: rw * 0.70, height: 1.2)),
+                with: .color(ridgeEdge)
+            )
+
+        case .vintage:
+            // ヴィンテージ（幅広・フラットトップグラデーション＝使い込まれた摩耗感）
+            let rw = tickGap * 0.75
+            let rx = x - rw / 2
+            ctx.fill(
+                Path(CGRect(x: rx, y: topY, width: rw, height: h)),
+                with: .linearGradient(
+                    Gradient(stops: [
+                        .init(color: ridgeDark,   location: 0.00),
+                        .init(color: ridgeBright, location: 0.28),
+                        .init(color: ridgeBright, location: 0.72),
+                        .init(color: ridgeDark,   location: 1.00),
+                    ]),
+                    startPoint: CGPoint(x: rx,      y: topY + h / 2),
+                    endPoint:   CGPoint(x: rx + rw, y: topY + h / 2)
+                )
+            )
+            // 控えめなハイライト線（幅広の天面に薄く）
+            ctx.fill(
+                Path(CGRect(x: rx + rw * 0.20, y: topY, width: rw * 0.60, height: 0.8)),
+                with: .color(ridgeEdge)
             )
         }
     }
