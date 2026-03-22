@@ -175,8 +175,11 @@ struct GraphSettingsView: View {
                         TextField("160", value: $settings.graphBMITall, format: .number)
                             .keyboardType(.numberPad)
                             .multilineTextAlignment(.trailing)
-                            .frame(width: 60)
-                        Text("cm").foregroundStyle(.secondary)
+                            .font(.title.bold().monospacedDigit())
+                            .frame(width: 72)
+                        Text("cm")
+                            .font(.callout.weight(.semibold))
+                            .foregroundStyle(.secondary)
                     }
                     AZDialView(
                         value: $settings.graphBMITall,
@@ -425,7 +428,7 @@ struct GoalSettingsView: View {
                     .labelsHidden()
             }
             if enabled.wrappedValue {
-                AZDialView(value: value, min: spec.min, max: spec.max, step: 1, stepperStep: stepperStep)
+                AZDialView(value: value, min: spec.min, max: spec.max, step: 1, stepperStep: stepperStep, decimals: decimals)
             }
         }
         .padding(.vertical, 4)

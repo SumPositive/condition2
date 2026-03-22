@@ -12,6 +12,16 @@ struct AZDialView: View {
     let max: Int
     let step: Int           // ダイアルの1ステップ値
     let stepperStep: Int    // ステッパーボタンの刻み（0=非表示）
+    var decimals: Int = 0   // 表示小数点桁数（ステップラベルのフォーマットに使用）
+
+    private var stepLabelText: String {
+        if decimals == 0 {
+            return "±\(stepperStep)"
+        } else {
+            let val = Double(stepperStep) / pow(10.0, Double(decimals))
+            return "±\(String(format: "%.\(decimals)f", val))"
+        }
+    }
 
     var body: some View {
         HStack(spacing: 6) {
@@ -19,6 +29,13 @@ struct AZDialView: View {
                 Stepper("", value: $value, in: min...max, step: stepperStep)
                     .labelsHidden()
                     .frame(width: 94)
+                    .overlay(alignment: .bottom) {
+                        Text(stepLabelText)
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                            .offset(y: 14)
+                            .allowsHitTesting(false)
+                    }
             }
             AZDialScrollArea(value: $value, min: min, max: max, step: step)
         }
@@ -103,6 +120,11 @@ private struct AZDialScrollArea: View {
             DragGesture(minimumDistance: 1)
                 .updating($isDragging) { _, state, _ in state = true }
                 .onChanged { drag in
+                    // ドラッグ開始フレーム: value と同期してから delta 計算
+                    if dragBase == 0 {
+                        scrollOffset = offsetForValue(value)
+                        dragBase = drag.translation.width
+                    }
                     let delta = drag.translation.width - dragBase
                     // scrollOffset をピクセル単位でリアルタイム更新（滑らかに流れる）
                     scrollOffset -= delta
@@ -122,12 +144,6 @@ private struct AZDialScrollArea: View {
                     scrollOffset = offsetForValue(value)
                 }
         )
-        // ステッパー等から value が外部変更された場合に追従
-        .onChange(of: value) { _, newVal in
-            if !isDragging {
-                scrollOffset = offsetForValue(newVal)
-            }
-        }
         .onAppear {
             scrollOffset = offsetForValue(value)
         }

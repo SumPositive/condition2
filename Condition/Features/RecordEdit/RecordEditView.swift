@@ -370,7 +370,8 @@ struct RecordEditView: View {
                     min: spec.min,
                     max: spec.max,
                     step: 1,
-                    stepperStep: stepperStep
+                    stepperStep: stepperStep,
+                    decimals: decimals
                 )
             }
         }
