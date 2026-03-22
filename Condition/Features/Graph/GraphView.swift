@@ -289,6 +289,8 @@ struct BpDistributionBar: View {
     let barMin: Int
     let barMax: Int
 
+    @Environment(\.colorScheme) private var colorScheme
+
     private var minVal: Int? { values.min() }
     private var maxVal: Int? { values.max() }
     private var avgVal: Int? {
@@ -311,12 +313,14 @@ struct BpDistributionBar: View {
                 // カプセル形にクリップ
                 ctx.clip(to: Path(roundedRect: CGRect(origin: .zero, size: size), cornerRadius: h / 2))
 
-                // ゾーン背景
+                // ゾーン背景（ダークモードは opacity を増幅）
+                let zoneOpacity: CGFloat = colorScheme == .dark ? 5.0 : 1.0
                 for z in zones {
                     let x0 = xf(max(z.min, barMin))
                     let x1 = xf(min(z.max, barMax))
                     guard x1 > x0 else { continue }
-                    ctx.fill(Path(CGRect(x: x0, y: 0, width: x1 - x0, height: h)), with: .color(z.color))
+                    ctx.fill(Path(CGRect(x: x0, y: 0, width: x1 - x0, height: h)),
+                             with: .color(z.color.opacity(zoneOpacity)))
                 }
 
                 // 測定範囲カプセル（min〜max）
@@ -579,12 +583,12 @@ struct BpChartView: View {
                 // 目標ライン
                 if settings.goalBpHi > 0 {
                     RuleMark(y: .value("目標上", settings.goalBpHi))
-                        .foregroundStyle(.red.opacity(0.4))
+                        .foregroundStyle(.red.opacity(0.7))
                         .lineStyle(StrokeStyle(lineWidth: 1, dash: [4]))
                 }
                 if settings.goalBpLo > 0 {
                     RuleMark(y: .value("目標下", settings.goalBpLo))
-                        .foregroundStyle(.blue.opacity(0.4))
+                        .foregroundStyle(.blue.opacity(0.7))
                         .lineStyle(StrokeStyle(lineWidth: 1, dash: [4]))
                 }
             }
@@ -724,7 +728,7 @@ struct BpPpChartView: View {
                 // 目標ライン
                 if goalValue > 0 {
                     RuleMark(y: .value("目標", goalValue))
-                        .foregroundStyle(Color.orange.opacity(0.5))
+                        .foregroundStyle(Color.orange.opacity(0.7))
                         .lineStyle(StrokeStyle(lineWidth: 1, dash: [4]))
                 }
             }
@@ -927,7 +931,7 @@ struct LineChartView: View {
                 // 目標ライン
                 if goalValue > 0 {
                     RuleMark(y: .value("目標", goalValue))
-                        .foregroundStyle(color.opacity(0.5))
+                        .foregroundStyle(color.opacity(0.7))
                         .lineStyle(StrokeStyle(lineWidth: 1, dash: [4]))
                 }
             }
@@ -1116,7 +1120,7 @@ private struct BMIChartView: View {
                 if goalValue > 0 {
                     let goalBMIDouble = Double(goalValue) / 10.0
                     RuleMark(y: .value("目標", goalBMIDouble))
-                        .foregroundStyle(Color.cyan.opacity(0.5))
+                        .foregroundStyle(Color.cyan.opacity(0.7))
                         .lineStyle(StrokeStyle(lineWidth: 1, dash: [4]))
                 }
             }

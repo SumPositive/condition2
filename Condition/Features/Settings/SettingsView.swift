@@ -190,7 +190,7 @@ struct GraphSettingsView: View {
                     GoalSettingsView()
                 } label: {
                     LabeledContent(
-                        String(localized: "GraphSett_Goal", defaultValue: "目標"),
+                        String(localized: "GraphSett_Goal", defaultValue: "目標ライン"),
                         value: String(localized: "GraphSett_GoalAction", defaultValue: "設定")
                     )
                 }
@@ -251,8 +251,8 @@ struct GraphSettingsView: View {
             } footer: {
                 Text(String(localized: "GraphSett_PanelOrder_Footer", defaultValue: "並び順はグラフに反映されます"))
             }
+            .environment(\.editMode, .constant(.active))
         }
-        .environment(\.editMode, .constant(.active))
         .navigationTitle(String(localized: "GraphSett_Title", defaultValue: "グラフ設定"))
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {

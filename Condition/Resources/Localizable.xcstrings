@@ -1404,13 +1404,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Goal"
+            "value" : "Goal Line"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "目標"
+            "value" : "目標ライン"
           }
         }
       }
