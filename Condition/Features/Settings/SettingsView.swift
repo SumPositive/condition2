@@ -376,17 +376,21 @@ struct GraphSettingsView: View {
             Section {
                 ForEach(settings.graphDisplayOrder, id: \.self) { raw in
                     if let kind = GraphKind(rawValue: raw) {
-                        Toggle(isOn: Binding(
-                            get: { !hiddenSet.contains(raw) },
-                            set: { visible in
-                                if visible {
-                                    settings.graphHiddenPanels.removeAll { $0 == raw }
-                                } else if !settings.graphHiddenPanels.contains(raw) {
-                                    settings.graphHiddenPanels.append(raw)
+                        HStack {
+                            Toggle(isOn: Binding(
+                                get: { !hiddenSet.contains(raw) },
+                                set: { visible in
+                                    if visible {
+                                        settings.graphHiddenPanels.removeAll { $0 == raw }
+                                    } else if !settings.graphHiddenPanels.contains(raw) {
+                                        settings.graphHiddenPanels.append(raw)
+                                    }
                                 }
+                            )) {
+                                Text(kind.title)
                             }
-                        )) {
-                            Text(kind.title)
+                            Image(systemName: "line.3.horizontal")
+                                .foregroundStyle(.tertiary)
                         }
                     }
                 }

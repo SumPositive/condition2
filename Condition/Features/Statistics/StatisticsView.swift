@@ -243,14 +243,17 @@ struct BpJshView: View {
                         .symbolSize(32)
                     }
                 }
-                .chartXScale(domain: 40...130)
+                .chartXScale(domain: 40...134)
                 .chartYScale(domain: 70...210)
                 .chartXAxis {
-                    AxisMarks(values: [60, 80, 100, 120]) { value in
+                    let narrow = UIScreen.main.bounds.width <= 375
+                    let xValues: [Int] = narrow ? [60, 80, 100] : [60, 80, 100, 120]
+                    AxisMarks(values: xValues) { value in
                         AxisGridLine().foregroundStyle(.gray.opacity(0.15))
                         AxisValueLabel {
                             if let v = value.as(Int.self) {
-                                if v == 120 {
+                                let showLabel = v == 120 || (narrow && v == 100)
+                                if showLabel {
                                     HStack(spacing: 2) {
                                         Text("\(v)").font(.caption)
                                         Text("下").font(.caption).foregroundStyle(.secondary)
@@ -424,7 +427,8 @@ private struct JSHStandardsPopover: View {
             }
         }
         .frame(minWidth: 300)
-        .presentationCompactAdaptation(.popover)
+        .presentationCompactAdaptation(.sheet)
+        .presentationDetents([.medium, .large])
     }
 }
 
@@ -481,7 +485,8 @@ private struct ESHStandardsPopover: View {
             }
         }
         .frame(minWidth: 300)
-        .presentationCompactAdaptation(.popover)
+        .presentationCompactAdaptation(.sheet)
+        .presentationDetents([.medium, .large])
     }
 }
 

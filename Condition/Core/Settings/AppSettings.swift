@@ -266,10 +266,10 @@ final class AppSettings {
 
         let sd = kvs.longLong(forKey: KVSKeys.settStatDays)
         if sd > 0 { statDays = Int(sd) }
-        statType        = Int(kvs.longLong(forKey: KVSKeys.settStatType))
-        statShowAvg     = kvs.bool(forKey: KVSKeys.settStatAvgShow)
-        statShowTimeLine = kvs.bool(forKey: KVSKeys.settStatTimeLine)
-        statShow24HLine = kvs.bool(forKey: KVSKeys.settStat24HLine)
+        if kvs.object(forKey: KVSKeys.settStatType)     != nil { statType         = Int(kvs.longLong(forKey: KVSKeys.settStatType)) }
+        if kvs.object(forKey: KVSKeys.settStatAvgShow)  != nil { statShowAvg      = kvs.bool(forKey: KVSKeys.settStatAvgShow) }
+        if kvs.object(forKey: KVSKeys.settStatTimeLine) != nil { statShowTimeLine = kvs.bool(forKey: KVSKeys.settStatTimeLine) }
+        if kvs.object(forKey: KVSKeys.settStat24HLine)  != nil { statShow24HLine  = kvs.bool(forKey: KVSKeys.settStat24HLine) }
         if let arr = kvs.array(forKey: KVSKeys.settStatSections) as? [Int], !arr.isEmpty {
             statSectionOrder = arr
         }
