@@ -456,12 +456,12 @@ struct RecordRowView: View {
                     VStack(spacing: 1) {
                         if record.bCaution {
                             Image(systemName: "flag.fill")
-                                .font(.system(size: 15))
+                                .font(.system(size: 14))
                                 .foregroundStyle(.orange)
                         }
                         if hkEnabled {
                             Image(systemName: record.dataSource.icon)
-                                .font(.system(size: 16))
+                                .font(.system(size: 12))
                                 .foregroundStyle(record.dataSource.color)
                         }
                     }
