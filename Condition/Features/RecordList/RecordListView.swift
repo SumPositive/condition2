@@ -52,18 +52,20 @@ struct RecordListView: View {
             .toolbar {
                 ToolbarItemGroup(placement: .topBarTrailing) {
                     #if targetEnvironment(simulator)
-                    Button {
-                        AppSettings.shared.hkDisabledByDemo = true
-                        AppSettings.shared.hkEnabled = false
-                        DemoDataGenerator.generate(in: context)
-                        toastMessage = "1年分のDemoデータを追加しました"
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
-                            toastMessage = nil
+                    if !settings.hkDisabledByDemo {
+                        Button {
+                            AppSettings.shared.hkDisabledByDemo = true
+                            AppSettings.shared.hkEnabled = false
+                            DemoDataGenerator.generate(in: context)
+                            toastMessage = "1年分のDemoデータを追加しました"
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+                                toastMessage = nil
+                            }
+                        } label: {
+                            Text("Demo")
                         }
-                    } label: {
-                        Text("Demo")
+                        .tint(.orange)
                     }
-                    .tint(.orange)
                     #endif // targetEnvironment(simulator)
                     Button { showAddSheet = true } label: {
                         Image(systemName: "plus")
@@ -205,6 +207,27 @@ struct RecordListView: View {
             enforceStepsConstraintAfterImport(in: oneYearAgo...now, context: context)
             showImportToast(count: addedCount)
         }
+
+        // 歩数: ヘルスケアから1日分合計を取得し、各日の最終レコードに付与・更新
+        guard !Set(settings.hiddenFields).contains(GraphKind.pedo.rawValue) else { return }
+        let dailySteps = await hkService.readDailySteps(from: oneYearAgo, to: now)
+        guard !dailySteps.isEmpty else { return }
+        var stepsChanged = false
+        for (day, steps) in dailySteps {
+            guard steps > 0 else { continue }
+            let nextDay = cal.date(byAdding: .day, value: 1, to: day) ?? day
+            var desc = FetchDescriptor<BodyRecord>(
+                predicate: #Predicate { $0.dateTime >= day && $0.dateTime < nextDay },
+                sortBy: [SortDescriptor(\.dateTime, order: .reverse)]
+            )
+            desc.fetchLimit = 1
+            guard let lastRecord = try? context.fetch(desc).first else { continue }
+            if lastRecord.nPedometer != steps {
+                lastRecord.nPedometer = steps
+                stepsChanged = true
+            }
+        }
+        if stepsChanged { try? context.save() }
     }
 
     /// バルクインポート後、対象期間内の各日について歩数を最終時刻レコードにのみ残す

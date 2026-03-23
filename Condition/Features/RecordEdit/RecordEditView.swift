@@ -288,7 +288,8 @@ struct RecordEditView: View {
 
     @ViewBuilder
     private var healthKitSection: some View {
-        let showWrite = settings.hkEnabled && hkDirection.canWrite && hkTiming == .manual
+        let isHKRecord = vm.dataSource == .hkImport || vm.dataSource == .hkModified
+        let showWrite = settings.hkEnabled && hkDirection.canWrite && hkTiming == .manual && !isHKRecord
         if showWrite {
             Section(String(localized: "HK_Section", defaultValue: "ヘルスケア")) {
                 Button {

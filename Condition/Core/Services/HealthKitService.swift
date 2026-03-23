@@ -515,6 +515,15 @@ final class HealthKitService {
         }
     }
 
+    /// 指定期間の日別歩数合計を返す（キー: startOfDay）
+    func readDailySteps(from startDate: Date, to endDate: Date) async -> [Date: Int] {
+        guard isAvailable, !AppSettings.shared.hkDisabledByDemo else { return [:] }
+        let samples = await allStepsByDay(from: startDate, to: endDate)
+        let cal = Calendar.current
+        return Dictionary(samples.map { (cal.startOfDay(for: $0.0), $0.1) },
+                          uniquingKeysWith: { $1 })
+    }
+
     private func allStepsByDay(from start: Date, to end: Date) async -> [(Date, Int)] {
         logger.info("allStepsByDay 開始: \(start, privacy: .public) 〜 \(end, privacy: .public)")
         let cal = Calendar.current

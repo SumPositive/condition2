@@ -280,6 +280,9 @@ final class RecordEditViewModel {
 
     private func writeToHealthKitIfAutomatic() {
         if case .goalEdit = mode { return }
+        // hkImport / hkModified レコードはヘルスケアへ書き戻さない
+        if case .edit(let record) = mode,
+           record.dataSource == .hkImport || record.dataSource == .hkModified { return }
         let s = AppSettings.shared
         guard s.hkEnabled,
               HKSyncDirection(rawValue: s.hkDirection)?.canWrite == true,
@@ -328,6 +331,9 @@ final class RecordEditViewModel {
 
     /// HealthKit へ現在のフォーム値を書き込み
     func writeToHealthKit() {
+        // hkImport / hkModified レコードはヘルスケアへ書き戻さない
+        if case .edit(let record) = mode,
+           record.dataSource == .hkImport || record.dataSource == .hkModified { return }
         let s = AppSettings.shared
         guard s.hkEnabled, HKSyncDirection(rawValue: s.hkDirection)?.canWrite == true else { return }
         Task {
