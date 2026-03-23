@@ -102,7 +102,7 @@ final class HealthKitService {
     // MARK: - 書き込み
 
     func write(_ values: HealthKitValues) async {
-        guard isAvailable else { return }
+        guard isAvailable, !AppSettings.shared.hkDisabledByDemo else { return }
 
         // 同日時の既存サンプルを削除してから追加（上書き相当）
         await deleteSamples(at: values.date)

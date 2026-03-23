@@ -196,6 +196,9 @@ final class AppSettings {
     var hkEnabled: Bool = false {
         didSet { ud.set(hkEnabled, forKey: UDefKeys.hkEnabled) }
     }
+    var hkDisabledByDemo: Bool = false {
+        didSet { ud.set(hkDisabledByDemo, forKey: UDefKeys.hkDisabledByDemo) }
+    }
     var hkDirection: Int = HKSyncDirection.both.rawValue {
         didSet { ud.set(hkDirection, forKey: UDefKeys.hkDirection) }
     }
@@ -216,7 +219,8 @@ final class AppSettings {
             UDefKeys.hkTiming:    HKSyncTiming.automatic.rawValue,
         ])
         // UserDefaults（デバイス個別）読み込み
-        hkEnabled   = ud.bool(forKey: UDefKeys.hkEnabled)
+        hkDisabledByDemo = ud.bool(forKey: UDefKeys.hkDisabledByDemo)
+        hkEnabled   = hkDisabledByDemo ? false : ud.bool(forKey: UDefKeys.hkEnabled)
         hkDirection = ud.integer(forKey: UDefKeys.hkDirection)
         hkTiming    = ud.integer(forKey: UDefKeys.hkTiming)
         // iCloud KVS 外部変更通知

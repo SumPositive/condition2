@@ -59,7 +59,8 @@ enum UDefKeys {
 static let migrationDone = "MigrationV2Done"    // CoreData→SwiftData移行完了フラグ
 
     // MARK: - HealthKit（デバイス個別設定）
-    static let hkEnabled   = "UDEF_HKEnabled"
-    static let hkDirection = "UDEF_HKDirection"  // HKSyncDirection.rawValue
-    static let hkTiming    = "UDEF_HKTiming"     // HKSyncTiming.rawValue
+    static let hkEnabled        = "UDEF_HKEnabled"
+    static let hkDirection      = "UDEF_HKDirection"       // HKSyncDirection.rawValue
+    static let hkTiming         = "UDEF_HKTiming"          // HKSyncTiming.rawValue
+    static let hkDisabledByDemo = "UDEF_HKDisabledByDemo"  // Demo生成後は再有効化不可
 }

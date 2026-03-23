@@ -51,8 +51,10 @@ struct RecordListView: View {
             .navigationTitle(String(localized: "Tab_List", defaultValue: "記録"))
             .toolbar {
                 ToolbarItemGroup(placement: .topBarTrailing) {
-                    #if DEBUG
+                    #if targetEnvironment(simulator)
                     Button {
+                        AppSettings.shared.hkDisabledByDemo = true
+                        AppSettings.shared.hkEnabled = false
                         DemoDataGenerator.generate(in: context)
                         toastMessage = "1年分のDemoデータを追加しました"
                         DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
@@ -62,7 +64,7 @@ struct RecordListView: View {
                         Text("Demo")
                     }
                     .tint(.orange)
-                    #endif
+                    #endif // targetEnvironment(simulator)
                     Button { showAddSheet = true } label: {
                         Image(systemName: "plus")
                     }

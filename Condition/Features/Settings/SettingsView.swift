@@ -34,7 +34,7 @@ struct SettingsView: View {
                     }
 
                     // ヘルスケア
-                    if healthKit.isAvailable {
+                    if healthKit.isAvailable && !settings.hkDisabledByDemo {
                         NavigationLink {
                             HealthKitSettingsView()
                         } label: {
