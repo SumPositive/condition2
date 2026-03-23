@@ -82,8 +82,8 @@ enum RecordDataSource: Int {
         switch self {
         case .appInput:    return String(localized: "DataSource_AppInput",    defaultValue: "このアプリで入力された記録です")
         case .appModified: return String(localized: "DataSource_AppModified", defaultValue: "このアプリで入力後に変更された記録です")
-        case .hkImport:    return String(localized: "DataSource_HKImport",    defaultValue: "ヘルスケアから読み込まれた記録です")
-        case .hkModified:  return String(localized: "DataSource_HKModified",  defaultValue: "ヘルスケアから読み込まれた後に変更された記録です。ヘルスケアに対しては変更や削除ができず常に追加されます。ヘルスケア側で重複する記録が不要ならば削除してください")
+        case .hkImport:    return String(localized: "DataSource_HKImport",    defaultValue: "ヘルスケアから読み込まれた記録です。変更や削除が可能ですがヘルスケア側には影響(連携)しません")
+        case .hkModified:  return String(localized: "DataSource_HKModified",  defaultValue: "ヘルスケアから読み込まれた後に変更された記録です。ヘルスケア側は変更されていません。必要ならばヘルスケア側で修正してください")
         }
     }
 }
