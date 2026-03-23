@@ -1381,6 +1381,15 @@ struct TempHistogramView: View {
 
     private var hasData: Bool { bins.contains { $0.count > 0 } }
 
+    private var xDomain: ClosedRange<Double> {
+        let active = bins.filter { $0.count > 0 }.map(\.lower)
+        guard let lo = active.min(), let hi = active.max() else { return 35.0...38.0 }
+        // ビン幅 0.2 の 2 本分マージンを加え、0.5 刻みで丸める
+        let domLo = (((lo - 0.4) * 2).rounded(.down) / 2)
+        let domHi = (((hi + 0.6) * 2).rounded(.up)   / 2)
+        return domLo...domHi
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(String(localized: "Stat_TempHist_Title", defaultValue: "体温 分布"))
@@ -1411,6 +1420,18 @@ struct TempHistogramView: View {
                     yEnd: .value("count", bin.count)
                 )
                 .foregroundStyle(bin.color.opacity(0.8))
+            }
+            .chartXScale(domain: xDomain)
+            .chartXAxis {
+                AxisMarks(values: .stride(by: 0.5)) { value in
+                    AxisGridLine().foregroundStyle(.gray.opacity(0.2))
+                    AxisTick()
+                    AxisValueLabel {
+                        if let v = value.as(Double.self) {
+                            Text(String(format: "%.1f", v)).font(.caption)
+                        }
+                    }
+                }
             }
             .chartXAxisLabel("°C")
             .chartYAxisLabel(String(localized: "Stat_Count", defaultValue: "件数"))
