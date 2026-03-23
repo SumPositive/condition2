@@ -39,6 +39,12 @@
       "comment" : "Privacy - Calendars Usage Description",
       "extractionState" : "extracted_with_value",
       "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Used to record health data in your calendar."
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "new",
@@ -51,6 +57,12 @@
       "comment" : "Privacy - Health Share Usage Description",
       "extractionState" : "extracted_with_value",
       "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Used to read your health records and auto-fill the entry screen."
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "new",
@@ -63,6 +75,12 @@
       "comment" : "Privacy - Health Update Usage Description",
       "extractionState" : "extracted_with_value",
       "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Used to write your recorded health data to the Health app."
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "new",
@@ -75,6 +93,12 @@
       "comment" : "Privacy - Reminders Usage Description",
       "extractionState" : "extracted_with_value",
       "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Used to set reminders for your health data."
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "new",
@@ -87,6 +111,12 @@
       "comment" : "Privacy - Tracking Usage Description",
       "extractionState" : "extracted_with_value",
       "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Used to measure and improve the effectiveness of ads."
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "new",

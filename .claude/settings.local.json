@@ -14,7 +14,9 @@
       "Bash(python3:*)",
       "Bash(ls /Users/sumpositive/GitLocal/Condition2/*.xcodeproj/)",
       "Bash(xcodegen version:*)",
-      "Bash(xcodegen generate:*)"
+      "Bash(xcodegen generate:*)",
+      "Bash(sips -g hasAlpha /Users/sumpositive/GitLocal/Condition2/Condition/Resources/Assets.xcassets/AppIcon.appiconset/AppIcon1024.png)",
+      "Bash(sips -s format png AppIcon1024.png --setProperty hasAlpha false -o AppIcon1024.png)"
     ]
   }
 }
