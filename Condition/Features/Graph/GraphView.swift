@@ -42,10 +42,7 @@ enum GraphPeriod: Int, CaseIterable {
 struct GraphView: View {
     @State private var period: GraphPeriod = .threeMonths
     @State private var showSettings = false
-
-    private var cutoffDate: Date {
-        Calendar.current.date(byAdding: .day, value: -period.rawValue, to: Date()) ?? Date()
-    }
+    @State private var cutoffDate = Calendar.current.date(byAdding: .day, value: -365, to: Date()) ?? Date()
 
     var body: some View {
         NavigationStack {
