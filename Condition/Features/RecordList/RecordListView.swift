@@ -50,7 +50,19 @@ struct RecordListView: View {
             }
             .navigationTitle(String(localized: "Tab_List", defaultValue: "記録"))
             .toolbar {
-                ToolbarItem(placement: .primaryAction) {
+                ToolbarItemGroup(placement: .topBarTrailing) {
+                    #if DEBUG
+                    Button {
+                        DemoDataGenerator.generate(in: context)
+                        toastMessage = "1年分のDemoデータを追加しました"
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+                            toastMessage = nil
+                        }
+                    } label: {
+                        Text("Demo")
+                    }
+                    .tint(.orange)
+                    #endif
                     Button { showAddSheet = true } label: {
                         Image(systemName: "plus")
                     }
@@ -302,6 +314,98 @@ struct RecordSectionHeader: View {
             .clipShape(RoundedRectangle(cornerRadius: 4))
     }
 }
+
+// MARK: - DEBUGサンプルデータ生成
+
+#if DEBUG
+private struct DemoDataGenerator {
+
+    private struct Profile {
+        let bpHiBase: Int; let bpHiRange: Int
+        let bpLoBase: Int; let bpLoRange: Int
+        let pulseBase: Int; let pulseRange: Int
+        let weightBase: Int; let weightRange: Int
+        let tempBase: Int; let tempRange: Int
+        let stepsBase: Int; let stepsRange: Int
+        let bodyFatBase: Int; let bodyFatRange: Int
+        let skMuscleBase: Int; let skMuscleRange: Int
+    }
+
+    private static let jaProfile = Profile(
+        bpHiBase: 123, bpHiRange: 18,
+        bpLoBase: 76,  bpLoRange: 12,
+        pulseBase: 70, pulseRange: 14,
+        weightBase: 680, weightRange: 60,
+        tempBase: 364,   tempRange: 8,
+        stepsBase: 7200, stepsRange: 4800,
+        bodyFatBase: 220, bodyFatRange: 50,
+        skMuscleBase: 340, skMuscleRange: 40
+    )
+
+    private static let enProfile = Profile(
+        bpHiBase: 128, bpHiRange: 20,
+        bpLoBase: 80,  bpLoRange: 12,
+        pulseBase: 72, pulseRange: 16,
+        weightBase: 900, weightRange: 80,
+        tempBase: 366,   tempRange: 8,
+        stepsBase: 5500, stepsRange: 4000,
+        bodyFatBase: 265, bodyFatRange: 60,
+        skMuscleBase: 305, skMuscleRange: 40
+    )
+
+    static func generate(in context: ModelContext) {
+        try? context.delete(model: BodyRecord.self)
+
+        let isJa = Locale.preferredLanguages.first?.hasPrefix("ja") ?? true
+        let profile = isJa ? jaProfile : enProfile
+        let cal = Calendar.current
+        let today = cal.startOfDay(for: Date())
+        var rng = SystemRandomNumberGenerator()
+
+        func rand(_ base: Int, _ range: Int, step: Int = 1) -> Int {
+            let v = base + Int.random(in: 0...range, using: &rng) - range / 2
+            return (v / step) * step
+        }
+
+        for dayOffset in 0..<365 {
+            guard let day = cal.date(byAdding: .day, value: -dayOffset, to: today) else { continue }
+            let recordCount = Int.random(in: 0...9, using: &rng) < 3 ? 2 : 1
+
+            for i in 0..<recordCount {
+                let dateOpt: DateOpt
+                let hour: Int
+                if i == 0 {
+                    let opts: [(DateOpt, Int)] = [(.wake, 7), (.rest, 20), (.down, 22)]
+                    let picked = opts[Int.random(in: 0..<opts.count, using: &rng)]
+                    dateOpt = picked.0; hour = picked.1
+                } else {
+                    dateOpt = .rest; hour = Int.random(in: 12...15, using: &rng)
+                }
+                let minute = Int.random(in: 0...59, using: &rng)
+                guard let dt = cal.date(bySettingHour: hour, minute: minute, second: 0, of: day) else { continue }
+
+                let record = BodyRecord(dateTime: dt, dateOpt: dateOpt)
+                record.nDataSource   = RecordDataSource.appInput.rawValue
+                let hi = max(90,  rand(profile.bpHiBase, profile.bpHiRange, step: 2))
+                let lo = max(55,  rand(profile.bpLoBase, profile.bpLoRange, step: 2))
+                record.nBpHi_mmHg    = hi
+                record.nBpLo_mmHg    = min(lo, hi - 20)
+                record.nPulse_bpm    = max(50, rand(profile.pulseBase,    profile.pulseRange))
+                record.nWeight_10Kg  = max(300, rand(profile.weightBase,  profile.weightRange, step: 5))
+                record.nTemp_10c     = max(355, rand(profile.tempBase,    profile.tempRange))
+                record.nBodyFat_10p  = max(100, rand(profile.bodyFatBase, profile.bodyFatRange, step: 5))
+                record.nSkMuscle_10p = max(150, rand(profile.skMuscleBase,profile.skMuscleRange, step: 5))
+                if i == recordCount - 1 {
+                    record.nPedometer = max(0, rand(profile.stepsBase, profile.stepsRange, step: 100))
+                }
+                record.bCaution = record.nBpHi_mmHg >= 140 || record.nBpLo_mmHg >= 90
+                context.insert(record)
+            }
+        }
+        try? context.save()
+    }
+}
+#endif
 
 // MARK: - 列幅定義
 
