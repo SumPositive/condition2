@@ -40,7 +40,7 @@ enum GraphPeriod: Int, CaseIterable {
 // MARK: - GraphView
 
 struct GraphView: View {
-    @State private var period: GraphPeriod = .threeMonths
+    @State private var period: GraphPeriod = .month
     @State private var showSettings = false
     @State private var cutoffDate = Calendar.current.date(byAdding: .day, value: -365, to: Date()) ?? Date()
 
@@ -153,7 +153,7 @@ private struct GraphContentView: View {
                           title: kind.title,
                           unit: String(localized: "Unit_Steps", defaultValue: "歩"),
                           color: .green, goalValue: settings.goalPedometer, period: period,
-                          tightDomain: true)
+                          tightDomain: true, showAsBar: true)
         case .bodyFat:
             LineChartView(records: records, keyPath: \.nBodyFat_10p,
                           title: kind.title, unit: "%", color: .purple,
@@ -799,6 +799,7 @@ struct LineChartView: View {
     let period: GraphPeriod
     var tightDomain: Bool = false
     var showMovingAverage: Bool = false
+    var showAsBar: Bool = false
 
     private let cal = Calendar.current
     @State private var selectedDate: Date?
@@ -880,47 +881,58 @@ struct LineChartView: View {
 
             // チャート
             Chart {
-                // 移動平均ライン（直近7件）― エリア・ライン・ドットより背面になるよう先頭に描画
-                ForEach(movingAverageValues) { d in
-                    LineMark(
-                        x: .value("日時", d.date),
-                        y: .value("移動平均", d.avg),
-                        series: .value("series", "ma")
-                    )
-                    .foregroundStyle(Color.orange.opacity(0.4))
-                    .lineStyle(StrokeStyle(lineWidth: 2))
-                    .interpolationMethod(.catmullRom)
-                }
-                // エリア（日次平均）
-                ForEach(dailyValues) { d in
-                    AreaMark(
-                        x: .value("日時", d.date),
-                        y: .value(unit, d.avg)
-                    )
-                    .foregroundStyle(
-                        LinearGradient(colors: [color.opacity(0.25), color.opacity(0.0)],
-                                       startPoint: .top, endPoint: .bottom)
-                    )
-                    .interpolationMethod(.catmullRom)
-                }
-                // ライン（日次平均を経由）
-                ForEach(dailyValues) { d in
-                    LineMark(
-                        x: .value("日時", d.date),
-                        y: .value(unit, d.avg)
-                    )
-                    .foregroundStyle(color)
-                    .lineStyle(StrokeStyle(lineWidth: 2))
-                    .interpolationMethod(.catmullRom)
-                }
-                // ポイント（個別レコード、同日は同X）
-                ForEach(validRecords) { r in
-                    PointMark(
-                        x: .value("日時", dayStart(r.dateTime)),
-                        y: .value(unit, Double(r[keyPath: keyPath]))
-                    )
-                    .foregroundStyle(r.dateOpt.color)
-                    .symbolSize(16)
+                if showAsBar {
+                    // 棒グラフ（日次平均）
+                    ForEach(dailyValues) { d in
+                        BarMark(
+                            x: .value("日時", d.date),
+                            y: .value(unit, d.avg)
+                        )
+                        .foregroundStyle(color.opacity(0.75))
+                    }
+                } else {
+                    // 移動平均ライン（直近7件）― エリア・ライン・ドットより背面になるよう先頭に描画
+                    ForEach(movingAverageValues) { d in
+                        LineMark(
+                            x: .value("日時", d.date),
+                            y: .value("移動平均", d.avg),
+                            series: .value("series", "ma")
+                        )
+                        .foregroundStyle(Color.orange.opacity(0.4))
+                        .lineStyle(StrokeStyle(lineWidth: 2))
+                        .interpolationMethod(.catmullRom)
+                    }
+                    // エリア（日次平均）
+                    ForEach(dailyValues) { d in
+                        AreaMark(
+                            x: .value("日時", d.date),
+                            y: .value(unit, d.avg)
+                        )
+                        .foregroundStyle(
+                            LinearGradient(colors: [color.opacity(0.25), color.opacity(0.0)],
+                                           startPoint: .top, endPoint: .bottom)
+                        )
+                        .interpolationMethod(.catmullRom)
+                    }
+                    // ライン（日次平均を経由）
+                    ForEach(dailyValues) { d in
+                        LineMark(
+                            x: .value("日時", d.date),
+                            y: .value(unit, d.avg)
+                        )
+                        .foregroundStyle(color)
+                        .lineStyle(StrokeStyle(lineWidth: 2))
+                        .interpolationMethod(.catmullRom)
+                    }
+                    // ポイント（個別レコード、同日は同X）
+                    ForEach(validRecords) { r in
+                        PointMark(
+                            x: .value("日時", dayStart(r.dateTime)),
+                            y: .value(unit, Double(r[keyPath: keyPath]))
+                        )
+                        .foregroundStyle(r.dateOpt.color)
+                        .symbolSize(16)
+                    }
                 }
                 // 選択ルール
                 if let date = selectedDate {
@@ -935,7 +947,7 @@ struct LineChartView: View {
                         .lineStyle(StrokeStyle(lineWidth: 1, dash: [4]))
                 }
             }
-            .chartYTightDomain(enabled: tightDomain, minVal: yearMinValue, maxVal: yearMaxValue,
+            .chartYTightDomain(enabled: tightDomain && !showAsBar, minVal: yearMinValue, maxVal: yearMaxValue,
                                goalValues: [goalValue])
             .chartYAxis {
                 AxisMarks(position: .leading) { value in
