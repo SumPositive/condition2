@@ -444,9 +444,15 @@ final class HealthKitService {
                 let day = cal.startOfDay(for: dayDate)
                 let keysForDay = byMinute.keys.filter { cal.startOfDay(for: $0) == day }
                 if let lastKey = keysForDay.max() {
+                    // 他のバイタルがある日: 最終時刻レコードに付与
                     byMinute[lastKey]!.steps = steps
+                } else {
+                    // 歩数のみの日: startOfDay にレコードを作成
+                    let key = minuteKey(day)
+                    var v = byMinute[key] ?? HealthKitValues(date: day)
+                    v.steps = steps
+                    byMinute[key] = v
                 }
-                // keysForDay が空の場合（歩数のみの日）はレコードを作成しない
             }
         }
 
@@ -456,7 +462,8 @@ final class HealthKitService {
                 (!hiddenFields.contains(GraphKind.bp.rawValue)     && v.bpHi > 0)   ||
                 (!hiddenFields.contains(GraphKind.pulse.rawValue)  && v.pulse > 0)  ||
                 (!hiddenFields.contains(GraphKind.temp.rawValue)   && v.temp > 0)   ||
-                (!hiddenFields.contains(GraphKind.weight.rawValue) && v.weight > 0)
+                (!hiddenFields.contains(GraphKind.weight.rawValue) && v.weight > 0) ||
+                (!hiddenFields.contains(GraphKind.pedo.rawValue)   && v.steps > 0)
             }
             .sorted { $0.date < $1.date }
         logger.info("readSamples 完了: \(result.count) 件")
