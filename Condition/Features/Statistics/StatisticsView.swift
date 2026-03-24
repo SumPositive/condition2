@@ -35,6 +35,9 @@ struct StatisticsView: View {
     private var settings: AppSettings { AppSettings.shared }
     @State private var showSettings = false
     @State private var chartWidth: CGFloat = 390
+    @State private var showShareSheet = false
+    @State private var shareItems: [Any] = []
+    @State private var isExporting = false
 
     private var periodBinding: Binding<GraphPeriod> {
         Binding(
@@ -68,8 +71,22 @@ struct StatisticsView: View {
                     scrollContent
                 }
             }
+            .overlay { if isExporting { exportingOverlay } }
             .navigationTitle(String(localized: "Tab_Statistics", defaultValue: "統計"))
             .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button {
+                        Task { @MainActor in
+                            isExporting = true
+                            defer { isExporting = false }
+                            try? await Task.sleep(for: .milliseconds(50))
+                            doExport()
+                        }
+                    } label: {
+                        Image(systemName: "square.and.arrow.up")
+                    }
+                    .disabled(targetRecords.isEmpty || isExporting)
+                }
                 ToolbarItem(placement: .primaryAction) {
                     Button { showSettings = true } label: {
                         Image(systemName: "slider.horizontal.3")
@@ -80,6 +97,9 @@ struct StatisticsView: View {
                 NavigationStack {
                     StatSettingsView(isModal: true)
                 }
+            }
+            .sheet(isPresented: $showShareSheet) {
+                ActivityViewController(activityItems: shareItems)
             }
         }
     }
@@ -128,6 +148,46 @@ struct StatisticsView: View {
         }
     }
 
+    // MARK: - PDF エクスポート
+
+    private var exportingOverlay: some View {
+        ZStack {
+            Color.black.opacity(0.3).ignoresSafeArea()
+            VStack(spacing: 14) {
+                ProgressView()
+                    .progressViewStyle(.circular)
+                    .scaleEffect(1.4)
+                Text(String(localized: "Export_Generating", defaultValue: "PDF生成中..."))
+                    .font(.subheadline.weight(.medium))
+            }
+            .padding(.horizontal, 28)
+            .padding(.vertical, 22)
+            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16))
+        }
+    }
+
+
+    private func doExport() {
+        let pdfW = PDFPanelExporter.contentW
+        let panels: [AnyView] = visibleStatSections.map { section in
+            AnyView(
+                statSectionView(section)
+                    .environment(\.chartAvailableWidth, pdfW)
+            )
+        }
+
+        let df = DateFormatter()
+        df.setLocalizedDateFormatFromTemplate("yMd")
+        let now = Date()
+        let fromDate = Calendar.current.date(byAdding: .day, value: -currentPeriod.rawValue, to: now) ?? now
+        let subtitle = currentPeriod.label + "  " + df.string(from: fromDate) + " 〜 " + df.string(from: now)
+        let title = String(localized: "Tab_Statistics", defaultValue: "統計")
+
+        let data = PDFPanelExporter.export(panels: panels, title: title, subtitle: subtitle)
+        guard let url = PDFPanelExporter.writeTempFile(name: "statistics.pdf", data: data) else { return }
+        shareItems = [url]
+        showShareSheet = true
+    }
 
     private var statSummaryView: some View {
         let validBpRecords = targetRecords.filter { $0.nBpHi_mmHg > 0 && $0.nBpLo_mmHg > 0 }

@@ -74,6 +74,9 @@ private struct GraphContentView: View {
 
     private var settings: AppSettings { AppSettings.shared }
     @State private var chartWidth: CGFloat = 390
+    @State private var showShareSheet = false
+    @State private var shareItems: [Any] = []
+    @State private var isExporting = false
 
     init(cutoffDate: Date, period: Binding<GraphPeriod>) {
         let predicate = #Predicate<BodyRecord> {
@@ -93,6 +96,41 @@ private struct GraphContentView: View {
             } else {
                 scrollContent
             }
+        }
+        .overlay { if isExporting { exportingOverlay } }
+        .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                Button {
+                    Task { @MainActor in
+                        isExporting = true
+                        defer { isExporting = false }
+                        try? await Task.sleep(for: .milliseconds(50))
+                        doExport()
+                    }
+                } label: {
+                    Image(systemName: "square.and.arrow.up")
+                }
+                .disabled(records.isEmpty || isExporting)
+            }
+        }
+        .sheet(isPresented: $showShareSheet) {
+            ActivityViewController(activityItems: shareItems)
+        }
+    }
+
+    private var exportingOverlay: some View {
+        ZStack {
+            Color.black.opacity(0.3).ignoresSafeArea()
+            VStack(spacing: 14) {
+                ProgressView()
+                    .progressViewStyle(.circular)
+                    .scaleEffect(1.4)
+                Text(String(localized: "Export_Generating", defaultValue: "PDF生成中..."))
+                    .font(.subheadline.weight(.medium))
+            }
+            .padding(.horizontal, 28)
+            .padding(.vertical, 22)
+            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16))
         }
     }
 
@@ -165,6 +203,35 @@ private struct GraphContentView: View {
                           goalValue: settings.goalSkMuscle, decimals: 1, period: period,
                           tightDomain: true)
         }
+    }
+
+    // MARK: - PDF エクスポート
+
+    private func doExport() {
+        let hidden = Set(settings.graphHiddenPanels)
+        let visibleKinds = settings.graphDisplayOrder
+            .filter { !hidden.contains($0) }
+            .compactMap { GraphKind(rawValue: $0) }
+
+        let pdfW = PDFPanelExporter.contentW
+        let panels: [AnyView] = visibleKinds.map { kind in
+            AnyView(
+                graphPanel(kind: kind)
+                    .environment(\.chartAvailableWidth, pdfW)
+            )
+        }
+
+        let df = DateFormatter()
+        df.setLocalizedDateFormatFromTemplate("yMd")
+        let now = Date()
+        let fromDate = Calendar.current.date(byAdding: .day, value: -period.rawValue, to: now) ?? now
+        let subtitle = period.label + "  " + df.string(from: fromDate) + " 〜 " + df.string(from: now)
+        let title = String(localized: "Tab_Graph", defaultValue: "グラフ")
+
+        let data = PDFPanelExporter.export(panels: panels, title: title, subtitle: subtitle)
+        guard let url = PDFPanelExporter.writeTempFile(name: "graph.pdf", data: data) else { return }
+        shareItems = [url]
+        showShareSheet = true
     }
 }
 
