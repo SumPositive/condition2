@@ -16,7 +16,15 @@
       "Bash(xcodegen version:*)",
       "Bash(xcodegen generate:*)",
       "Bash(sips -g hasAlpha /Users/sumpositive/GitLocal/Condition2/Condition/Resources/Assets.xcassets/AppIcon.appiconset/AppIcon1024.png)",
-      "Bash(sips -s format png AppIcon1024.png --setProperty hasAlpha false -o AppIcon1024.png)"
+      "Bash(sips -s format png AppIcon1024.png --setProperty hasAlpha false -o AppIcon1024.png)",
+      "Bash(xcodebuild -scheme Condition -destination 'platform=iOS Simulator,name=iPhone 16' -quiet build)",
+      "Bash(DEVELOPER_DIR=/Applications/Xcode-26.0.1.app/Contents/Developer xcodebuild -scheme Condition -destination 'platform=iOS Simulator,name=iPhone 16' -quiet build)",
+      "Bash(DEVELOPER_DIR=/Applications/Xcode26.1.1.app/Contents/Developer xcodebuild -scheme Condition -destination 'platform=iOS Simulator,id=8DA85CD1-D2A3-4A7C-9FDB-E792FD001A7E' -quiet build)",
+      "Bash(DEVELOPER_DIR=/Applications/Xcode26.1.1.app/Contents/Developer xcodebuild -workspace Condition.xcworkspace -scheme Condition -destination 'id=8DA85CD1-D2A3-4A7C-9FDB-E792FD001A7E' build)",
+      "Bash(ls /Users/sumpositive/GitLocal/Condition2/*.xcodeproj /Users/sumpositive/GitLocal/Condition2/*.xcworkspace)",
+      "Bash(DEVELOPER_DIR=/Applications/Xcode26.1.1.app/Contents/Developer xcodebuild -project Condition.xcodeproj -scheme Condition -destination 'id=8DA85CD1-D2A3-4A7C-9FDB-E792FD001A7E' build)",
+      "Bash(DEVELOPER_DIR=/Applications/Xcode26.1.1.app/Contents/Developer xcodebuild -project Condition.xcodeproj -scheme Condition -destination 'platform=iOS Simulator,OS=latest,name=iPhone 15 Pro' build CODE_SIGN_IDENTITY=\"\" CODE_SIGNING_REQUIRED=NO)",
+      "Bash(DEVELOPER_DIR=/Applications/Xcode26.1.1.app/Contents/Developer xcodebuild -project Condition.xcodeproj -scheme Condition -destination 'generic/platform=iOS Simulator' build CODE_SIGN_IDENTITY=\"\" CODE_SIGNING_REQUIRED=NO)"
     ]
   }
 }

@@ -3,6 +3,7 @@
 
 import SwiftUI
 import SwiftData
+import UIKit
 
 struct RecordListView: View {
 
@@ -17,6 +18,7 @@ struct RecordListView: View {
 
     @State private var editTarget: BodyRecord? = nil
     @State private var showAddSheet = false
+    @State private var showExportSheet = false
 
     @State private var toastMessage: String? = nil
     @State private var showHKTimeoutAlert = false
@@ -70,6 +72,12 @@ struct RecordListView: View {
             }
             .navigationTitle(String(localized: "Tab_List", defaultValue: "記録"))
             .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button { showExportSheet = true } label: {
+                        Image(systemName: "square.and.arrow.up")
+                    }
+                    .disabled(records.isEmpty)
+                }
                 ToolbarItemGroup(placement: .topBarTrailing) {
                     #if targetEnvironment(simulator)
                     if !settings.hkDisabledByDemo {
@@ -110,6 +118,9 @@ struct RecordListView: View {
             }
             .sheet(item: $editTarget) { record in
                 RecordEditView(mode: .edit(record))
+            }
+            .sheet(isPresented: $showExportSheet) {
+                ExportSheetView(records: records, visibleKinds: visibleRecordKinds)
             }
 
             .overlay(alignment: .bottom) {
@@ -708,4 +719,522 @@ struct RecordRowView: View {
             .foregroundStyle(value.isEmpty ? Color.secondary.opacity(0.4) : .primary)
             .frame(width: width, height: height)
     }
+}
+
+// MARK: - エクスポートシート
+
+private enum ExportFormat: String, CaseIterable, Identifiable {
+    case pdf   = "PDF"
+    case excel = "Excel"
+    case csv   = "CSV"
+    var id: String { rawValue }
+}
+
+private struct ExportSheetView: View {
+    let records: [BodyRecord]
+    let visibleKinds: [GraphKind]
+    @Environment(\.dismiss) private var dismiss
+    private let cal = Calendar.current
+
+    @State private var fromDate: Date
+    @State private var toDate: Date = Date()
+    @State private var format: ExportFormat = .pdf
+    @State private var ascending: Bool = false
+    @State private var shareItems: [Any] = []
+    @State private var showShareSheet = false
+    @State private var isGenerating = false
+
+    init(records: [BodyRecord], visibleKinds: [GraphKind]) {
+        self.records = records
+        self.visibleKinds = visibleKinds
+        _fromDate = State(initialValue: Calendar.current.date(byAdding: .month, value: -1, to: Date()) ?? Date())
+    }
+
+    private var targetRecords: [BodyRecord] {
+        let start = cal.startOfDay(for: fromDate)
+        let end   = cal.date(byAdding: .day, value: 1, to: cal.startOfDay(for: toDate)) ?? toDate
+        return records.filter { $0.dateTime >= start && $0.dateTime < end }
+                      .sorted { ascending ? $0.dateTime < $1.dateTime : $0.dateTime > $1.dateTime }
+    }
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section(String(localized: "Export_Period", defaultValue: "期間")) {
+                    DatePicker(String(localized: "Export_From", defaultValue: "開始"),
+                               selection: $fromDate, in: ...toDate,
+                               displayedComponents: .date)
+                    DatePicker(String(localized: "Export_To", defaultValue: "終了"),
+                               selection: $toDate, in: fromDate...,
+                               displayedComponents: .date)
+                }
+                Section(String(localized: "Export_Format", defaultValue: "形式")) {
+                    Picker("", selection: $format) {
+                        ForEach(ExportFormat.allCases) { f in
+                            Text(f.rawValue).tag(f)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+                    .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
+                    Picker(String(localized: "Export_SortOrder", defaultValue: "並び順"), selection: $ascending) {
+                        Text(String(localized: "Export_Sort_Desc", defaultValue: "降順（新しい順）")).tag(false)
+                        Text(String(localized: "Export_Sort_Asc",  defaultValue: "昇順（古い順）")).tag(true)
+                    }
+                }
+                Section {
+                    HStack {
+                        Text(String(localized: "Export_Count", defaultValue: "対象件数"))
+                        Spacer()
+                        Text(String(format: String(localized: "Export_CountFormat",
+                                                   defaultValue: "%d 件"), targetRecords.count))
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            }
+            .navigationTitle(String(localized: "Export_Title", defaultValue: "エクスポート"))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button(String(localized: "Cancel", defaultValue: "キャンセル")) { dismiss() }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button {
+                        Task { await generateAndShare() }
+                    } label: {
+                        if isGenerating {
+                            ProgressView()
+                        } else {
+                            Text(String(localized: "Export_Share", defaultValue: "書き出し")).bold()
+                        }
+                    }
+                    .disabled(targetRecords.isEmpty || isGenerating)
+                }
+            }
+            .sheet(isPresented: $showShareSheet) {
+                ActivityViewController(activityItems: shareItems)
+                    .ignoresSafeArea()
+            }
+        }
+    }
+
+    @MainActor
+    private func generateAndShare() async {
+        isGenerating = true
+        defer { isGenerating = false }
+        shareItems = buildShareItems()
+        showShareSheet = true
+    }
+
+    @MainActor
+    private func buildShareItems() -> [Any] {
+        switch format {
+        case .csv:
+            let csv = generateCSV()
+            if let url = tempFile(name: "records.csv", data: Data(csv.utf8)) { return [url] }
+            return []
+        case .excel:
+            let xml = generateExcel()
+            if let data = xml.data(using: .utf8),
+               let url = tempFile(name: "records.xls", data: data) { return [url] }
+            return []
+        case .pdf:
+            let pdfData = generatePDF()
+            if let url = tempFile(name: "records.pdf", data: pdfData) { return [url] }
+            return []
+        }
+    }
+
+    private func tempFile(name: String, data: Data) -> URL? {
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent(name)
+        try? data.write(to: url, options: .atomic)
+        return url
+    }
+
+    // MARK: - CSV（表示項目のみ）
+
+    private func generateCSV() -> String {
+        let df = DateFormatter()
+        df.dateFormat = "yyyy/MM/dd HH:mm"
+
+        var headers = [
+            String(localized: "CSV_DateTime", defaultValue: "日時"),
+            String(localized: "CSV_DateOpt",  defaultValue: "区分"),
+        ]
+        for kind in visibleKinds {
+            switch kind {
+            case .bp:
+                headers.append(String(localized: "CSV_BpHi",  defaultValue: "収縮期血圧(mmHg)"))
+                headers.append(String(localized: "CSV_BpLo",  defaultValue: "拡張期血圧(mmHg)"))
+            case .pulse:    headers.append(String(localized: "CSV_Pulse",    defaultValue: "心拍数(bpm)"))
+            case .temp:     headers.append(String(localized: "CSV_Temp",     defaultValue: "体温(℃)"))
+            case .weight:   headers.append(String(localized: "CSV_Weight",   defaultValue: "体重(kg)"))
+            case .pedo:     headers.append(String(localized: "CSV_Steps",    defaultValue: "歩数"))
+            case .bodyFat:  headers.append(String(localized: "CSV_BodyFat",  defaultValue: "体脂肪率(%)"))
+            case .skMuscle: headers.append(String(localized: "CSV_SkMuscle", defaultValue: "骨格筋率(%)"))
+            default: break
+            }
+        }
+        headers += [
+            String(localized: "CSV_Caution",   defaultValue: "注意フラグ"),
+            String(localized: "CSV_Note1",     defaultValue: "メモ1"),
+            String(localized: "CSV_Note2",     defaultValue: "メモ2"),
+            String(localized: "CSV_Equipment", defaultValue: "計測機器"),
+        ]
+
+        var rows: [String] = [headers.map(csvEscape).joined(separator: ",")]
+        for r in targetRecords {
+            var fields = [df.string(from: r.dateTime), r.dateOpt.label]
+            for kind in visibleKinds {
+                switch kind {
+                case .bp:
+                    fields.append(r.nBpHi_mmHg   > 0 ? "\(r.nBpHi_mmHg)" : "")
+                    fields.append(r.nBpLo_mmHg   > 0 ? "\(r.nBpLo_mmHg)" : "")
+                case .pulse:    fields.append(r.nPulse_bpm   > 0 ? "\(r.nPulse_bpm)" : "")
+                case .temp:     fields.append(r.nTemp_10c    > 0 ? String(format: "%.1f", Double(r.nTemp_10c)    / 10.0) : "")
+                case .weight:   fields.append(r.nWeight_10Kg > 0 ? String(format: "%.1f", Double(r.nWeight_10Kg) / 10.0) : "")
+                case .pedo:     fields.append(r.nPedometer   > 0 ? "\(r.nPedometer)" : "")
+                case .bodyFat:  fields.append(r.nBodyFat_10p  > 0 ? String(format: "%.1f", Double(r.nBodyFat_10p)  / 10.0) : "")
+                case .skMuscle: fields.append(r.nSkMuscle_10p > 0 ? String(format: "%.1f", Double(r.nSkMuscle_10p) / 10.0) : "")
+                default: break
+                }
+            }
+            fields += [r.bCaution ? "1" : "", r.sNote1, r.sNote2, r.sEquipment]
+            rows.append(fields.map(csvEscape).joined(separator: ","))
+        }
+        return "\u{FEFF}" + rows.joined(separator: "\r\n")
+    }
+
+    private func csvEscape(_ s: String) -> String {
+        guard s.contains(",") || s.contains("\"") || s.contains("\n") || s.contains("\r") else { return s }
+        return "\"" + s.replacingOccurrences(of: "\"", with: "\"\"") + "\""
+    }
+
+    // MARK: - Excel SpreadsheetML（表示項目のみ）
+
+    private func generateExcel() -> String {
+        func cell(_ value: String, type: String = "String") -> String {
+            "<Cell><Data ss:Type=\"\(type)\">\(value)</Data></Cell>"
+        }
+
+        var headerCells = cell(String(localized: "CSV_DateTime", defaultValue: "日時"))
+                        + cell(String(localized: "CSV_DateOpt",  defaultValue: "区分"))
+        for kind in visibleKinds {
+            switch kind {
+            case .bp:
+                headerCells += cell(String(localized: "Export_XLS_BpHi",    defaultValue: "収縮期血圧 mmHg"))
+                             + cell(String(localized: "Export_XLS_BpLo",    defaultValue: "拡張期血圧 mmHg"))
+            case .pulse:    headerCells += cell(String(localized: "Export_XLS_Pulse",   defaultValue: "心拍数 bpm"))
+            case .temp:     headerCells += cell(String(localized: "Export_XLS_Temp",    defaultValue: "体温 ℃"))
+            case .weight:   headerCells += cell(String(localized: "Export_XLS_Weight",  defaultValue: "体重 kg"))
+            case .pedo:     headerCells += cell(String(localized: "Export_XLS_Steps",   defaultValue: "歩数"))
+            case .bodyFat:  headerCells += cell(String(localized: "Export_XLS_BodyFat", defaultValue: "体脂肪率 %"))
+            case .skMuscle: headerCells += cell(String(localized: "Export_XLS_Muscle",  defaultValue: "骨格筋率 %"))
+            default: break
+            }
+        }
+        headerCells += cell(String(localized: "CSV_Caution",   defaultValue: "注意フラグ"))
+                     + cell(String(localized: "CSV_Note1",     defaultValue: "メモ1"))
+                     + cell(String(localized: "CSV_Note2",     defaultValue: "メモ2"))
+                     + cell(String(localized: "CSV_Equipment", defaultValue: "計測機器"))
+
+        let df = DateFormatter()
+        df.setLocalizedDateFormatFromTemplate("yMdEEEEEHmm")
+
+        let stepsFmt = NumberFormatter()
+        stepsFmt.numberStyle = .decimal
+
+        var dataRows = ""
+        for r in targetRecords {
+            var cells = cell(df.string(from: r.dateTime)) + cell(r.dateOpt.label)
+            for kind in visibleKinds {
+                switch kind {
+                case .bp:
+                    cells += r.nBpHi_mmHg > 0 ? cell("\(r.nBpHi_mmHg)", type: "Number") : cell("")
+                    cells += r.nBpLo_mmHg > 0 ? cell("\(r.nBpLo_mmHg)", type: "Number") : cell("")
+                case .pulse:
+                    cells += r.nPulse_bpm > 0 ? cell("\(r.nPulse_bpm)", type: "Number") : cell("")
+                case .temp:
+                    cells += r.nTemp_10c > 0 ? cell(String(format: "%.1f", Double(r.nTemp_10c) / 10.0), type: "Number") : cell("")
+                case .weight:
+                    cells += r.nWeight_10Kg > 0 ? cell(String(format: "%.1f", Double(r.nWeight_10Kg) / 10.0), type: "Number") : cell("")
+                case .pedo:
+                    cells += r.nPedometer > 0 ? cell(stepsFmt.string(from: NSNumber(value: r.nPedometer)) ?? "\(r.nPedometer)") : cell("")
+                case .bodyFat:
+                    cells += r.nBodyFat_10p > 0 ? cell(String(format: "%.1f", Double(r.nBodyFat_10p) / 10.0), type: "Number") : cell("")
+                case .skMuscle:
+                    cells += r.nSkMuscle_10p > 0 ? cell(String(format: "%.1f", Double(r.nSkMuscle_10p) / 10.0), type: "Number") : cell("")
+                default: break
+                }
+            }
+            cells += cell(r.bCaution ? "1" : "") + cell(r.sNote1) + cell(r.sNote2) + cell(r.sEquipment)
+            dataRows += "<Row>\(cells)</Row>\n"
+        }
+
+        return """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <?mso-application progid="Excel.Sheet"?>
+        <Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
+                  xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">
+          <Worksheet ss:Name="記録">
+            <Table>
+              <Row>\(headerCells)</Row>
+              \(dataRows)
+            </Table>
+          </Worksheet>
+        </Workbook>
+        """
+    }
+
+    // MARK: - PDF（A4 改ページ対応）
+
+    @MainActor
+    private func generatePDF() -> Data {
+        let pages = paginateRecords(targetRecords)
+        var mediaBox = CGRect(x: 0, y: 0, width: PDFLayout.pageW, height: PDFLayout.pageH)
+        let pdfData = NSMutableData()
+        guard let consumer = CGDataConsumer(data: pdfData),
+              let ctx = CGContext(consumer: consumer, mediaBox: &mediaBox, nil) else { return Data() }
+
+        for (i, pageRecords) in pages.enumerated() {
+            let view = ExportPDFPageView(
+                records: pageRecords, visibleKinds: visibleKinds,
+                fromDate: fromDate, toDate: toDate,
+                pageNumber: i + 1, totalPages: pages.count, isFirstPage: i == 0
+            )
+            let renderer = ImageRenderer(content: view)
+            renderer.proposedSize = ProposedViewSize(width: PDFLayout.pageW, height: PDFLayout.pageH)
+            ctx.beginPDFPage(nil)
+            renderer.render { _, renderFn in renderFn(ctx) }
+            ctx.endPDFPage()
+        }
+        ctx.closePDF()
+        return pdfData as Data
+    }
+
+    private func paginateRecords(_ records: [BodyRecord]) -> [[BodyRecord]] {
+        var pages: [[BodyRecord]] = []
+        var current: [BodyRecord] = []
+        var remaining = PDFLayout.usableH(isFirst: true)
+
+        for r in records {
+            let h = PDFLayout.estimatedRowH(r)
+            if current.isEmpty || remaining >= h {
+                current.append(r)
+                remaining -= h
+            } else {
+                pages.append(current)
+                current = [r]
+                remaining = PDFLayout.usableH(isFirst: false) - h
+            }
+        }
+        if !current.isEmpty { pages.append(current) }
+        return pages.isEmpty ? [[]] : pages
+    }
+}
+
+// MARK: - PDF レイアウト定数
+
+private enum PDFLayout {
+    static let pageW:     CGFloat = 595
+    static let pageH:     CGFloat = 842
+    static let margin:    CGFloat = 16
+    static let contentW:  CGFloat = pageW - margin * 2   // 563
+    static let dateColW:  CGFloat = 138
+    static let optColW:   CGFloat = 38
+    static let notesW:    CGFloat = contentW - dateColW  // 425
+    static let rowH:      CGFloat = 22
+    static let memoLineH: CGFloat = 14
+    static let divH:      CGFloat = 1
+    static let titleH:    CGFloat = 46
+    static let colHeadH:  CGFloat = 22
+    static let footerH:   CGFloat = 18
+
+    static func usableH(isFirst: Bool) -> CGFloat {
+        pageH - margin * 2
+            - (isFirst ? titleH : 0)
+            - colHeadH - divH - footerH
+    }
+
+    static func estimatedRowH(_ r: BodyRecord) -> CGFloat {
+        let notes = [r.sNote1, r.sNote2].filter { !$0.isEmpty }.joined(separator: "  ")
+        guard !notes.isEmpty else { return rowH + divH }
+        let charsPerLine = 38
+        let lines = max(1, (notes.count + charsPerLine - 1) / charsPerLine)
+        return rowH + CGFloat(lines) * memoLineH + 3 + divH
+    }
+}
+
+// MARK: - PDF ページビュー
+
+private struct ExportPDFPageView: View {
+    let records: [BodyRecord]
+    let visibleKinds: [GraphKind]
+    let fromDate: Date
+    let toDate: Date
+    let pageNumber: Int
+    let totalPages: Int
+    let isFirstPage: Bool
+
+    private static let dtdf: DateFormatter = {
+        let f = DateFormatter()
+        f.setLocalizedDateFormatFromTemplate("yMdEEEEEHmm")
+        return f
+    }()
+    private static let datedf: DateFormatter = {
+        let f = DateFormatter()
+        f.dateStyle = .short
+        f.timeStyle = .none
+        return f
+    }()
+    private static let stepsFmt: NumberFormatter = {
+        let f = NumberFormatter()
+        f.numberStyle = .decimal
+        return f
+    }()
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            if isFirstPage {
+                HStack(alignment: .top) {
+                    Text(String(localized: "Export_PDF_Title", defaultValue: "体調メモ"))
+                        .font(.title2.bold())
+                        .fixedSize(horizontal: false, vertical: true)
+                    Spacer(minLength: 8)
+                    VStack(alignment: .trailing, spacing: 1) {
+                        Text(Self.datedf.string(from: fromDate)
+                             + String(localized: "Export_PDF_Range", defaultValue: " 〜 ")
+                             + Self.datedf.string(from: toDate))
+                        Text(String(localized: "Export_PDF_Created", defaultValue: "作成:")
+                             + " " + Self.datedf.string(from: Date()))
+                    }
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                }
+                .padding(.bottom, 8)
+            }
+            pdfHeaderRow
+            Divider().background(Color.gray)
+            ForEach(records) { record in
+                pdfDataRow(record)
+                Divider()
+            }
+            Spacer(minLength: 0)
+            HStack {
+                Spacer()
+                Text("\(pageNumber) / \(totalPages)")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .padding(PDFLayout.margin)
+        .frame(width: PDFLayout.pageW, height: PDFLayout.pageH, alignment: .topLeading)
+        .background(Color.white)
+    }
+
+    private var pdfHeaderRow: some View {
+        HStack(spacing: 0) {
+            Text(String(localized: "Export_PDF_DateTime", defaultValue: "日時"))
+                .frame(width: PDFLayout.dateColW, alignment: .leading).padding(3)
+            Text(String(localized: "Export_PDF_DateOpt", defaultValue: "区分"))
+                .frame(width: PDFLayout.optColW, alignment: .center).padding(3)
+            ForEach(visibleKinds, id: \.rawValue) { kind in
+                ForEach(Array(pdfColumnHeaders(kind).enumerated()), id: \.offset) { _, header in
+                    Text(header)
+                        .multilineTextAlignment(.center)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .frame(width: pdfCellWidth(kind), alignment: .center)
+                        .padding(3)
+                }
+            }
+        }
+        .font(.caption.bold())
+        .background(Color(UIColor.systemGray5))
+    }
+
+    private func pdfDataRow(_ r: BodyRecord) -> some View {
+        let notes = [r.sNote1, r.sNote2].filter { !$0.isEmpty }.joined(separator: "  ")
+        return VStack(alignment: .leading, spacing: 0) {
+            HStack(spacing: 0) {
+                Text(Self.dtdf.string(from: r.dateTime))
+                    .lineLimit(1)
+                    .frame(width: PDFLayout.dateColW, alignment: .leading).padding(3)
+                Text(r.dateOpt.shortLabel)
+                    .lineLimit(1)
+                    .frame(width: PDFLayout.optColW, alignment: .center).padding(3)
+                ForEach(visibleKinds, id: \.rawValue) { kind in
+                    ForEach(Array(pdfCellValues(r, kind).enumerated()), id: \.offset) { _, value in
+                        Text(value.isEmpty ? "-" : value)
+                            .frame(width: pdfCellWidth(kind), alignment: .trailing)
+                            .padding(3)
+                            .foregroundStyle(value.isEmpty ? Color.secondary.opacity(0.4) : .primary)
+                    }
+                }
+            }
+            if !notes.isEmpty {
+                // 明示的な幅指定でメモ列を固定し列ズレを防ぐ
+                Text(notes)
+                    .foregroundStyle(.secondary)
+                    .frame(width: PDFLayout.notesW - 6, alignment: .leading)
+                    .padding(.leading, PDFLayout.dateColW + 3)
+                    .padding(.trailing, 3)
+                    .padding(.bottom, 3)
+            }
+        }
+        .font(.caption)
+    }
+
+    private func pdfColumnHeaders(_ kind: GraphKind) -> [String] {
+        switch kind {
+        case .bp:
+            return [String(localized: "Export_Col_BpHi",    defaultValue: "上 mmHg"),
+                    String(localized: "Export_Col_BpLo",    defaultValue: "下 mmHg")]
+        case .pulse:    return [String(localized: "Export_Col_Pulse",   defaultValue: "心拍 bpm")]
+        case .temp:     return [String(localized: "Export_Col_Temp",    defaultValue: "体温 ℃")]
+        case .weight:   return [String(localized: "Export_Col_Weight",  defaultValue: "体重 kg")]
+        case .pedo:     return [String(localized: "Export_Col_Steps",   defaultValue: "歩数")]
+        case .bodyFat:  return [String(localized: "Export_Col_BodyFat", defaultValue: "体脂肪 %")]
+        case .skMuscle: return [String(localized: "Export_Col_Muscle",  defaultValue: "骨格筋 %")]
+        default:        return []
+        }
+    }
+
+    private func pdfCellValues(_ r: BodyRecord, _ kind: GraphKind) -> [String] {
+        switch kind {
+        case .bp:       return [r.displayBpHi, r.displayBpLo]
+        case .pulse:    return [r.displayPulse]
+        case .temp:     return [r.displayTemp]
+        case .weight:   return [r.displayWeight]
+        case .pedo:
+            guard r.nPedometer > 0 else { return [""] }
+            return [Self.stepsFmt.string(from: NSNumber(value: r.nPedometer)) ?? "\(r.nPedometer)"]
+        case .bodyFat:  return [r.displayBodyFat]
+        case .skMuscle: return [r.displaySkMuscle]
+        default:        return []
+        }
+    }
+
+    private func pdfCellWidth(_ kind: GraphKind) -> CGFloat {
+        switch kind {
+        case .bp:       return 46
+        case .pulse:    return 44
+        case .temp:     return 44
+        case .weight:   return 48
+        case .pedo:     return 56
+        case .bodyFat:  return 50
+        case .skMuscle: return 50
+        default:        return 0
+        }
+    }
+}
+
+// MARK: - UIActivityViewController ラッパー
+
+struct ActivityViewController: UIViewControllerRepresentable {
+    let activityItems: [Any]
+
+    func makeUIViewController(context: Context) -> UIActivityViewController {
+        UIActivityViewController(activityItems: activityItems, applicationActivities: nil)
+    }
+
+    func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
 }
