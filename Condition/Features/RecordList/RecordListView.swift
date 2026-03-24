@@ -24,10 +24,30 @@ struct RecordListView: View {
     private var settings: AppSettings { AppSettings.shared }
     private var hkService: HealthKitService { HealthKitService.shared }
 
+    // MARK: - 可視フィールドにデータがあるレコードのみ抽出
+    private var visibleRecords: [BodyRecord] {
+        let kinds = visibleRecordKinds
+        guard !kinds.isEmpty else { return records }
+        return records.filter { r in
+            kinds.contains { kind in
+                switch kind {
+                case .bp:       return r.nBpHi_mmHg > 0 || r.nBpLo_mmHg > 0
+                case .pulse:    return r.nPulse_bpm > 0
+                case .temp:     return r.nTemp_10c > 0
+                case .weight:   return r.nWeight_10Kg > 0
+                case .pedo:     return r.nPedometer > 0
+                case .bodyFat:  return r.nBodyFat_10p > 0
+                case .skMuscle: return r.nSkMuscle_10p > 0
+                default:        return false
+                }
+            }
+        }
+    }
+
     // MARK: - セクション分割（年月ごと）
     private var sections: [(yearMonth: Int, records: [BodyRecord])] {
         var dict: [Int: [BodyRecord]] = [:]
-        for r in records {
+        for r in visibleRecords {
             dict[r.yearMonth, default: []].append(r)
         }
         return dict
@@ -38,7 +58,7 @@ struct RecordListView: View {
     var body: some View {
         NavigationStack {
             Group {
-                if records.isEmpty {
+                if visibleRecords.isEmpty {
                     ContentUnavailableView(
                         String(localized: "List_Empty", defaultValue: "記録がありません"),
                         systemImage: "heart.text.square",
