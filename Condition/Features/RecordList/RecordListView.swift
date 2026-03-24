@@ -726,7 +726,7 @@ struct RecordRowView: View {
 private enum ExportFormat: String, CaseIterable, Identifiable {
     case pdf   = "PDF"
     case excel = "Excel"
-    case csv   = "CSV"
+    case json  = "JSON"
     var id: String { rawValue }
 }
 
@@ -828,9 +828,9 @@ private struct ExportSheetView: View {
     @MainActor
     private func buildShareItems() -> [Any] {
         switch format {
-        case .csv:
-            let csv = generateCSV()
-            if let url = tempFile(name: "records.csv", data: Data(csv.utf8)) { return [url] }
+        case .json:
+            let json = generateJSON()
+            if let url = tempFile(name: "records.json", data: json) { return [url] }
             return []
         case .excel:
             let xml = generateExcel()
@@ -850,63 +850,53 @@ private struct ExportSheetView: View {
         return url
     }
 
-    // MARK: - CSV（表示項目のみ）
+    // MARK: - JSON（表示項目のみ）
 
-    private func generateCSV() -> String {
-        let df = DateFormatter()
-        df.dateFormat = "yyyy/MM/dd HH:mm"
+    private func generateJSON() -> Data {
+        let iso = ISO8601DateFormatter()
+        iso.formatOptions = [.withInternetDateTime, .withDashSeparatorInDate,
+                             .withColonSeparatorInTime, .withTimeZone]
 
-        var headers = [
-            String(localized: "CSV_DateTime", defaultValue: "日時"),
-            String(localized: "CSV_DateOpt",  defaultValue: "区分"),
-        ]
-        for kind in visibleKinds {
-            switch kind {
-            case .bp:
-                headers.append(String(localized: "CSV_BpHi",  defaultValue: "収縮期血圧(mmHg)"))
-                headers.append(String(localized: "CSV_BpLo",  defaultValue: "拡張期血圧(mmHg)"))
-            case .pulse:    headers.append(String(localized: "CSV_Pulse",    defaultValue: "心拍数(bpm)"))
-            case .temp:     headers.append(String(localized: "CSV_Temp",     defaultValue: "体温(℃)"))
-            case .weight:   headers.append(String(localized: "CSV_Weight",   defaultValue: "体重(kg)"))
-            case .pedo:     headers.append(String(localized: "CSV_Steps",    defaultValue: "歩数"))
-            case .bodyFat:  headers.append(String(localized: "CSV_BodyFat",  defaultValue: "体脂肪率(%)"))
-            case .skMuscle: headers.append(String(localized: "CSV_SkMuscle", defaultValue: "骨格筋率(%)"))
-            default: break
-            }
-        }
-        headers += [
-            String(localized: "CSV_Caution",   defaultValue: "注意フラグ"),
-            String(localized: "CSV_Note1",     defaultValue: "メモ1"),
-            String(localized: "CSV_Note2",     defaultValue: "メモ2"),
-            String(localized: "CSV_Equipment", defaultValue: "計測機器"),
-        ]
-
-        var rows: [String] = [headers.map(csvEscape).joined(separator: ",")]
+        var result: [[String: Any]] = []
         for r in targetRecords {
-            var fields = [df.string(from: r.dateTime), r.dateOpt.label]
+            var obj: [String: Any] = [
+                "dateTime":  iso.string(from: r.dateTime),
+                "condition": r.dateOpt.label,
+            ]
             for kind in visibleKinds {
                 switch kind {
                 case .bp:
-                    fields.append(r.nBpHi_mmHg   > 0 ? "\(r.nBpHi_mmHg)" : "")
-                    fields.append(r.nBpLo_mmHg   > 0 ? "\(r.nBpLo_mmHg)" : "")
-                case .pulse:    fields.append(r.nPulse_bpm   > 0 ? "\(r.nPulse_bpm)" : "")
-                case .temp:     fields.append(r.nTemp_10c    > 0 ? String(format: "%.1f", Double(r.nTemp_10c)    / 10.0) : "")
-                case .weight:   fields.append(r.nWeight_10Kg > 0 ? String(format: "%.1f", Double(r.nWeight_10Kg) / 10.0) : "")
-                case .pedo:     fields.append(r.nPedometer   > 0 ? "\(r.nPedometer)" : "")
-                case .bodyFat:  fields.append(r.nBodyFat_10p  > 0 ? String(format: "%.1f", Double(r.nBodyFat_10p)  / 10.0) : "")
-                case .skMuscle: fields.append(r.nSkMuscle_10p > 0 ? String(format: "%.1f", Double(r.nSkMuscle_10p) / 10.0) : "")
+                    if r.nBpHi_mmHg > 0 { obj["bpSystolic"]  = r.nBpHi_mmHg }
+                    if r.nBpLo_mmHg > 0 { obj["bpDiastolic"] = r.nBpLo_mmHg }
+                case .pulse:
+                    if r.nPulse_bpm > 0 { obj["heartRate"] = r.nPulse_bpm }
+                case .temp:
+                    if r.nTemp_10c > 0 { obj["bodyTemp"] = Double(r.nTemp_10c) / 10.0 }
+                case .weight:
+                    if r.nWeight_10Kg > 0 { obj["weight"] = Double(r.nWeight_10Kg) / 10.0 }
+                case .pedo:
+                    if r.nPedometer > 0 { obj["steps"] = r.nPedometer }
+                case .bodyFat:
+                    if r.nBodyFat_10p > 0 { obj["bodyFat"] = Double(r.nBodyFat_10p) / 10.0 }
+                case .skMuscle:
+                    if r.nSkMuscle_10p > 0 { obj["skeletalMuscle"] = Double(r.nSkMuscle_10p) / 10.0 }
                 default: break
                 }
             }
-            fields += [r.bCaution ? "1" : "", r.sNote1, r.sNote2, r.sEquipment]
-            rows.append(fields.map(csvEscape).joined(separator: ","))
+            if r.bCaution         { obj["cautionFlag"] = true }
+            if !r.sNote1.isEmpty  { obj["memo1"]  = r.sNote1 }
+            if !r.sNote2.isEmpty  { obj["memo2"]  = r.sNote2 }
+            if !r.sEquipment.isEmpty { obj["device"] = r.sEquipment }
+            result.append(obj)
         }
-        return "\u{FEFF}" + rows.joined(separator: "\r\n")
-    }
-
-    private func csvEscape(_ s: String) -> String {
-        guard s.contains(",") || s.contains("\"") || s.contains("\n") || s.contains("\r") else { return s }
-        return "\"" + s.replacingOccurrences(of: "\"", with: "\"\"") + "\""
+        let df = ISO8601DateFormatter()
+        df.formatOptions = [.withFullDate, .withDashSeparatorInDate]
+        let envelope: [String: Any] = [
+            "exportDate": df.string(from: Date()),
+            "records": result,
+        ]
+        return (try? JSONSerialization.data(withJSONObject: envelope,
+                                           options: [.prettyPrinted, .sortedKeys])) ?? Data()
     }
 
     // MARK: - Excel SpreadsheetML（表示項目のみ）
