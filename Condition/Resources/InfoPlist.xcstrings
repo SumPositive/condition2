@@ -7,7 +7,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Condition"
+            "value" : "HealthNote"
           }
         },
         "ja" : {
@@ -24,7 +24,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Condition"
+            "value" : "HealthNote"
           }
         },
         "ja" : {

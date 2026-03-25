@@ -40,9 +40,15 @@ enum GraphPeriod: Int, CaseIterable {
 // MARK: - GraphView
 
 struct GraphView: View {
+    /// バックグラウンドでプリフェッチする日数。将来 730・1095 等に変更可能。
+    private static let preloadDays = 365
+
     @State private var period: GraphPeriod = .month
     @State private var showSettings = false
-    @State private var cutoffDate = Calendar.current.date(byAdding: .day, value: -365, to: Date()) ?? Date()
+    /// フェーズ1: デフォルト期間分だけ即クエリ（高速初期表示）
+    @State private var cutoffDate = Calendar.current.date(
+        byAdding: .day, value: -GraphPeriod.month.rawValue, to: Date()
+    ) ?? Date()
 
     var body: some View {
         NavigationStack {
@@ -60,6 +66,26 @@ struct GraphView: View {
                         GraphSettingsView(isModal: true)
                     }
                 }
+                // フェーズ2: 初期表示後にプリフェッチ範囲まで拡張（横スクロール対応）
+                .task { await prefetchFullRange() }
+                // 期間変更がプリフェッチ完了前の場合も即時対応
+                .onChange(of: period) { _, newPeriod in
+                    expandCutoffIfNeeded(days: newPeriod.rawValue)
+                }
+        }
+    }
+
+    /// 初期レンダリング完了を待ってから cutoffDate を拡張する
+    private func prefetchFullRange() async {
+        try? await Task.sleep(for: .milliseconds(200))
+        expandCutoffIfNeeded(days: Self.preloadDays)
+    }
+
+    /// target が現在の cutoffDate より古ければ cutoffDate を更新する
+    private func expandCutoffIfNeeded(days: Int) {
+        let target = Calendar.current.date(byAdding: .day, value: -days, to: Date()) ?? Date()
+        if target < cutoffDate {
+            cutoffDate = target
         }
     }
 }
