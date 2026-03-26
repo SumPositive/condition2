@@ -44,7 +44,6 @@ enum KVSKeys {
     static let goalPulse     = "Goal_nPulse_bpm"
     static let goalWeight    = "Goal_nWeight_10Kg"
     static let goalTemp      = "Goal_nTemp_10c"
-    static let goalPedometer = "Goal_nPedometer"
     static let goalBodyFat   = "Goal_nBodyFat_10p"
     static let goalSkMuscle  = "Goal_nSkMuscle_10p"
     static let goalBpPp      = "Goal_nBpPp_mmHg"

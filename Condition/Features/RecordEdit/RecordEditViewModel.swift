@@ -28,7 +28,6 @@ final class RecordEditViewModel {
     var nPulse_bpm: Int
     var nTemp_10c: Int
     var nWeight_10Kg: Int
-    var nPedometer: Int
     var nBodyFat_10p: Int
     var nSkMuscle_10p: Int
 
@@ -38,7 +37,6 @@ final class RecordEditViewModel {
     var pulseEnabled:     Bool
     var weightEnabled:    Bool
     var tempEnabled:      Bool
-    var pedometerEnabled: Bool
     var bodyFatEnabled:   Bool
     var skMuscleEnabled:  Bool
 
@@ -73,7 +71,6 @@ final class RecordEditViewModel {
             nPulse_bpm  = MeasureRange.pulse.initVal
             nTemp_10c   = MeasureRange.temp.initVal
             nWeight_10Kg = MeasureRange.weight.initVal
-            nPedometer   = MeasureRange.pedometer.initVal
             nBodyFat_10p  = MeasureRange.bodyFat.initVal
             nSkMuscle_10p = MeasureRange.skMuscle.initVal
             bpHiEnabled      = true
@@ -81,7 +78,6 @@ final class RecordEditViewModel {
             pulseEnabled     = false
             weightEnabled    = false
             tempEnabled      = false
-            pedometerEnabled = false
             bodyFatEnabled   = false
             skMuscleEnabled  = false
 
@@ -99,7 +95,6 @@ final class RecordEditViewModel {
             nPulse_bpm  = record.nPulse_bpm   > 0 ? record.nPulse_bpm  : MeasureRange.pulse.initVal
             nTemp_10c   = record.nTemp_10c    > 0 ? record.nTemp_10c   : MeasureRange.temp.initVal
             nWeight_10Kg = record.nWeight_10Kg > 0 ? record.nWeight_10Kg : MeasureRange.weight.initVal
-            nPedometer   = record.nPedometer   > 0 ? record.nPedometer  : MeasureRange.pedometer.initVal
             nBodyFat_10p  = record.nBodyFat_10p  > 0 ? record.nBodyFat_10p  : MeasureRange.bodyFat.initVal
             nSkMuscle_10p = record.nSkMuscle_10p > 0 ? record.nSkMuscle_10p : MeasureRange.skMuscle.initVal
             bpHiEnabled      = record.nBpHi_mmHg   > 0
@@ -107,7 +102,6 @@ final class RecordEditViewModel {
             pulseEnabled     = record.nPulse_bpm    > 0
             weightEnabled    = record.nWeight_10Kg  > 0
             tempEnabled      = record.nTemp_10c     > 0
-            pedometerEnabled = record.nPedometer    > 0
             bodyFatEnabled   = record.nBodyFat_10p  > 0
             skMuscleEnabled  = record.nSkMuscle_10p > 0
 
@@ -124,7 +118,6 @@ final class RecordEditViewModel {
             nPulse_bpm  = settings.goalPulse
             nTemp_10c   = settings.goalTemp
             nWeight_10Kg = settings.goalWeight
-            nPedometer   = settings.goalPedometer
             nBodyFat_10p  = settings.goalBodyFat
             nSkMuscle_10p = settings.goalSkMuscle
             bpHiEnabled      = true
@@ -132,7 +125,6 @@ final class RecordEditViewModel {
             pulseEnabled     = true
             weightEnabled    = true
             tempEnabled      = true
-            pedometerEnabled = true
             bodyFatEnabled   = true
             skMuscleEnabled  = true
         }
@@ -174,15 +166,12 @@ final class RecordEditViewModel {
                 .map { $0.nPulse_bpm } ?? MeasureRange.pulse.initVal
         }
 
-        // 体重・体温・歩数・体脂肪・骨格筋は日時順のみ
+        // 体重・体温・体脂肪・骨格筋は日時順のみ
         if nWeight_10Kg == MeasureRange.weight.initVal {
             nWeight_10Kg = allPrev.first { $0.nWeight_10Kg > 0 }.map { $0.nWeight_10Kg } ?? MeasureRange.weight.initVal
         }
         if nTemp_10c == MeasureRange.temp.initVal {
             nTemp_10c = allPrev.first { $0.nTemp_10c > 0 }.map { $0.nTemp_10c } ?? MeasureRange.temp.initVal
-        }
-        if nPedometer == MeasureRange.pedometer.initVal {
-            nPedometer = allPrev.first { $0.nPedometer > 0 }.map { $0.nPedometer } ?? MeasureRange.pedometer.initVal
         }
         if nBodyFat_10p == MeasureRange.bodyFat.initVal {
             nBodyFat_10p = allPrev.first { $0.nBodyFat_10p > 0 }.map { $0.nBodyFat_10p } ?? MeasureRange.bodyFat.initVal
@@ -202,7 +191,6 @@ final class RecordEditViewModel {
         if let p = prevBody {
             weightEnabled    = p.nWeight_10Kg  > 0
             tempEnabled      = p.nTemp_10c     > 0
-            pedometerEnabled = p.nPedometer    > 0
             bodyFatEnabled   = p.nBodyFat_10p  > 0
             skMuscleEnabled  = p.nSkMuscle_10p > 0
         }
@@ -247,35 +235,13 @@ final class RecordEditViewModel {
             s.goalPulse     = nPulse_bpm
             s.goalTemp      = nTemp_10c
             s.goalWeight    = nWeight_10Kg
-            s.goalPedometer = nPedometer
             s.goalBodyFat   = nBodyFat_10p
             s.goalSkMuscle  = nSkMuscle_10p
         }
 
         try context.save()
-        try enforceStepsConstraintForDay(of: dateTime, context: context)
         writeToHealthKitIfAutomatic()
         isModified = false
-    }
-
-    /// 歩数は1日の最終時刻レコードにのみ有効。同日の他レコードをゼロクリアする
-    private func enforceStepsConstraintForDay(of date: Date, context: ModelContext) throws {
-        let cal = Calendar.current
-        let day = cal.startOfDay(for: date)
-        let nextDay = cal.date(byAdding: .day, value: 1, to: day)!
-        var descriptor = FetchDescriptor<BodyRecord>(
-            predicate: #Predicate { $0.dateTime >= day && $0.dateTime < nextDay },
-            sortBy: [SortDescriptor(\.dateTime)]
-        )
-        descriptor.includePendingChanges = true
-        let dayRecords = try context.fetch(descriptor)
-        guard let last = dayRecords.last else { return }
-        for record in dayRecords where record.persistentModelID != last.persistentModelID {
-            if record.nPedometer != 0 {
-                record.nPedometer = 0
-            }
-        }
-        if dayRecords.count > 1 { try context.save() }
     }
 
     private func writeToHealthKitIfAutomatic() {
@@ -309,7 +275,6 @@ final class RecordEditViewModel {
         record.nPulse_bpm    = pulseEnabled     ? nPulse_bpm   : 0
         record.nTemp_10c     = tempEnabled      ? nTemp_10c    : 0
         record.nWeight_10Kg  = weightEnabled    ? nWeight_10Kg  : 0
-        record.nPedometer    = pedometerEnabled ? nPedometer   : 0
         record.nBodyFat_10p  = bodyFatEnabled   ? nBodyFat_10p  : 0
         record.nSkMuscle_10p = skMuscleEnabled  ? nSkMuscle_10p : 0
     }
@@ -351,7 +316,6 @@ final class RecordEditViewModel {
             pulse:   active(.pulse,   pulseEnabled)     ? nPulse_bpm   : 0,
             temp:    active(.temp,    tempEnabled)      ? nTemp_10c    : 0,
             weight:  active(.weight,  weightEnabled)    ? nWeight_10Kg  : 0,
-            steps:   active(.pedo,    pedometerEnabled) ? nPedometer   : 0,
             bodyFat: active(.bodyFat, bodyFatEnabled)   ? nBodyFat_10p  : 0
         )
     }
@@ -362,10 +326,9 @@ final class RecordEditViewModel {
         if v.pulse > 0   { nPulse_bpm   = v.pulse;   pulseEnabled     = true }
         if v.temp > 0    { nTemp_10c    = v.temp;    tempEnabled      = true }
         if v.weight > 0  { nWeight_10Kg  = v.weight;  weightEnabled    = true }
-        if v.steps > 0   { nPedometer   = v.steps;   pedometerEnabled = true }
         if v.bodyFat > 0 { nBodyFat_10p  = v.bodyFat; bodyFatEnabled   = true }
         if v.bpHi > 0 || v.bpLo > 0 || v.pulse > 0 || v.temp > 0
-            || v.weight > 0 || v.steps > 0 || v.bodyFat > 0 {
+            || v.weight > 0 || v.bodyFat > 0 {
             isModified = true
         }
     }

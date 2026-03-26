@@ -50,8 +50,6 @@ enum MeasureRange {
     static let weight = MeasureSpec(min: 0,   initVal: 650, max: 2000, decimals: 1)
     // 体温 x10 ℃  (365 = 36.5 ℃)
     static let temp = MeasureSpec(min: 310, initVal: 365, max: 429,  decimals: 1)
-    // 歩数
-    static let pedometer = MeasureSpec(min: 0,   initVal: 5000, max: 99999, decimals: 0)
     // 体脂肪率 x10 % (235 = 23.5 %)
     static let bodyFat = MeasureSpec(min: 0,   initVal: 235, max: 1000,  decimals: 1)
     // 骨格筋率 x10 % (285 = 28.5 %)
@@ -103,7 +101,6 @@ enum GraphKind: Int, CaseIterable, Identifiable, Codable {
     case pulse        = 2
     case temp         = 3
     case weight       = 4
-    case pedo         = 5
     case bodyFat      = 6
     case skMuscle     = 7
     case bmi          = 8  // BMI（グラフ専用）
@@ -118,7 +115,6 @@ enum GraphKind: Int, CaseIterable, Identifiable, Codable {
         case .pulse:        return String(localized: "Graph_Pulse",        defaultValue: "心拍数")
         case .temp:         return String(localized: "Graph_Temp",         defaultValue: "体温")
         case .weight:       return String(localized: "Graph_Weight",       defaultValue: "体重")
-        case .pedo:         return String(localized: "Graph_Pedo",         defaultValue: "歩数")
         case .bodyFat:      return String(localized: "Graph_BodyFat",      defaultValue: "体脂肪率")
         case .skMuscle:     return String(localized: "Graph_SkMuscle",     defaultValue: "骨格筋率")
         case .bmi:          return String(localized: "Graph_BMI",          defaultValue: "BMI（体重÷身長×身長）")
@@ -141,10 +137,9 @@ enum StatSection: Int, CaseIterable, Identifiable {
     case bpDateOptCorr  = 2
     case bp24h          = 3
     case weightSummary  = 4
-    case weightStepsCorr = 5
-    case tempSummary    = 6
-    case temp24h        = 7
-    case tempHist       = 8
+    case tempSummary    = 5
+    case temp24h        = 6
+    case tempHist       = 7
 
     var id: Int { rawValue }
 
@@ -155,7 +150,6 @@ enum StatSection: Int, CaseIterable, Identifiable {
         case .bpDateOptCorr:  return String(localized: "StatSection_BpDateOptCorr",  defaultValue: "血圧・区分 相関")
         case .bp24h:          return String(localized: "StatSection_Bp24h",          defaultValue: "血圧 24時間分布")
         case .weightSummary:  return String(localized: "StatSection_WeightSummary",  defaultValue: "体重 サマリー")
-        case .weightStepsCorr: return String(localized: "StatSection_WeightStepsCorr", defaultValue: "体重・歩数 相関")
         case .tempSummary:    return String(localized: "StatSection_TempSummary",    defaultValue: "体温 サマリー")
         case .temp24h:        return String(localized: "StatSection_Temp24h",        defaultValue: "体温 24時間分布")
         case .tempHist:       return String(localized: "StatSection_TempHist",       defaultValue: "体温 分布")

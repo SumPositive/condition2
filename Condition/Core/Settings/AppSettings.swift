@@ -24,7 +24,6 @@ final class AppSettings {
         GraphKind.bmi.rawValue,
         GraphKind.weightChange.rawValue,
         GraphKind.temp.rawValue,
-        GraphKind.pedo.rawValue,
         GraphKind.bodyFat.rawValue,
         GraphKind.skMuscle.rawValue,
     ] {
@@ -32,7 +31,6 @@ final class AppSettings {
     }
     var graphHiddenPanels: [Int] = [
         GraphKind.temp.rawValue,
-        GraphKind.pedo.rawValue,
         GraphKind.bodyFat.rawValue,
         GraphKind.skMuscle.rawValue,
     ] {
@@ -46,7 +44,6 @@ final class AppSettings {
         GraphKind.weight.rawValue,   // 4
         GraphKind.temp.rawValue,     // 3
         GraphKind.bpAvg.rawValue,    // 1
-        GraphKind.pedo.rawValue,     // 5
         GraphKind.bodyFat.rawValue,  // 6
         GraphKind.skMuscle.rawValue, // 7
     ] {
@@ -55,7 +52,6 @@ final class AppSettings {
     /// 非表示フィールドの GraphKind.rawValue 集合（グラフ・記録入力の両方に適用）
     var hiddenFields: [Int] = [
         GraphKind.temp.rawValue,     // 3
-        GraphKind.pedo.rawValue,     // 5
         GraphKind.bodyFat.rawValue,  // 6
         GraphKind.skMuscle.rawValue, // 7
     ] {
@@ -175,9 +171,6 @@ final class AppSettings {
     }
     var goalTemp: Int = 0 {
         didSet { kvs.set(goalTemp, forKey: KVSKeys.goalTemp) }
-    }
-    var goalPedometer: Int = 0 {
-        didSet { kvs.set(goalPedometer, forKey: KVSKeys.goalPedometer) }
     }
     var goalBodyFat: Int = 0 {
         didSet { kvs.set(goalBodyFat, forKey: KVSKeys.goalBodyFat) }
@@ -310,8 +303,6 @@ final class AppSettings {
         if gw > 0 { goalWeight = Int(gw) }
         let gt = kvs.longLong(forKey: KVSKeys.goalTemp)
         if gt > 0 { goalTemp = Int(gt) }
-        let gped = kvs.longLong(forKey: KVSKeys.goalPedometer)
-        if gped > 0 { goalPedometer = Int(gped) }
         let gbf = kvs.longLong(forKey: KVSKeys.goalBodyFat)
         if gbf > 0 { goalBodyFat = Int(gbf) }
         let gsk = kvs.longLong(forKey: KVSKeys.goalSkMuscle)

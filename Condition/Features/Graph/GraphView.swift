@@ -234,12 +234,6 @@ private struct GraphContentView: View {
             }
         case .weightChange:
             WeightChangeChartView(records: records, period: period)
-        case .pedo:
-            LineChartView(records: records, keyPath: \.nPedometer,
-                          title: kind.title,
-                          unit: String(localized: "Unit_Steps", defaultValue: "歩"),
-                          color: .green, goalValue: settings.goalPedometer, period: period,
-                          tightDomain: true, showAsBar: true, kind: kind)
         case .bodyFat:
             LineChartView(records: records, keyPath: \.nBodyFat_10p,
                           title: kind.title, unit: "%", color: .purple,
@@ -1153,6 +1147,7 @@ private struct BMIChartView: View {
     @State private var showBMIInfo = false
     private var isJapanese: Bool { Locale.preferredLanguages.first?.hasPrefix("ja") ?? true }
     @Environment(\.chartAvailableWidth) private var chartWidth
+    @Environment(\.colorScheme) private var colorScheme
 
     private func dayStart(_ date: Date) -> Date { cal.startOfDay(for: date) }
 
@@ -1243,13 +1238,26 @@ private struct BMIChartView: View {
 
             // チャート
             Chart {
-                // BMI基準帯（背景）
+                // JASSO BMI 肥満度区分 背景帯
                 ForEach(bmiZones, id: \.label) { z in
                     RectangleMark(
                         yStart: .value("下限", z.min),
                         yEnd:   .value("上限", z.max)
                     )
-                    .foregroundStyle(z.color)
+                    .foregroundStyle(z.swatch.opacity(colorScheme == .dark ? 0.22 : 0.16))
+                }
+                // ゾーン境界ライン＋ゾーン名ラベル
+                ForEach(bmiZones.dropFirst(), id: \.label) { z in
+                    RuleMark(y: .value("境界", z.min))
+                        .foregroundStyle(z.swatch.opacity(colorScheme == .dark ? 0.55 : 0.40))
+                        .lineStyle(StrokeStyle(lineWidth: 0.5, dash: [3, 2]))
+                        .annotation(position: .overlay, alignment: .topLeading) {
+                            Text(isJapanese ? z.label : z.enLabel)
+                                .font(.system(size: 8, weight: .medium))
+                                .foregroundStyle(z.swatch.opacity(colorScheme == .dark ? 0.90 : 0.75))
+                                .padding(.leading, 2)
+                                .padding(.top, 1)
+                        }
                 }
 
                 ForEach(dailyValues) { d in

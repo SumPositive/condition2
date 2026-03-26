@@ -28,8 +28,6 @@ var sNote1: String = ""
     var nTemp_10c: Int = 0
     // 体重（x10 kg 例: 650 = 65.0kg）
     var nWeight_10Kg: Int = 0
-    // 歩数
-    var nPedometer: Int = 0
     // 体脂肪率（x10 % 例: 235 = 23.5%）
     var nBodyFat_10p: Int = 0
     // 骨格筋率（x10 % 例: 285 = 28.5%）
@@ -79,7 +77,6 @@ extension BodyRecord {
     var displayPulse: String  { ValueFormatter.format(nPulse_bpm,    decimals: 0) }
     var displayTemp: String   { ValueFormatter.format(nTemp_10c,     decimals: 1) }
     var displayWeight: String { ValueFormatter.format(nWeight_10Kg,  decimals: 1) }
-    var displayPedo: String   { ValueFormatter.format(nPedometer,    decimals: 0) }
     var displayBodyFat: String  { ValueFormatter.format(nBodyFat_10p,  decimals: 1) }
     var displaySkMuscle: String { ValueFormatter.format(nSkMuscle_10p, decimals: 1) }
 }

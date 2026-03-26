@@ -148,7 +148,6 @@ struct RecordEditView: View {
             .onChange(of: vm.nPulse_bpm)    { _, _ in vm.isModified = true }
             .onChange(of: vm.nWeight_10Kg)  { _, _ in vm.isModified = true }
             .onChange(of: vm.nTemp_10c)     { _, _ in vm.isModified = true }
-            .onChange(of: vm.nPedometer)    { _, _ in vm.isModified = true }
             .onChange(of: vm.nBodyFat_10p)  { _, _ in vm.isModified = true }
             .onChange(of: vm.nSkMuscle_10p) { _, _ in vm.isModified = true }
         }
@@ -176,8 +175,6 @@ struct RecordEditView: View {
             dialRow(title: "体重", value: $vm.nWeight_10Kg, enabled: $vm.weightEnabled, spec: MeasureRange.weight, unit: "kg", stepperStep: 10, decimals: 1, color: .indigo)
         case .temp:
             dialRow(title: "体温", value: $vm.nTemp_10c, enabled: $vm.tempEnabled, spec: MeasureRange.temp, unit: "℃", stepperStep: 1, decimals: 1, color: .pink)
-        case .pedo:
-            dialRow(title: "歩数", value: $vm.nPedometer, enabled: $vm.pedometerEnabled, spec: MeasureRange.pedometer, unit: "歩", stepperStep: 1000, color: .green)
         case .bodyFat:
             dialRow(title: "体脂肪率", value: $vm.nBodyFat_10p, enabled: $vm.bodyFatEnabled, spec: MeasureRange.bodyFat, unit: "%", stepperStep: 5, decimals: 1, color: .purple)
         case .skMuscle:
@@ -272,7 +269,6 @@ struct RecordEditView: View {
                 record.nPulse_bpm   = v.pulse
                 record.nTemp_10c    = v.temp
                 record.nWeight_10Kg = v.weight
-                record.nPedometer   = v.steps
                 record.nBodyFat_10p = v.bodyFat
                 context.insert(record)
                 addedCount += 1

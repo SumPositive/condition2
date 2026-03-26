@@ -149,7 +149,6 @@ final class MigrationService {
             ("nPulse_bpm",     .integer16AttributeType),
             ("nTemp_10c",      .integer16AttributeType),
             ("nWeight_10Kg",   .integer32AttributeType),
-            ("nPedometer",     .integer32AttributeType),
             ("nBodyFat_10p",   .integer32AttributeType),
             ("nSkMuscle_10p",  .integer32AttributeType),
         ]
@@ -201,7 +200,6 @@ final class MigrationService {
         record.nPulse_bpm   = (obj.value(forKey: "nPulse_bpm")   as? Int) ?? 0
         record.nTemp_10c    = (obj.value(forKey: "nTemp_10c")    as? Int) ?? 0
         record.nWeight_10Kg = (obj.value(forKey: "nWeight_10Kg") as? Int) ?? 0
-        record.nPedometer   = (obj.value(forKey: "nPedometer")   as? Int) ?? 0
         record.nBodyFat_10p  = (obj.value(forKey: "nBodyFat_10p")  as? Int) ?? 0
         record.nSkMuscle_10p = (obj.value(forKey: "nSkMuscle_10p") as? Int) ?? 0
 
@@ -217,7 +215,6 @@ final class MigrationService {
         if let v = obj.value(forKey: "nPulse_bpm") as? Int,   v > 0 { settings.goalPulse     = v }
         if let v = obj.value(forKey: "nWeight_10Kg") as? Int, v > 0 { settings.goalWeight    = v }
         if let v = obj.value(forKey: "nTemp_10c") as? Int,    v > 0 { settings.goalTemp      = v }
-        if let v = obj.value(forKey: "nPedometer") as? Int,   v > 0 { settings.goalPedometer = v }
         if let v = obj.value(forKey: "nBodyFat_10p") as? Int, v > 0 { settings.goalBodyFat   = v }
         if let v = obj.value(forKey: "nSkMuscle_10p") as? Int, v > 0 { settings.goalSkMuscle = v }
         logger.info("目標値レコードを AppSettings へ書き出し完了")

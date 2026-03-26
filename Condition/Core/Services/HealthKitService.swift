@@ -32,7 +32,6 @@ struct HealthKitValues {
     var pulse:   Int = 0   // bpm
     var temp:    Int = 0   // ×10 ℃      例: 365 = 36.5℃
     var weight:  Int = 0   // ×10 kg      例: 650 = 65.0kg
-    var steps:   Int = 0   // 歩
     var bodyFat: Int = 0   // ×10 %       例: 235 = 23.5%
 }
 
@@ -62,7 +61,6 @@ final class HealthKitService {
         HKQuantityType(.heartRate),
         HKQuantityType(.bodyTemperature),
         HKQuantityType(.bodyMass),
-        HKQuantityType(.stepCount),
         HKQuantityType(.bodyFatPercentage),
     ]
 
@@ -72,7 +70,6 @@ final class HealthKitService {
         HKQuantityType(.heartRate),
         HKQuantityType(.bodyTemperature),
         HKQuantityType(.bodyMass),
-        HKQuantityType(.stepCount),
         HKQuantityType(.bodyFatPercentage),
     ]
 
@@ -151,14 +148,6 @@ final class HealthKitService {
                 start: date, end: date))
         }
 
-        // 歩数
-        if values.steps > 0 {
-            samples.append(HKQuantitySample(
-                type: HKQuantityType(.stepCount),
-                quantity: HKQuantity(unit: .count(), doubleValue: Double(values.steps)),
-                start: date, end: date))
-        }
-
         // 体脂肪率（HKUnit.percent() は 0–100 のパーセント値）
         if values.bodyFat > 0 {
             samples.append(HKQuantitySample(
@@ -179,7 +168,7 @@ final class HealthKitService {
 
     // MARK: - 読み込み
 
-    /// 指定日時より前の最新サンプルを取得（歩数は当日合計）
+    /// 指定日時より前の最新サンプルを取得
     /// - Parameter hiddenFields: 非表示フィールドの GraphKind.rawValue 集合。含まれる種別は取得をスキップする。
     func readLatest(before date: Date, hiddenFields: Set<Int> = []) async -> HealthKitValues {
         guard isAvailable else { return HealthKitValues(date: date) }
@@ -211,12 +200,6 @@ final class HealthKitService {
             v.weight = Int(s.quantity.doubleValue(for: .gramUnit(with: .kilo)) * 10.0)
         }
 
-        // 歩数（当日合計）
-        if !hiddenFields.contains(GraphKind.pedo.rawValue),
-           let steps = await stepCountForDay(of: date) {
-            v.steps = steps
-        }
-
         // 体脂肪率
         if !hiddenFields.contains(GraphKind.bodyFat.rawValue),
            let s = await mostRecentQuantity(.bodyFatPercentage, before: date) {
@@ -244,7 +227,7 @@ final class HealthKitService {
         }
         // その他の量的型を削除
         let qtTypes: [HKQuantityTypeIdentifier] = [
-            .heartRate, .bodyTemperature, .bodyMass, .stepCount, .bodyFatPercentage
+            .heartRate, .bodyTemperature, .bodyMass, .bodyFatPercentage
         ]
         for id in qtTypes {
             do {
@@ -302,31 +285,9 @@ final class HealthKitService {
         }
     }
 
-    private func stepCountForDay(of date: Date) async -> Int? {
-        let cal = Calendar.current
-        let start = cal.startOfDay(for: date)
-        guard let end = cal.date(byAdding: .day, value: 1, to: start) else { return nil }
-        let type = HKQuantityType(.stepCount)
-        let predicate = HKQuery.predicateForSamples(withStart: start, end: end)
-        return await withCheckedContinuation { continuation in
-            let query = HKStatisticsQuery(
-                quantityType: type,
-                quantitySamplePredicate: predicate,
-                options: .cumulativeSum
-            ) { _, result, error in
-                guard error == nil, let sum = result?.sumQuantity() else {
-                    continuation.resume(returning: nil)
-                    return
-                }
-                continuation.resume(returning: Int(sum.doubleValue(for: .count())))
-            }
-            self.store.execute(query)
-        }
-    }
-
     // MARK: - 期間一括読み込み
 
-    /// 指定期間の全サンプルを返す（分単位でグループ化、歩数は同日の全レコードに付与）
+    /// 指定期間の全サンプルを返す（分単位でグループ化）
     /// 10秒以内に完了しない場合は空配列を返し importTimedOut を true にする。
     /// - Parameter hiddenFields: 非表示フィールドの GraphKind.rawValue 集合。含まれる種別は取得をスキップする。
     func readSamples(from startDate: Date, to endDate: Date, hiddenFields: Set<Int> = []) async -> [HealthKitValues] {
@@ -435,35 +396,13 @@ final class HealthKitService {
             }
         }
 
-        // 歩数（日別合計）同日の最終時刻レコードにのみ付与、レコードがない日は startOfDay に作成
-        if !hiddenFields.contains(GraphKind.pedo.rawValue) {
-            importProgress = "歩数を取得中..."
-            let stepSamples = await allStepsByDay(from: startDate, to: endDate)
-            logger.info("歩数サンプル日数: \(stepSamples.count)")
-            for (dayDate, steps) in stepSamples {
-                let day = cal.startOfDay(for: dayDate)
-                let keysForDay = byMinute.keys.filter { cal.startOfDay(for: $0) == day }
-                if let lastKey = keysForDay.max() {
-                    // 他のバイタルがある日: 最終時刻レコードに付与
-                    byMinute[lastKey]!.steps = steps
-                } else {
-                    // 歩数のみの日: startOfDay にレコードを作成
-                    let key = minuteKey(day)
-                    var v = byMinute[key] ?? HealthKitValues(date: day)
-                    v.steps = steps
-                    byMinute[key] = v
-                }
-            }
-        }
-
         // 非表示でないバイタル項目のうち少なくとも1つが入力されているレコードのみ残す
         let result = byMinute.values
             .filter { v in
                 (!hiddenFields.contains(GraphKind.bp.rawValue)     && v.bpHi > 0)   ||
                 (!hiddenFields.contains(GraphKind.pulse.rawValue)  && v.pulse > 0)  ||
                 (!hiddenFields.contains(GraphKind.temp.rawValue)   && v.temp > 0)   ||
-                (!hiddenFields.contains(GraphKind.weight.rawValue) && v.weight > 0) ||
-                (!hiddenFields.contains(GraphKind.pedo.rawValue)   && v.steps > 0)
+                (!hiddenFields.contains(GraphKind.weight.rawValue) && v.weight > 0)
             }
             .sorted { $0.date < $1.date }
         logger.info("readSamples 完了: \(result.count) 件")
@@ -522,45 +461,6 @@ final class HealthKitService {
         }
     }
 
-    /// 指定期間の日別歩数合計を返す（キー: startOfDay）
-    func readDailySteps(from startDate: Date, to endDate: Date) async -> [Date: Int] {
-        guard isAvailable, !AppSettings.shared.hkDisabledByDemo else { return [:] }
-        let samples = await allStepsByDay(from: startDate, to: endDate)
-        let cal = Calendar.current
-        return Dictionary(samples.map { (cal.startOfDay(for: $0.0), $0.1) },
-                          uniquingKeysWith: { $1 })
-    }
-
-    private func allStepsByDay(from start: Date, to end: Date) async -> [(Date, Int)] {
-        logger.info("allStepsByDay 開始: \(start, privacy: .public) 〜 \(end, privacy: .public)")
-        let cal = Calendar.current
-        let predicate = HKQuery.predicateForSamples(withStart: start, end: end)
-        return await withCheckedContinuation { continuation in
-            let query = HKStatisticsCollectionQuery(
-                quantityType: HKQuantityType(.stepCount),
-                quantitySamplePredicate: predicate,
-                options: .cumulativeSum,
-                anchorDate: cal.startOfDay(for: start),
-                intervalComponents: DateComponents(day: 1)
-            )
-            query.initialResultsHandler = { _, collection, error in
-                if let error {
-                    logger.error("allStepsByDay エラー: \(error.localizedDescription, privacy: .public)")
-                    continuation.resume(returning: [])
-                    return
-                }
-                var result: [(Date, Int)] = []
-                collection?.enumerateStatistics(from: start, to: end) { stats, _ in
-                    if let sum = stats.sumQuantity() {
-                        result.append((stats.startDate, Int(sum.doubleValue(for: .count()))))
-                    }
-                }
-                logger.info("allStepsByDay 完了: \(result.count) 日分")
-                continuation.resume(returning: result)
-            }
-            self.store.execute(query)
-        }
-    }
 }
 
 // MARK: - ユーティリティ

@@ -538,7 +538,6 @@ struct GoalSettingsView: View {
     private var latestPulse:   Int? { latest?.nPulse_bpm }
     private var latestWeight:  Int? { latest?.nWeight_10Kg }
     private var latestTemp:    Int? { latest?.nTemp_10c }
-    private var latestPedo:    Int? { latest?.nPedometer }
     private var latestBodyFat: Int? { latest?.nBodyFat_10p }
     private var latestSkMuscle:Int? { latest?.nSkMuscle_10p }
     private var latestBMI:     Int? {
@@ -559,7 +558,6 @@ struct GoalSettingsView: View {
                     goalDialRow(title: "体重",             value: $settings.goalWeight,    spec: MeasureRange.weight,    recordVal: latestWeight, unit: "kg",   stepperStep: 10, decimals: 1, color: .indigo)
                     goalDialRow(title: "BMI",              value: $settings.goalBMI,       spec: MeasureRange.bmi,       recordVal: latestBMI,    unit: "",     stepperStep: 5,  decimals: 1, color: .cyan)
                     goalDialRow(title: "体温",             value: $settings.goalTemp,      spec: MeasureRange.temp,      recordVal: latestTemp,   unit: "℃",   stepperStep: 1,  decimals: 1, color: .pink)
-                    goalDialRow(title: "歩数",             value: $settings.goalPedometer, spec: MeasureRange.pedometer, recordVal: latestPedo,   unit: "歩",   stepperStep: 1000, color: .green)
                     goalDialRow(title: "体脂肪率",         value: $settings.goalBodyFat,   spec: MeasureRange.bodyFat,   recordVal: latestBodyFat,unit: "%",    stepperStep: 5,  decimals: 1, color: .purple)
                     goalDialRow(title: "骨格筋率",         value: $settings.goalSkMuscle,  spec: MeasureRange.skMuscle,  recordVal: latestSkMuscle,unit: "%",   stepperStep: 5,  decimals: 1, color: .teal)
                 }

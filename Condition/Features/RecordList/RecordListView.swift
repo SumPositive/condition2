@@ -37,7 +37,6 @@ struct RecordListView: View {
                 case .pulse:    return r.nPulse_bpm > 0
                 case .temp:     return r.nTemp_10c > 0
                 case .weight:   return r.nWeight_10Kg > 0
-                case .pedo:     return r.nPedometer > 0
                 case .bodyFat:  return r.nBodyFat_10p > 0
                 case .skMuscle: return r.nSkMuscle_10p > 0
                 default:        return false
@@ -228,63 +227,14 @@ struct RecordListView: View {
             record.nPulse_bpm   = v.pulse
             record.nTemp_10c    = v.temp
             record.nWeight_10Kg = v.weight
-            record.nPedometer   = v.steps
             record.nBodyFat_10p = v.bodyFat
             context.insert(record)
             addedCount += 1
         }
         if addedCount > 0 {
             try? context.save()
-            enforceStepsConstraintAfterImport(in: oneYearAgo...now, context: context)
             showImportToast(count: addedCount)
         }
-
-        // 歩数: ヘルスケアから1日分合計を取得し、各日の最終レコードに付与・更新
-        guard !Set(settings.hiddenFields).contains(GraphKind.pedo.rawValue) else { return }
-        let dailySteps = await hkService.readDailySteps(from: oneYearAgo, to: now)
-        guard !dailySteps.isEmpty else { return }
-        var stepsChanged = false
-        for (day, steps) in dailySteps {
-            guard steps > 0 else { continue }
-            let nextDay = cal.date(byAdding: .day, value: 1, to: day) ?? day
-            var desc = FetchDescriptor<BodyRecord>(
-                predicate: #Predicate { $0.dateTime >= day && $0.dateTime < nextDay },
-                sortBy: [SortDescriptor(\.dateTime, order: .reverse)]
-            )
-            desc.fetchLimit = 1
-            guard let lastRecord = try? context.fetch(desc).first else { continue }
-            if lastRecord.nPedometer != steps {
-                lastRecord.nPedometer = steps
-                stepsChanged = true
-            }
-        }
-        if stepsChanged { try? context.save() }
-    }
-
-    /// バルクインポート後、対象期間内の各日について歩数を最終時刻レコードにのみ残す
-    private func enforceStepsConstraintAfterImport(in range: ClosedRange<Date>, context: ModelContext) {
-        let cal = Calendar.current
-        var descriptor = FetchDescriptor<BodyRecord>(
-            predicate: #Predicate { $0.dateTime >= range.lowerBound && $0.dateTime <= range.upperBound },
-            sortBy: [SortDescriptor(\.dateTime)]
-        )
-        descriptor.includePendingChanges = true
-        guard let allRecords = try? context.fetch(descriptor) else { return }
-
-        // 日ごとにグループ化して最終時刻以外の歩数をゼロクリア
-        let grouped = Dictionary(grouping: allRecords) { cal.startOfDay(for: $0.dateTime) }
-        var changed = false
-        for dayRecords in grouped.values {
-            let sorted = dayRecords.sorted { $0.dateTime < $1.dateTime }
-            guard let last = sorted.last else { continue }
-            for record in sorted where record.persistentModelID != last.persistentModelID {
-                if record.nPedometer != 0 {
-                    record.nPedometer = 0
-                    changed = true
-                }
-            }
-        }
-        if changed { try? context.save() }
     }
 
     private func showImportToast(count: Int) {
@@ -382,7 +332,6 @@ private struct DemoDataGenerator {
         let pulseBase: Int; let pulseRange: Int
         let weightBase: Int; let weightRange: Int
         let tempBase: Int; let tempRange: Int
-        let stepsBase: Int; let stepsRange: Int
         let bodyFatBase: Int; let bodyFatRange: Int
         let skMuscleBase: Int; let skMuscleRange: Int
     }
@@ -393,7 +342,6 @@ private struct DemoDataGenerator {
         pulseBase: 70, pulseRange: 14,
         weightBase: 680, weightRange: 60,
         tempBase: 364,   tempRange: 8,
-        stepsBase: 7200, stepsRange: 4800,
         bodyFatBase: 220, bodyFatRange: 50,
         skMuscleBase: 340, skMuscleRange: 40
     )
@@ -404,7 +352,6 @@ private struct DemoDataGenerator {
         pulseBase: 72, pulseRange: 16,
         weightBase: 900, weightRange: 80,
         tempBase: 366,   tempRange: 8,
-        stepsBase: 5500, stepsRange: 4000,
         bodyFatBase: 265, bodyFatRange: 60,
         skMuscleBase: 305, skMuscleRange: 40
     )
@@ -451,9 +398,6 @@ private struct DemoDataGenerator {
                 record.nTemp_10c     = max(355, rand(profile.tempBase,    profile.tempRange))
                 record.nBodyFat_10p  = max(100, rand(profile.bodyFatBase, profile.bodyFatRange, step: 5))
                 record.nSkMuscle_10p = max(150, rand(profile.skMuscleBase,profile.skMuscleRange, step: 5))
-                if i == recordCount - 1 {
-                    record.nPedometer = max(0, rand(profile.stepsBase, profile.stepsRange, step: 100))
-                }
                 record.bCaution = record.nBpHi_mmHg >= 140 || record.nBpLo_mmHg >= 90
                 context.insert(record)
             }
@@ -474,7 +418,6 @@ private func subColumnWidths(for kind: GraphKind) -> [CGFloat] {
     case .pulse:    return [42]
     case .weight:   return [60]
     case .temp:     return [52]
-    case .pedo:     return [62]
     case .bodyFat:  return [52]
     case .skMuscle: return [52]
     default:        return []
@@ -545,8 +488,6 @@ struct RecordColumnHeader: View {
             Text("体重").minimumScaleFactor(0.6).lineLimit(1).frame(width: 60)
         case .temp:
             Text("体温").minimumScaleFactor(0.6).lineLimit(1).frame(width: 52)
-        case .pedo:
-            Text("歩数").minimumScaleFactor(0.6).lineLimit(1).frame(width: 62)
         case .bodyFat:
             Text("体脂肪").minimumScaleFactor(0.6).lineLimit(1).frame(width: 52)
         case .skMuscle:
@@ -655,7 +596,7 @@ struct RecordRowView: View {
                             if !notes.isEmpty {
                                 Text(notes)
                                     .font(.caption)
-                                    .foregroundStyle(.tertiary)
+                                    .foregroundStyle(.secondary)
                                     .lineLimit(1)
                                     .padding(.leading, 4)
                                     .padding(.top, -8)
@@ -699,8 +640,6 @@ struct RecordRowView: View {
             valueCell(record.displayWeight, width: 60, height: cellH)
         case .temp:
             valueCell(record.displayTemp, width: 52, height: cellH)
-        case .pedo:
-            valueCell(record.displayPedo, width: 62, height: cellH)
         case .bodyFat:
             valueCell(record.displayBodyFat, width: 52, height: cellH)
         case .skMuscle:
@@ -904,8 +843,6 @@ private struct ExportSheetView: View {
                     if r.nTemp_10c > 0 { obj["bodyTemp"] = Double(r.nTemp_10c) / 10.0 }
                 case .weight:
                     if r.nWeight_10Kg > 0 { obj["weight"] = Double(r.nWeight_10Kg) / 10.0 }
-                case .pedo:
-                    if r.nPedometer > 0 { obj["steps"] = r.nPedometer }
                 case .bodyFat:
                     if r.nBodyFat_10p > 0 { obj["bodyFat"] = Double(r.nBodyFat_10p) / 10.0 }
                 case .skMuscle:
@@ -949,7 +886,6 @@ private struct ExportSheetView: View {
             case .pulse:    headers.append(escape(String(localized: "Export_XLS_Pulse",   defaultValue: "心拍数 bpm")))
             case .temp:     headers.append(escape(String(localized: "Export_XLS_Temp",    defaultValue: "体温 ℃")))
             case .weight:   headers.append(escape(String(localized: "Export_XLS_Weight",  defaultValue: "体重 kg")))
-            case .pedo:     headers.append(escape(String(localized: "Export_XLS_Steps",   defaultValue: "歩数")))
             case .bodyFat:  headers.append(escape(String(localized: "Export_XLS_BodyFat", defaultValue: "体脂肪率 %")))
             case .skMuscle: headers.append(escape(String(localized: "Export_XLS_Muscle",  defaultValue: "骨格筋率 %")))
             default: break
@@ -979,8 +915,6 @@ private struct ExportSheetView: View {
                     fields.append(r.nTemp_10c > 0 ? String(format: "%.1f", Double(r.nTemp_10c) / 10.0) : "")
                 case .weight:
                     fields.append(r.nWeight_10Kg > 0 ? String(format: "%.1f", Double(r.nWeight_10Kg) / 10.0) : "")
-                case .pedo:
-                    fields.append(r.nPedometer > 0 ? "\(r.nPedometer)" : "")
                 case .bodyFat:
                     fields.append(r.nBodyFat_10p > 0 ? String(format: "%.1f", Double(r.nBodyFat_10p) / 10.0) : "")
                 case .skMuscle:
@@ -1097,12 +1031,6 @@ private struct ExportPDFPageView: View {
         f.timeStyle = .none
         return f
     }()
-    private static let stepsFmt: NumberFormatter = {
-        let f = NumberFormatter()
-        f.numberStyle = .decimal
-        return f
-    }()
-
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             if isFirstPage {
@@ -1203,7 +1131,6 @@ private struct ExportPDFPageView: View {
         case .pulse:    return [String(localized: "Export_Col_Pulse",   defaultValue: "心拍 bpm")]
         case .temp:     return [String(localized: "Export_Col_Temp",    defaultValue: "体温 ℃")]
         case .weight:   return [String(localized: "Export_Col_Weight",  defaultValue: "体重 kg")]
-        case .pedo:     return [String(localized: "Export_Col_Steps",   defaultValue: "歩数")]
         case .bodyFat:  return [String(localized: "Export_Col_BodyFat", defaultValue: "体脂肪 %")]
         case .skMuscle: return [String(localized: "Export_Col_Muscle",  defaultValue: "骨格筋 %")]
         default:        return []
@@ -1216,9 +1143,6 @@ private struct ExportPDFPageView: View {
         case .pulse:    return [r.displayPulse]
         case .temp:     return [r.displayTemp]
         case .weight:   return [r.displayWeight]
-        case .pedo:
-            guard r.nPedometer > 0 else { return [""] }
-            return [Self.stepsFmt.string(from: NSNumber(value: r.nPedometer)) ?? "\(r.nPedometer)"]
         case .bodyFat:  return [r.displayBodyFat]
         case .skMuscle: return [r.displaySkMuscle]
         default:        return []
@@ -1231,7 +1155,6 @@ private struct ExportPDFPageView: View {
         case .pulse:    return 44
         case .temp:     return 44
         case .weight:   return 48
-        case .pedo:     return 56
         case .bodyFat:  return 50
         case .skMuscle: return 50
         default:        return 0
