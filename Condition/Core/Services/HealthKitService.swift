@@ -328,7 +328,6 @@ final class HealthKitService {
     }
 
     private func _runImport(from startDate: Date, to endDate: Date, hiddenFields: Set<Int>) async -> [HealthKitValues] {
-        let cal = Calendar.current
         /// 同じ分の測定を1レコードに統合するキー
         func minuteKey(_ d: Date) -> Date {
             let secs = d.timeIntervalSinceReferenceDate
