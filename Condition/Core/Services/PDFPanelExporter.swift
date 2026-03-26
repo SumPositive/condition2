@@ -68,11 +68,14 @@ enum PDFPanelExporter {
     // MARK: - レンダリング
 
     private static func renderToImage(_ view: AnyView) -> UIImage? {
-        // Swift Charts のエントリアニメーションを完全に止めるため、
-        // ImageRenderer ではなく UIHostingController + UIGraphicsImageRenderer を使用する。
-        // UIView.setAnimationsEnabled(false) と CATransaction.setDisableActions(true) を
-        // 組み合わせることで CA レベルのアニメーションも無効化し、
-        // マークが最終状態で即座に描画されるようにする。
+        // Swift Charts の軸ラベルはウィンドウ階層に接続されていないと
+        // レイヤーツリーに追加されず drawHierarchy でキャプチャできない。
+        // キーウィンドウの画面外位置に一時追加することで完全なレンダリングを強制する。
+        guard let keyWindow = UIApplication.shared.connectedScenes
+            .compactMap({ $0 as? UIWindowScene })
+            .flatMap({ $0.windows })
+            .first(where: { $0.isKeyWindow }) else { return nil }
+
         UIView.setAnimationsEnabled(false)
         defer { UIView.setAnimationsEnabled(true) }
 
@@ -83,8 +86,10 @@ enum PDFPanelExporter {
         )
         hostVC.view.backgroundColor = .white
 
-        CATransaction.begin()
-        CATransaction.setDisableActions(true)
+        // 画面外左側に配置（ユーザーには見えない）
+        hostVC.view.frame = CGRect(x: -(contentW + 10), y: 0, width: contentW, height: 300)
+        keyWindow.addSubview(hostVC.view)
+        defer { hostVC.view.removeFromSuperview() }
 
         let fitting = hostVC.sizeThatFits(in: CGSize(
             width: contentW,
@@ -92,18 +97,28 @@ enum PDFPanelExporter {
         ))
         let h = fitting.height > 0 ? fitting.height : 300
         let size = CGSize(width: contentW, height: h)
-        hostVC.view.frame = CGRect(origin: .zero, size: size)
-        hostVC.view.setNeedsLayout()
-        hostVC.view.layoutIfNeeded()
 
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
+        hostVC.view.frame = CGRect(x: -(contentW + 10), y: 0, width: contentW, height: h)
+        hostVC.view.setNeedsLayout()
+        hostVC.view.layoutIfNeeded()  // 第1パス: onAppear 発火 → @State 更新スケジュール
+        CATransaction.commit()
+
+        // onAppear で @State (scrollPosition 等) が更新される。
+        // その再レンダリングは次 RunLoop サイクルにスケジュールされるため、
+        // 明示的に RunLoop を回して処理を完了させてから第2パスを行う。
+        RunLoop.main.run(until: Date(timeIntervalSinceNow: 0.05))
+
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
+        hostVC.view.setNeedsLayout()
+        hostVC.view.layoutIfNeeded()  // 第2パス: 更新済みスクロール位置で再描画
         CATransaction.commit()
 
         let renderer = UIGraphicsImageRenderer(size: size)
         return renderer.image { _ in
-            hostVC.view.drawHierarchy(
-                in: CGRect(origin: .zero, size: size),
-                afterScreenUpdates: true
-            )
+            hostVC.view.drawHierarchy(in: hostVC.view.bounds, afterScreenUpdates: true)
         }
     }
 

@@ -5,6 +5,31 @@ import SwiftUI
 import SwiftData
 import Charts
 
+// MARK: - スクロール位置キャプチャ
+
+private final class ScrollCapture: @unchecked Sendable {
+    var positions: [GraphKind: Date] = [:]
+}
+private struct ScrollCaptureKey: EnvironmentKey {
+    static let defaultValue = ScrollCapture()
+}
+extension EnvironmentValues {
+    fileprivate var scrollCapture: ScrollCapture {
+        get { self[ScrollCaptureKey.self] }
+        set { self[ScrollCaptureKey.self] = newValue }
+    }
+}
+
+private struct ExportScrollDateKey: EnvironmentKey {
+    static let defaultValue: Date? = nil
+}
+extension EnvironmentValues {
+    fileprivate var exportScrollDate: Date? {
+        get { self[ExportScrollDateKey.self] }
+        set { self[ExportScrollDateKey.self] = newValue }
+    }
+}
+
 // MARK: - 表示期間
 
 enum GraphPeriod: Int, CaseIterable {
@@ -100,9 +125,8 @@ private struct GraphContentView: View {
 
     private var settings: AppSettings { AppSettings.shared }
     @State private var chartWidth: CGFloat = 390
-    @State private var showShareSheet = false
-    @State private var shareItems: [Any] = []
     @State private var isExporting = false
+    @State private var scrollCapture = ScrollCapture()
 
     init(cutoffDate: Date, period: Binding<GraphPeriod>) {
         let predicate = #Predicate<BodyRecord> {
@@ -124,6 +148,7 @@ private struct GraphContentView: View {
             }
         }
         .overlay { if isExporting { exportingOverlay } }
+        .environment(\.scrollCapture, scrollCapture)
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {
                 Button {
@@ -138,9 +163,6 @@ private struct GraphContentView: View {
                 }
                 .disabled(records.isEmpty || isExporting)
             }
-        }
-        .sheet(isPresented: $showShareSheet) {
-            ActivityViewController(activityItems: shareItems)
         }
     }
 
@@ -195,17 +217,17 @@ private struct GraphContentView: View {
             LineChartView(records: records, keyPath: \.nPulse_bpm,
                           title: kind.title, unit: "bpm", color: .orange,
                           goalValue: settings.goalPulse, period: period,
-                          tightDomain: true)
+                          tightDomain: true, kind: kind)
         case .temp:
             LineChartView(records: records, keyPath: \.nTemp_10c,
                           title: kind.title, unit: "℃", color: .pink,
                           goalValue: settings.goalTemp, decimals: 1, period: period,
-                          tightDomain: true)
+                          tightDomain: true, kind: kind)
         case .weight:
             LineChartView(records: records, keyPath: \.nWeight_10Kg,
                           title: kind.title, unit: "kg", color: .indigo,
                           goalValue: settings.goalWeight, decimals: 1, period: period,
-                          tightDomain: true, showMovingAverage: settings.graphWeightMA)
+                          tightDomain: true, showMovingAverage: settings.graphWeightMA, kind: kind)
         case .bmi:
             if settings.graphBMITall > 0 {
                 BMIChartView(records: records, heightCm: settings.graphBMITall, period: period, goalValue: settings.goalBMI)
@@ -217,17 +239,17 @@ private struct GraphContentView: View {
                           title: kind.title,
                           unit: String(localized: "Unit_Steps", defaultValue: "歩"),
                           color: .green, goalValue: settings.goalPedometer, period: period,
-                          tightDomain: true, showAsBar: true)
+                          tightDomain: true, showAsBar: true, kind: kind)
         case .bodyFat:
             LineChartView(records: records, keyPath: \.nBodyFat_10p,
                           title: kind.title, unit: "%", color: .purple,
                           goalValue: settings.goalBodyFat, decimals: 1, period: period,
-                          tightDomain: true)
+                          tightDomain: true, kind: kind)
         case .skMuscle:
             LineChartView(records: records, keyPath: \.nSkMuscle_10p,
                           title: kind.title, unit: "%", color: .teal,
                           goalValue: settings.goalSkMuscle, decimals: 1, period: period,
-                          tightDomain: true)
+                          tightDomain: true, kind: kind)
         }
     }
 
@@ -244,6 +266,7 @@ private struct GraphContentView: View {
             AnyView(
                 graphPanel(kind: kind)
                     .environment(\.chartAvailableWidth, pdfW)
+                    .environment(\.exportScrollDate, scrollCapture.positions[kind])
             )
         }
 
@@ -255,9 +278,27 @@ private struct GraphContentView: View {
         let title = String(localized: "Tab_Graph", defaultValue: "グラフ")
 
         let data = PDFPanelExporter.export(panels: panels, title: title, subtitle: subtitle)
-        guard let url = PDFPanelExporter.writeTempFile(name: "graph.pdf", data: data) else { return }
-        shareItems = [url]
-        showShareSheet = true
+        let tabName = String(localized: "Tab_Graph", defaultValue: "グラフ")
+        let dateTag = Self.exportDateTag()
+        guard let url = PDFPanelExporter.writeTempFile(name: "\(tabName)_\(dateTag).pdf", data: data) else { return }
+
+        guard let windowScene = UIApplication.shared.connectedScenes
+                .compactMap({ $0 as? UIWindowScene })
+                .first(where: { $0.activationState == .foregroundActive }),
+              let rootVC = windowScene.windows.first(where: { $0.isKeyWindow })?.rootViewController
+        else { return }
+
+        var topVC = rootVC
+        while let presented = topVC.presentedViewController { topVC = presented }
+
+        let activityVC = UIActivityViewController(activityItems: [url], applicationActivities: nil)
+        topVC.present(activityVC, animated: true)
+    }
+
+    private static func exportDateTag() -> String {
+        let f = DateFormatter()
+        f.dateFormat = "yyyyMMdd"
+        return f.string(from: Date())
     }
 }
 
@@ -469,41 +510,65 @@ private extension View {
         }
     }
 
-    /// 横スクロール可能なX軸。初期表示・期間変更時に最新日が右端になるよう設定する。
-    /// - Parameters:
-    ///   - oldestDate: データの最古日時。スクロール域の左端に使用。nil の場合は期間分のみ。
-    func standardXAxis(period: GraphPeriod, scrollPosition: Binding<Date>, oldestDate: Date? = nil) -> some View {
-        let now = Date()
-        // スクロール域: 最古データ（最大1年前）〜現在。これにより確実にスクロール可能になる。
-        let maxLookback = now.addingTimeInterval(-730 * 24 * 3600)
-        let rawStart = oldestDate.map { max($0, maxLookback) } ?? now.addingTimeInterval(-TimeInterval(period.domainSeconds))
-        let domainStart = min(rawStart.addingTimeInterval(-2 * 24 * 3600), now)
-        let scrollDomain = domainStart...now
+    /// 横スクロール可能なX軸。スクロール位置をキャプチャし、エクスポート時に再現する。
+    func standardXAxis(period: GraphPeriod, scrollPosition: Binding<Date>, kind: GraphKind? = nil, oldestDate: Date? = nil, newestDate: Date? = nil) -> some View {
+        modifier(StandardXAxisModifier(period: period, scrollPosition: scrollPosition, kind: kind, oldestDate: oldestDate, newestDate: newestDate))
+    }
+}
 
-        return self
-            .chartXScale(domain: scrollDomain)
-            .chartScrollableAxes(.horizontal)
-            .chartXVisibleDomain(length: period.domainSeconds)
-            .chartScrollPosition(x: scrollPosition)
-            .onAppear {
-                scrollPosition.wrappedValue = now.addingTimeInterval(-TimeInterval(period.domainSeconds))
-            }
-            .onChange(of: period) { _, newPeriod in
-                scrollPosition.wrappedValue = Date().addingTimeInterval(-TimeInterval(newPeriod.domainSeconds))
-            }
-            .chartXAxis {
-                AxisMarks(values: .automatic(desiredCount: period.xAxisCount)) { value in
-                    AxisGridLine().foregroundStyle(.gray.opacity(0.2))
-                    AxisTick()
-                    AxisValueLabel {
-                        if let date = value.as(Date.self) {
-                            let m = Calendar.current.component(.month, from: date)
-                            let d = Calendar.current.component(.day, from: date)
-                            Text("\(m)/\(d)").font(.caption)
-                        }
-                    }
+private struct StandardXAxisModifier: ViewModifier {
+    let period: GraphPeriod
+    @Binding var scrollPosition: Date
+    let kind: GraphKind?
+    let oldestDate: Date?
+    let newestDate: Date?
+    @Environment(\.scrollCapture) private var scrollCapture
+    @Environment(\.exportScrollDate) private var exportScrollDate
+
+    func body(content: Content) -> some View {
+        let domainEnd = (newestDate ?? Date()).addingTimeInterval(1 * 24 * 3600)
+
+        if let exportStart = exportScrollDate {
+            // PDF エクスポート: 固定ドメイン（スクロールなし）
+            let exportEnd = exportStart.addingTimeInterval(TimeInterval(period.domainSeconds))
+            content
+                .chartXScale(domain: exportStart...exportEnd)
+                .chartXAxis { xAxisMarks }
+        } else {
+            // 通常表示: スクロール可能
+            let maxLookback = domainEnd.addingTimeInterval(-730 * 24 * 3600)
+            let rawStart = oldestDate.map { max($0, maxLookback) } ?? domainEnd.addingTimeInterval(-TimeInterval(period.domainSeconds))
+            let domainStart = min(rawStart.addingTimeInterval(-2 * 24 * 3600), domainEnd)
+            content
+                .chartXScale(domain: domainStart...domainEnd)
+                .chartScrollableAxes(.horizontal)
+                .chartXVisibleDomain(length: period.domainSeconds)
+                .chartScrollPosition(x: $scrollPosition)
+                .onAppear {
+                    scrollPosition = domainEnd.addingTimeInterval(-TimeInterval(period.domainSeconds))
+                }
+                .onChange(of: scrollPosition) { _, new in
+                    if let kind { scrollCapture.positions[kind] = new }
+                }
+                .onChange(of: period) { _, newPeriod in
+                    scrollPosition = domainEnd.addingTimeInterval(-TimeInterval(newPeriod.domainSeconds))
+                }
+                .chartXAxis { xAxisMarks }
+        }
+    }
+
+    private var xAxisMarks: some AxisContent {
+        AxisMarks(values: .automatic(desiredCount: period.xAxisCount)) { value in
+            AxisGridLine().foregroundStyle(.gray.opacity(0.2))
+            AxisTick()
+            AxisValueLabel {
+                if let date = value.as(Date.self) {
+                    let m = Calendar.current.component(.month, from: date)
+                    let d = Calendar.current.component(.day, from: date)
+                    Text("\(m)/\(d)").font(.caption)
                 }
             }
+        }
     }
 }
 
@@ -694,7 +759,7 @@ struct BpChartView: View {
                 }
             }
             .tapToSelectDay($selectedDate, validDays: Set(validRecords.map { dayStart($0.dateTime) }))
-            .standardXAxis(period: period, scrollPosition: $scrollPosition, oldestDate: validRecords.first?.dateTime)
+            .standardXAxis(period: period, scrollPosition: $scrollPosition, kind: .bp, oldestDate: validRecords.first?.dateTime, newestDate: validRecords.last?.dateTime)
             .frame(height: adaptiveChartHeight(base: 150, width: chartWidth))
             .padding(.horizontal, 8)
             .padding(.bottom, 4)
@@ -834,7 +899,7 @@ struct BpPpChartView: View {
                 }
             }
             .tapToSelectDay($selectedDate, validDays: Set(validRecords.map { dayStart($0.dateTime) }))
-            .standardXAxis(period: period, scrollPosition: $scrollPosition, oldestDate: validRecords.first?.dateTime)
+            .standardXAxis(period: period, scrollPosition: $scrollPosition, kind: .bpAvg, oldestDate: validRecords.first?.dateTime, newestDate: validRecords.last?.dateTime)
             .frame(height: adaptiveChartHeight(base: 120, width: chartWidth))
             .padding(.horizontal, 8)
             .padding(.bottom, 4)
@@ -893,6 +958,7 @@ struct LineChartView: View {
     var tightDomain: Bool = false
     var showMovingAverage: Bool = false
     var showAsBar: Bool = false
+    var kind: GraphKind? = nil
 
     private let cal = Calendar.current
     @State private var selectedDate: Date?
@@ -1053,7 +1119,7 @@ struct LineChartView: View {
                 }
             }
             .tapToSelectDay($selectedDate, validDays: Set(validRecords.map { dayStart($0.dateTime) }))
-            .standardXAxis(period: period, scrollPosition: $scrollPosition, oldestDate: validRecords.first?.dateTime)
+            .standardXAxis(period: period, scrollPosition: $scrollPosition, kind: kind, oldestDate: validRecords.first?.dateTime, newestDate: validRecords.last?.dateTime)
             .frame(height: adaptiveChartHeight(base: 120, width: chartWidth))
             .padding(.horizontal, 8)
             .padding(.bottom, 4)
@@ -1242,7 +1308,7 @@ private struct BMIChartView: View {
                 }
             }
             .tapToSelectDay($selectedDate, validDays: Set(validRecords.map { dayStart($0.dateTime) }))
-            .standardXAxis(period: period, scrollPosition: $scrollPosition, oldestDate: validRecords.first?.dateTime)
+            .standardXAxis(period: period, scrollPosition: $scrollPosition, kind: .bmi, oldestDate: validRecords.first?.dateTime, newestDate: validRecords.last?.dateTime)
             .frame(height: adaptiveChartHeight(base: 120, width: chartWidth))
             .padding(.horizontal, 8)
             .padding(.bottom, 4)
@@ -1357,7 +1423,7 @@ struct WeightChangeChartView: View {
                 }
             }
             .tapToSelectDay($selectedDate, validDays: validDays)
-            .standardXAxis(period: period, scrollPosition: $scrollPosition, oldestDate: changeValues.first?.date)
+            .standardXAxis(period: period, scrollPosition: $scrollPosition, kind: .weightChange, oldestDate: changeValues.first?.date, newestDate: changeValues.last?.date)
             .frame(height: adaptiveChartHeight(base: 100, width: chartWidth))
             .padding(.horizontal, 8)
             .padding(.bottom, 4)

@@ -142,12 +142,12 @@ struct RecordListView: View {
                 if timedOut { showHKTimeoutAlert = true }
             }
             .alert(
-                String(localized: "HKTimeout_Title", defaultValue: "ヘルスケア連携"),
+                String(localized: "HKTimeout_Title", defaultValue: "ヘルスケア連携エラー"),
                 isPresented: $showHKTimeoutAlert
             ) {
                 Button("OK") { hkService.importTimedOut = false }
             } message: {
-                Text(String(localized: "HKTimeout_Message", defaultValue: "ヘルスケアで「すべてのデータを表示」に異常がないか確認してください"))
+                Text(String(localized: "HKTimeout_Message", defaultValue: "ヘルスケアに異常がないか確認してください。「データなし」や「すべてのデータを表示」ができない場合、iCloud同期エラーが発生しています。たいていはデバイスを再起動すれば正常に戻るようです"))
             }
         }
     }
@@ -724,9 +724,9 @@ struct RecordRowView: View {
 // MARK: - エクスポートシート
 
 private enum ExportFormat: String, CaseIterable, Identifiable {
-    case pdf   = "PDF"
-    case excel = "Excel"
-    case json  = "JSON"
+    case pdf = "PDF"
+    case csv = "CSV(Excel)"
+    case json = "JSON"
     var id: String { rawValue }
 }
 
@@ -740,8 +740,6 @@ private struct ExportSheetView: View {
     @State private var toDate: Date = Date()
     @State private var format: ExportFormat = .pdf
     @State private var ascending: Bool = false
-    @State private var shareItems: [Any] = []
-    @State private var showShareSheet = false
     @State private var isGenerating = false
 
     init(records: [BodyRecord], visibleKinds: [GraphKind]) {
@@ -810,36 +808,68 @@ private struct ExportSheetView: View {
                     .disabled(targetRecords.isEmpty || isGenerating)
                 }
             }
-            .sheet(isPresented: $showShareSheet) {
-                ActivityViewController(activityItems: shareItems)
-                    .ignoresSafeArea()
+            .overlay { if isGenerating { exportingOverlay } }
+        }
+    }
+
+    private var exportingOverlay: some View {
+        ZStack {
+            Color.black.opacity(0.3).ignoresSafeArea()
+            VStack(spacing: 14) {
+                ProgressView()
+                    .progressViewStyle(.circular)
+                    .scaleEffect(1.4)
+                Text("\(format.rawValue)生成中...")
+                    .font(.subheadline.weight(.medium))
             }
+            .padding(.horizontal, 28)
+            .padding(.vertical, 22)
+            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16))
         }
     }
 
     @MainActor
     private func generateAndShare() async {
         isGenerating = true
-        defer { isGenerating = false }
-        shareItems = buildShareItems()
-        showShareSheet = true
+        try? await Task.sleep(for: .milliseconds(50))
+        let items = buildShareItems()
+        guard !items.isEmpty else { isGenerating = false; return }
+
+        guard let windowScene = UIApplication.shared.connectedScenes
+                .compactMap({ $0 as? UIWindowScene })
+                .first(where: { $0.activationState == .foregroundActive }),
+              let rootVC = windowScene.windows.first(where: { $0.isKeyWindow })?.rootViewController
+        else { isGenerating = false; return }
+
+        var topVC = rootVC
+        while let presented = topVC.presentedViewController { topVC = presented }
+
+        let activityVC = UIActivityViewController(activityItems: items, applicationActivities: nil)
+        let isGeneratingBinding = $isGenerating
+        activityVC.completionWithItemsHandler = { _, _, _, _ in
+            isGeneratingBinding.wrappedValue = false
+        }
+        topVC.present(activityVC, animated: true)
     }
 
     @MainActor
     private func buildShareItems() -> [Any] {
+        let appName = String(localized: "Export_PDF_Title", defaultValue: "体調メモ")
+        let f = DateFormatter(); f.dateFormat = "yyyyMMdd"
+        let dateTag = f.string(from: Date())
         switch format {
         case .json:
             let json = generateJSON()
-            if let url = tempFile(name: "records.json", data: json) { return [url] }
+            if let url = tempFile(name: "\(appName)_\(dateTag).json", data: json) { return [url] }
             return []
-        case .excel:
-            let xml = generateExcel()
-            if let data = xml.data(using: .utf8),
-               let url = tempFile(name: "records.xls", data: data) { return [url] }
+        case .csv:
+            let csv = generateCSV()
+            if let data = csv.data(using: .utf8),
+               let url = tempFile(name: "\(appName)_\(dateTag).csv", data: data) { return [url] }
             return []
         case .pdf:
             let pdfData = generatePDF()
-            if let url = tempFile(name: "records.pdf", data: pdfData) { return [url] }
+            if let url = tempFile(name: "\(appName)_\(dateTag).pdf", data: pdfData) { return [url] }
             return []
         }
     }
@@ -899,80 +929,71 @@ private struct ExportSheetView: View {
                                            options: [.prettyPrinted, .sortedKeys])) ?? Data()
     }
 
-    // MARK: - Excel SpreadsheetML（表示項目のみ）
+    // MARK: - CSV（Excel 互換・UTF-8 BOM付き）
 
-    private func generateExcel() -> String {
-        func cell(_ value: String, type: String = "String") -> String {
-            "<Cell><Data ss:Type=\"\(type)\">\(value)</Data></Cell>"
+    private func generateCSV() -> String {
+        func escape(_ s: String) -> String {
+            guard s.contains(",") || s.contains("\"") || s.contains("\n") || s.contains("\r") else { return s }
+            return "\"" + s.replacingOccurrences(of: "\"", with: "\"\"") + "\""
         }
 
-        var headerCells = cell(String(localized: "CSV_DateTime", defaultValue: "日時"))
-                        + cell(String(localized: "CSV_DateOpt",  defaultValue: "区分"))
+        var headers = [
+            escape(String(localized: "CSV_DateTime", defaultValue: "日時")),
+            escape(String(localized: "CSV_DateOpt",  defaultValue: "区分")),
+        ]
         for kind in visibleKinds {
             switch kind {
             case .bp:
-                headerCells += cell(String(localized: "Export_XLS_BpHi",    defaultValue: "収縮期血圧 mmHg"))
-                             + cell(String(localized: "Export_XLS_BpLo",    defaultValue: "拡張期血圧 mmHg"))
-            case .pulse:    headerCells += cell(String(localized: "Export_XLS_Pulse",   defaultValue: "心拍数 bpm"))
-            case .temp:     headerCells += cell(String(localized: "Export_XLS_Temp",    defaultValue: "体温 ℃"))
-            case .weight:   headerCells += cell(String(localized: "Export_XLS_Weight",  defaultValue: "体重 kg"))
-            case .pedo:     headerCells += cell(String(localized: "Export_XLS_Steps",   defaultValue: "歩数"))
-            case .bodyFat:  headerCells += cell(String(localized: "Export_XLS_BodyFat", defaultValue: "体脂肪率 %"))
-            case .skMuscle: headerCells += cell(String(localized: "Export_XLS_Muscle",  defaultValue: "骨格筋率 %"))
+                headers.append(escape(String(localized: "Export_XLS_BpHi",    defaultValue: "収縮期血圧 mmHg")))
+                headers.append(escape(String(localized: "Export_XLS_BpLo",    defaultValue: "拡張期血圧 mmHg")))
+            case .pulse:    headers.append(escape(String(localized: "Export_XLS_Pulse",   defaultValue: "心拍数 bpm")))
+            case .temp:     headers.append(escape(String(localized: "Export_XLS_Temp",    defaultValue: "体温 ℃")))
+            case .weight:   headers.append(escape(String(localized: "Export_XLS_Weight",  defaultValue: "体重 kg")))
+            case .pedo:     headers.append(escape(String(localized: "Export_XLS_Steps",   defaultValue: "歩数")))
+            case .bodyFat:  headers.append(escape(String(localized: "Export_XLS_BodyFat", defaultValue: "体脂肪率 %")))
+            case .skMuscle: headers.append(escape(String(localized: "Export_XLS_Muscle",  defaultValue: "骨格筋率 %")))
             default: break
             }
         }
-        headerCells += cell(String(localized: "CSV_Caution",   defaultValue: "注意フラグ"))
-                     + cell(String(localized: "CSV_Note1",     defaultValue: "メモ1"))
-                     + cell(String(localized: "CSV_Note2",     defaultValue: "メモ2"))
-                     + cell(String(localized: "CSV_Equipment", defaultValue: "計測機器"))
+        headers += [
+            escape(String(localized: "CSV_Caution",   defaultValue: "注意フラグ")),
+            escape(String(localized: "CSV_Note1",     defaultValue: "メモ1")),
+            escape(String(localized: "CSV_Note2",     defaultValue: "メモ2")),
+            escape(String(localized: "CSV_Equipment", defaultValue: "計測機器")),
+        ]
 
         let df = DateFormatter()
         df.setLocalizedDateFormatFromTemplate("yMdEEEEEHmm")
 
-        let stepsFmt = NumberFormatter()
-        stepsFmt.numberStyle = .decimal
-
-        var dataRows = ""
+        var rows: [String] = [headers.joined(separator: ",")]
         for r in targetRecords {
-            var cells = cell(df.string(from: r.dateTime)) + cell(r.dateOpt.label)
+            var fields = [escape(df.string(from: r.dateTime)), escape(r.dateOpt.label)]
             for kind in visibleKinds {
                 switch kind {
                 case .bp:
-                    cells += r.nBpHi_mmHg > 0 ? cell("\(r.nBpHi_mmHg)", type: "Number") : cell("")
-                    cells += r.nBpLo_mmHg > 0 ? cell("\(r.nBpLo_mmHg)", type: "Number") : cell("")
+                    fields.append(r.nBpHi_mmHg > 0 ? "\(r.nBpHi_mmHg)" : "")
+                    fields.append(r.nBpLo_mmHg > 0 ? "\(r.nBpLo_mmHg)" : "")
                 case .pulse:
-                    cells += r.nPulse_bpm > 0 ? cell("\(r.nPulse_bpm)", type: "Number") : cell("")
+                    fields.append(r.nPulse_bpm > 0 ? "\(r.nPulse_bpm)" : "")
                 case .temp:
-                    cells += r.nTemp_10c > 0 ? cell(String(format: "%.1f", Double(r.nTemp_10c) / 10.0), type: "Number") : cell("")
+                    fields.append(r.nTemp_10c > 0 ? String(format: "%.1f", Double(r.nTemp_10c) / 10.0) : "")
                 case .weight:
-                    cells += r.nWeight_10Kg > 0 ? cell(String(format: "%.1f", Double(r.nWeight_10Kg) / 10.0), type: "Number") : cell("")
+                    fields.append(r.nWeight_10Kg > 0 ? String(format: "%.1f", Double(r.nWeight_10Kg) / 10.0) : "")
                 case .pedo:
-                    cells += r.nPedometer > 0 ? cell(stepsFmt.string(from: NSNumber(value: r.nPedometer)) ?? "\(r.nPedometer)") : cell("")
+                    fields.append(r.nPedometer > 0 ? "\(r.nPedometer)" : "")
                 case .bodyFat:
-                    cells += r.nBodyFat_10p > 0 ? cell(String(format: "%.1f", Double(r.nBodyFat_10p) / 10.0), type: "Number") : cell("")
+                    fields.append(r.nBodyFat_10p > 0 ? String(format: "%.1f", Double(r.nBodyFat_10p) / 10.0) : "")
                 case .skMuscle:
-                    cells += r.nSkMuscle_10p > 0 ? cell(String(format: "%.1f", Double(r.nSkMuscle_10p) / 10.0), type: "Number") : cell("")
+                    fields.append(r.nSkMuscle_10p > 0 ? String(format: "%.1f", Double(r.nSkMuscle_10p) / 10.0) : "")
                 default: break
                 }
             }
-            cells += cell(r.bCaution ? "1" : "") + cell(r.sNote1) + cell(r.sNote2) + cell(r.sEquipment)
-            dataRows += "<Row>\(cells)</Row>\n"
+            fields += [r.bCaution ? "1" : "", escape(r.sNote1), escape(r.sNote2), escape(r.sEquipment)]
+            rows.append(fields.joined(separator: ","))
         }
 
-        return """
-        <?xml version="1.0" encoding="UTF-8"?>
-        <?mso-application progid="Excel.Sheet"?>
-        <Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
-                  xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">
-          <Worksheet ss:Name="記録">
-            <Table>
-              <Row>\(headerCells)</Row>
-              \(dataRows)
-            </Table>
-          </Worksheet>
-        </Workbook>
-        """
+        // UTF-8 BOM を先頭に付加することで Excel が文字化けなく開ける
+        return "\u{FEFF}" + rows.joined(separator: "\r\n")
     }
 
     // MARK: - PDF（A4 改ページ対応）
@@ -1030,7 +1051,7 @@ private enum PDFLayout {
     static let margin:    CGFloat = 16
     static let contentW:  CGFloat = pageW - margin * 2   // 563
     static let dateColW:  CGFloat = 138
-    static let optColW:   CGFloat = 38
+    static let optColW:   CGFloat = 44
     static let notesW:    CGFloat = contentW - dateColW  // 425
     static let rowH:      CGFloat = 22
     static let memoLineH: CGFloat = 14
@@ -1148,7 +1169,8 @@ private struct ExportPDFPageView: View {
                 Text(Self.dtdf.string(from: r.dateTime))
                     .lineLimit(1)
                     .frame(width: PDFLayout.dateColW, alignment: .leading).padding(3)
-                Text(r.dateOpt.shortLabel)
+                Text(Locale.current.language.languageCode?.identifier == "ja"
+                     ? r.dateOpt.label : r.dateOpt.shortLabel)
                     .lineLimit(1)
                     .frame(width: PDFLayout.optColW, alignment: .center).padding(3)
                 ForEach(visibleKinds, id: \.rawValue) { kind in
@@ -1217,14 +1239,3 @@ private struct ExportPDFPageView: View {
     }
 }
 
-// MARK: - UIActivityViewController ラッパー
-
-struct ActivityViewController: UIViewControllerRepresentable {
-    let activityItems: [Any]
-
-    func makeUIViewController(context: Context) -> UIActivityViewController {
-        UIActivityViewController(activityItems: activityItems, applicationActivities: nil)
-    }
-
-    func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
-}

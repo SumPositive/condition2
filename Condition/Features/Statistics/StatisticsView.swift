@@ -35,8 +35,6 @@ struct StatisticsView: View {
     private var settings: AppSettings { AppSettings.shared }
     @State private var showSettings = false
     @State private var chartWidth: CGFloat = 390
-    @State private var showShareSheet = false
-    @State private var shareItems: [Any] = []
     @State private var isExporting = false
 
     private var periodBinding: Binding<GraphPeriod> {
@@ -97,9 +95,6 @@ struct StatisticsView: View {
                 NavigationStack {
                     StatSettingsView(isModal: true)
                 }
-            }
-            .sheet(isPresented: $showShareSheet) {
-                ActivityViewController(activityItems: shareItems)
             }
         }
     }
@@ -184,9 +179,21 @@ struct StatisticsView: View {
         let title = String(localized: "Tab_Statistics", defaultValue: "統計")
 
         let data = PDFPanelExporter.export(panels: panels, title: title, subtitle: subtitle)
-        guard let url = PDFPanelExporter.writeTempFile(name: "statistics.pdf", data: data) else { return }
-        shareItems = [url]
-        showShareSheet = true
+        let tabName = String(localized: "Tab_Statistics", defaultValue: "統計")
+        let dateTag = { let f = DateFormatter(); f.dateFormat = "yyyyMMdd"; return f.string(from: Date()) }()
+        guard let url = PDFPanelExporter.writeTempFile(name: "\(tabName)_\(dateTag).pdf", data: data) else { return }
+
+        guard let windowScene = UIApplication.shared.connectedScenes
+                .compactMap({ $0 as? UIWindowScene })
+                .first(where: { $0.activationState == .foregroundActive }),
+              let rootVC = windowScene.windows.first(where: { $0.isKeyWindow })?.rootViewController
+        else { return }
+
+        var topVC = rootVC
+        while let presented = topVC.presentedViewController { topVC = presented }
+
+        let activityVC = UIActivityViewController(activityItems: [url], applicationActivities: nil)
+        topVC.present(activityVC, animated: true)
     }
 
     private var statSummaryView: some View {
