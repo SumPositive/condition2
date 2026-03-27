@@ -663,8 +663,8 @@ struct RecordRowView: View {
 // MARK: - エクスポートシート
 
 private enum ExportFormat: String, CaseIterable, Identifiable {
-    case pdf = "PDF"
-    case csv = "CSV(Excel)"
+    case pdf = "PDF (→Print)"
+    case csv = "CSV (→Excel)"
     case json = "JSON"
     var id: String { rawValue }
 }
