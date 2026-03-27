@@ -38,20 +38,19 @@ final class MigrationService {
     func migrateIfNeeded(context: ModelContext) async {
         phase = .checking
 
-        // 移行済みフラグ確認
-        if UserDefaults.standard.bool(forKey: UDefKeys.migrationDone) {
-            phase = .done
-            return
-        }
-
-        // 旧 SQLite ファイル検索
+        // 旧 SQLite ファイル検索（フラグより先に確認）
+        // iCloud バックアップから migrationDone フラグが復元される場合があるため、
+        // ファイルの有無を正とする
         guard let oldStoreURL = findOldStoreURL() else {
-            logger.info("旧データなし → 新規インストール")
-            UserDefaults.standard.set(true, forKey: UDefKeys.migrationDone)
+            if !UserDefaults.standard.bool(forKey: UDefKeys.migrationDone) {
+                logger.info("旧データなし → 新規インストール")
+                UserDefaults.standard.set(true, forKey: UDefKeys.migrationDone)
+            }
             phase = .done
             return
         }
 
+        // 旧ファイルが存在する場合はフラグに関わらず移行実行
         logger.info("旧データ発見: \(oldStoreURL.path)")
         await performMigration(from: oldStoreURL, context: context)
     }
@@ -59,12 +58,17 @@ final class MigrationService {
     // MARK: - 旧ファイル検索
 
     private func findOldStoreURL() -> URL? {
-        let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
+        let fm = FileManager.default
+        let appSupport = fm.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
+        let documents  = fm.urls(for: .documentDirectory,           in: .userDomainMask).first!
+        // 旧 Objective-C アプリは Documents/ に保存していた可能性があるため両方探す
         let candidates = [
             appSupport.appendingPathComponent("AzBodyNote.sqlite"),
             appSupport.appendingPathComponent("AzBodyNote/AzBodyNote.sqlite"),
+            documents.appendingPathComponent("AzBodyNote.sqlite"),
+            documents.appendingPathComponent("AzBodyNote/AzBodyNote.sqlite"),
         ]
-        return candidates.first { FileManager.default.fileExists(atPath: $0.path) }
+        return candidates.first { fm.fileExists(atPath: $0.path) }
     }
 
     // MARK: - 移行実行
@@ -167,6 +171,10 @@ final class MigrationService {
         let container = NSPersistentContainer(name: "AzBodyNote", managedObjectModel: model)
         let desc = NSPersistentStoreDescription(url: storeURL)
         desc.isReadOnly = true
+        // モデルバージョンハッシュの不一致を無視して強制ロード
+        desc.setOption(true as NSNumber, forKey: NSIgnorePersistentStoreVersioningOption)
+        desc.setOption(true as NSNumber, forKey: NSMigratePersistentStoresAutomaticallyOption)
+        desc.setOption(true as NSNumber, forKey: NSInferMappingModelAutomaticallyOption)
         container.persistentStoreDescriptions = [desc]
 
         var loadError: Error?
