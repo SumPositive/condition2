@@ -4,12 +4,14 @@
 import SwiftUI
 import SwiftData
 import StoreKit
+import WebKit
 
 struct SettingsView: View {
 
     @State private var settings = AppSettings.shared
     @State private var healthKit = HealthKitService.shared
     @State private var showHKSettings = false
+    @State private var showSafari = false
 
     private var aboutURL: URL {
         let isJapanese = Locale.preferredLanguages.first?.hasPrefix("ja") ?? false
@@ -68,8 +70,9 @@ struct SettingsView: View {
 
                 // MARK: - アプリ情報
                 Section {
-                    Link(String(localized: "Settings_About", defaultValue: "このアプリについて"),
-                         destination: aboutURL)
+                    Button(String(localized: "Settings_About", defaultValue: "このアプリについて")) {
+                        showSafari = true
+                    }
                 }
 
                 // MARK: - 開発者を応援する
@@ -79,8 +82,77 @@ struct SettingsView: View {
             }
             .navigationTitle(String(localized: "Tab_Settings", defaultValue: "設定"))
         }
+        .sheet(isPresented: $showSafari) {
+            SafariView(url: aboutURL)
+        }
     }
 
+}
+
+// MARK: - SafariView
+
+private struct SafariView: UIViewControllerRepresentable {
+    let url: URL
+
+    func makeUIViewController(context: Context) -> UINavigationController {
+        let vc = WebViewController(url: url)
+        return UINavigationController(rootViewController: vc)
+    }
+
+    func updateUIViewController(_ uiViewController: UINavigationController, context: Context) {}
+}
+
+private class WebViewController: UIViewController, WKNavigationDelegate {
+    private let url: URL
+    private var webView: WKWebView!
+
+    init(url: URL) {
+        self.url = url
+        super.init(nibName: nil, bundle: nil)
+    }
+
+    required init?(coder: NSCoder) { fatalError() }
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        navigationItem.rightBarButtonItem = UIBarButtonItem(
+            barButtonSystemItem: .done, target: self, action: #selector(doneTapped))
+
+        webView = WKWebView()
+        webView.navigationDelegate = self
+        webView.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(webView)
+        NSLayoutConstraint.activate([
+            webView.topAnchor.constraint(equalTo: view.topAnchor),
+            webView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+            webView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            webView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+        ])
+        webView.load(URLRequest(url: url))
+    }
+
+    @objc private func doneTapped() { dismiss(animated: true) }
+
+    func webView(_ webView: WKWebView,
+                 decidePolicyFor navigationAction: WKNavigationAction,
+                 decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
+        if let url = navigationAction.request.url,
+           url.host?.contains("apps.apple.com") == true {
+            decisionHandler(.cancel)
+#if targetEnvironment(simulator)
+            let alert = UIAlertController(title: nil,
+                                          message: String(localized: "AppStore_SimulatorOnly",
+                                                          defaultValue: "実機でしか開けません"),
+                                          preferredStyle: .alert)
+            alert.addAction(UIAlertAction(title: "OK", style: .default))
+            present(alert, animated: true)
+#else
+            UIApplication.shared.open(url)
+#endif
+            return
+        }
+        decisionHandler(.allow)
+    }
 }
 
 // MARK: - 開発者を応援する
