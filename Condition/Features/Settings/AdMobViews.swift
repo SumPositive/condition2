@@ -12,13 +12,13 @@ private let adUnavailableMessage = String(localized: "Ad_Unavailable",
     defaultValue: "現在、特典付きの広告がありません。後ほどお試しください")
 
 // 広告ユニットID
-// TODO: AdMob コンソールで体調メモ用の広告ユニットを作成後、リリース用 ID に置き換えてください
+// AdMob コンソールで体調メモ用の広告ユニットを作成後、リリース用 ID に置き換えてください
 #if DEBUG
 let ADMOB_REWARD_UnitID = "ca-app-pub-3940256099942544/1712485313"  // テスト用リワード
 let ADMOB_BANNER_UnitID = "ca-app-pub-3940256099942544/2435281174"  // テスト用バナー
 #else
-let ADMOB_REWARD_UnitID = "ca-app-pub-3940256099942544/1712485313"  // TODO: 本番用リワード ID を設定
-let ADMOB_BANNER_UnitID = "ca-app-pub-3940256099942544/2435281174"  // TODO: 本番用バナー ID を設定
+let ADMOB_REWARD_UnitID = "ca-app-pub-7576639777972199/4693657810"  // 本番用リワード ID を設定
+let ADMOB_BANNER_UnitID = "ca-app-pub-7576639777972199/9141270336"  // 本番用バナー ID を設定
 #endif
 
 // MARK: - AdMobAdSheetView
