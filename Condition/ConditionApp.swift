@@ -12,6 +12,10 @@ struct ConditionApp: App {
 
     init() {
         MobileAds.shared.start()
+        let font = UIFont.systemFont(ofSize: 13, weight: .semibold)
+        let attrs: [NSAttributedString.Key: Any] = [.font: font]
+        UITabBarItem.appearance().setTitleTextAttributes(attrs, for: .normal)
+        UITabBarItem.appearance().setTitleTextAttributes(attrs, for: .selected)
     }
 
     var body: some Scene {

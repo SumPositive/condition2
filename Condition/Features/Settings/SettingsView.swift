@@ -75,7 +75,7 @@ struct SettingsView: View {
                     }
                 }
 
-                // MARK: - 開発者を応援する
+                // MARK: - 開発者を応援
                 Section {
                     SupportDeveloperView()
                 }
@@ -134,28 +134,26 @@ private class WebViewController: UIViewController, WKNavigationDelegate {
     @objc private func doneTapped() { dismiss(animated: true) }
 
     func webView(_ webView: WKWebView,
-                 decidePolicyFor navigationAction: WKNavigationAction,
-                 decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
-        if let url = navigationAction.request.url,
-           url.host?.contains("apps.apple.com") == true {
-            decisionHandler(.cancel)
-#if targetEnvironment(simulator)
-            let alert = UIAlertController(title: nil,
-                                          message: String(localized: "AppStore_SimulatorOnly",
-                                                          defaultValue: "実機でしか開けません"),
-                                          preferredStyle: .alert)
-            alert.addAction(UIAlertAction(title: "OK", style: .default))
-            present(alert, animated: true)
-#else
-            UIApplication.shared.open(url)
-#endif
-            return
+                 decidePolicyFor navigationAction: WKNavigationAction) async -> WKNavigationActionPolicy {
+        guard let url = navigationAction.request.url,
+              url.host?.contains("apps.apple.com") == true else {
+            return .allow
         }
-        decisionHandler(.allow)
+#if targetEnvironment(simulator)
+        let alert = UIAlertController(title: nil,
+                                      message: String(localized: "AppStore_SimulatorOnly",
+                                                      defaultValue: "シミュレータでは開けません"),
+                                      preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "OK", style: .default))
+        present(alert, animated: true)
+#else
+        UIApplication.shared.open(url, options: [:], completionHandler: nil)
+#endif
+        return .cancel
     }
 }
 
-// MARK: - 開発者を応援する
+// MARK: - 開発者を応援
 
 private struct SupportDeveloperView: View {
     @State private var store = TipStore.shared
@@ -166,7 +164,7 @@ private struct SupportDeveloperView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             Label {
-                Text(String(localized: "Support_Title", defaultValue: "開発者を応援する"))
+                Text(String(localized: "Support_Title", defaultValue: "開発者を応援"))
                     .font(.body.weight(.medium))
             } icon: {
                 Image(systemName: "heart.fill")
@@ -190,7 +188,7 @@ private struct SupportDeveloperView: View {
             Button {
                 showAd = true
             } label: {
-                Text(String(localized: "Support_WatchAd", defaultValue: "広告を見て応援"))
+                Text(String(localized: "Support_WatchAd", defaultValue: "広告を見て応援する"))
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(.borderedProminent)
