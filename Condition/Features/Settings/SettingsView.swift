@@ -48,6 +48,7 @@ struct SettingsView: View {
                                 if enabled {
                                     Task { await healthKit.requestAuthorization() }
                                     showHKSettings = true
+                                    healthKit.needsAutoImport = true
                                 }
                             }
                         }
@@ -750,7 +751,7 @@ struct HealthKitSettingsView: View {
 
             Section {
                 Text(String(localized: "HKSett_Note",
-                            defaultValue: "連携対象：上・下血圧、心拍数、体重、体温、歩数、体脂肪率"))
+                            defaultValue: "連携対象：上・下血圧、心拍数、体重、体温、体脂肪率"))
                     .font(.footnote)
                     .foregroundStyle(.secondary)
                 Text(String(localized: "HKSett_Note2",
