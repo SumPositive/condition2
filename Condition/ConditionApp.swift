@@ -11,7 +11,6 @@ struct ConditionApp: App {
     @State private var migrationService = MigrationService()
 
     init() {
-        MobileAds.shared.start()
         let font = UIFont.systemFont(ofSize: 13, weight: .semibold)
         let attrs: [NSAttributedString.Key: Any] = [.font: font]
         UITabBarItem.appearance().setTitleTextAttributes(attrs, for: .normal)
@@ -45,6 +44,9 @@ struct ConditionApp: App {
             .task {
                 let context = ModelContainer.shared.mainContext
                 await migrationService.migrateIfNeeded(context: context)
+            }
+            .task {
+                await MobileAds.shared.start()
             }
         }
         .modelContainer(ModelContainer.shared)

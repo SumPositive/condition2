@@ -4,15 +4,7 @@
 <dict>
 	<!-- アプリ自身またはSDKがトラッキングにデータを使用するか -->
 	<key>NSPrivacyTracking</key>
-	<true/>
-
-	<!-- トラッキングに使用するドメイン（AdMob） -->
-	<key>NSPrivacyTrackingDomains</key>
-	<array>
-		<string>googlesyndication.com</string>
-		<string>googleadservices.com</string>
-		<string>doubleclick.net</string>
-	</array>
+	<false/>
 
 	<!-- アプリが収集するデータの種類 -->
 	<key>NSPrivacyCollectedDataTypes</key>
