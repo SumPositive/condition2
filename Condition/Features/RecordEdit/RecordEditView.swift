@@ -3,6 +3,7 @@
 
 import SwiftUI
 import SwiftData
+import AZDial
 import HealthKit
 
 struct RecordEditView: View {
@@ -366,7 +367,8 @@ struct RecordEditView: View {
                     max: spec.max,
                     step: 1,
                     stepperStep: stepperStep,
-                    decimals: decimals
+                    decimals: decimals,
+                    style: DialStyle(rawValue: AppSettings.shared.dialStyle) ?? .machined
                 )
             }
         }

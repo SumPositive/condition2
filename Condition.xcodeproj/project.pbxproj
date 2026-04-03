@@ -22,13 +22,13 @@
 		6A6487B27CC55B3970DF9411 /* StatisticsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EFEF1236779D72BC224C618E /* StatisticsView.swift */; };
 		8206959AD5C6A8FA4D0CF941 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 90D068752225DE01C4F4BE92 /* ContentView.swift */; };
 		82BEB0597976A364B0796572 /* ConditionApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E36777C3625DABE02E40FBA /* ConditionApp.swift */; };
-		8932430F64468911DF2F4947 /* AZDialView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C90E168B96A53E7B7A773C3 /* AZDialView.swift */; };
 		92DD1CE7BA9A6B6D06918258 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = F6931DD60054ABF712D5455D /* Localizable.xcstrings */; };
 		94F8FFF55DB8A08ACB41B6C7 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 631EC7DEF4838569597EA3C8 /* Assets.xcassets */; };
 		982998F6ABEDB9272F6A6BA1 /* ValueFormatter.swift in Sources */ = {isa = PBXBuildFile; fileRef = A14BB534396221BF4A8DD998 /* ValueFormatter.swift */; };
 		9AEA2B0965601F94C251CA2F /* GoogleMobileAds in Frameworks */ = {isa = PBXBuildFile; productRef = E34D8E33BC77DA54E6C61D52 /* GoogleMobileAds */; };
 		B01892399930A51751ED92F1 /* RecordEditView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C5B54F260937D2BF7A3B8E0 /* RecordEditView.swift */; };
 		BFF8BE17437CFD77E63A1B44 /* TipStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 132A076B61B2C635E9A5FADA /* TipStore.swift */; };
+		C3713DD42F7FF32400DF8BB3 /* AZDial in Frameworks */ = {isa = PBXBuildFile; productRef = C3713DD32F7FF32400DF8BB3 /* AZDial */; };
 		C3DC29A22F7040EA007F4C3A /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = C3DC29A12F7040EA007F4C3A /* PrivacyInfo.xcprivacy */; };
 		C3DC29A42F72BE25007F4C3A /* PDFPanelExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3DC29A32F72BE25007F4C3A /* PDFPanelExporter.swift */; };
 		CC257634A8AF415F5F40872E /* MigrationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = D11FAFC4E99DE815E66D2AEB /* MigrationService.swift */; };
@@ -52,7 +52,6 @@
 		037CD7BBB175D96B6BA9D41C /* RecordEditViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordEditViewModel.swift; sourceTree = "<group>"; };
 		132A076B61B2C635E9A5FADA /* TipStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TipStore.swift; sourceTree = "<group>"; };
 		1B00938D5C29ADB460EE55EA /* Condition.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Condition.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		1C90E168B96A53E7B7A773C3 /* AZDialView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AZDialView.swift; sourceTree = "<group>"; };
 		2C5B54F260937D2BF7A3B8E0 /* RecordEditView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordEditView.swift; sourceTree = "<group>"; };
 		332C7D7242BE0FB4EF8FAFFA /* AppConstants.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppConstants.swift; sourceTree = "<group>"; };
 		37C42276B20297B0CE85AC5E /* ConditionTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = ConditionTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -87,6 +86,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				9AEA2B0965601F94C251CA2F /* GoogleMobileAds in Frameworks */,
+				C3713DD42F7FF32400DF8BB3 /* AZDial in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -143,7 +143,6 @@
 		5E5748A4659A240A887D7138 /* Components */ = {
 			isa = PBXGroup;
 			children = (
-				FBF11A90362CEC357309975E /* AZDial */,
 				0C542E511B57079E742EC24F /* Common */,
 			);
 			path = Components;
@@ -266,14 +265,6 @@
 			path = RecordList;
 			sourceTree = "<group>";
 		};
-		FBF11A90362CEC357309975E /* AZDial */ = {
-			isa = PBXGroup;
-			children = (
-				1C90E168B96A53E7B7A773C3 /* AZDialView.swift */,
-			);
-			path = AZDial;
-			sourceTree = "<group>";
-		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -292,6 +283,7 @@
 			name = Condition;
 			packageProductDependencies = (
 				E34D8E33BC77DA54E6C61D52 /* GoogleMobileAds */,
+				C3713DD32F7FF32400DF8BB3 /* AZDial */,
 			);
 			productName = Condition;
 			productReference = 1B00938D5C29ADB460EE55EA /* Condition.app */;
@@ -341,6 +333,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				BC598EFC28CA017618D0E615 /* XCRemoteSwiftPackageReference "swift-package-manager-google-mobile-ads" */,
+				C3713DD22F7FF32400DF8BB3 /* XCLocalSwiftPackageReference "../AZDial" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 758C2EFE3946876AA265CABE /* Products */;
@@ -372,7 +365,6 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				8932430F64468911DF2F4947 /* AZDialView.swift in Sources */,
 				546717AE8E7EBCAB0248C456 /* AdMobViews.swift in Sources */,
 				04F485DCB1ADFC0859E7298C /* AppConstants.swift in Sources */,
 				307BEA02A0CE7F10B77FFC4A /* AppSettings.swift in Sources */,
@@ -651,6 +643,13 @@
 		};
 /* End XCConfigurationList section */
 
+/* Begin XCLocalSwiftPackageReference section */
+		C3713DD22F7FF32400DF8BB3 /* XCLocalSwiftPackageReference "../AZDial" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = ../AZDial;
+		};
+/* End XCLocalSwiftPackageReference section */
+
 /* Begin XCRemoteSwiftPackageReference section */
 		BC598EFC28CA017618D0E615 /* XCRemoteSwiftPackageReference "swift-package-manager-google-mobile-ads" */ = {
 			isa = XCRemoteSwiftPackageReference;
@@ -663,6 +662,10 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		C3713DD32F7FF32400DF8BB3 /* AZDial */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = AZDial;
+		};
 		E34D8E33BC77DA54E6C61D52 /* GoogleMobileAds */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = BC598EFC28CA017618D0E615 /* XCRemoteSwiftPackageReference "swift-package-manager-google-mobile-ads" */;

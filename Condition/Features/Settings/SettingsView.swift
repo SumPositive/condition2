@@ -3,6 +3,7 @@
 
 import SwiftUI
 import SwiftData
+import AZDial
 import StoreKit
 import WebKit
 
@@ -395,7 +396,8 @@ struct GraphSettingsView: View {
                         min: 100,
                         max: 250,
                         step: 1,
-                        stepperStep: 5
+                        stepperStep: 5,
+                        style: DialStyle(rawValue: settings.dialStyle) ?? .machined
                     )
                 }
                 .padding(.vertical, 4)
@@ -672,7 +674,7 @@ struct GoalSettingsView: View {
                     .labelsHidden()
             }
             if enabled.wrappedValue {
-                AZDialView(value: value, min: spec.min, max: spec.max, step: 1, stepperStep: stepperStep, decimals: decimals)
+                AZDialView(value: value, min: spec.min, max: spec.max, step: 1, stepperStep: stepperStep, decimals: decimals, style: DialStyle(rawValue: AppSettings.shared.dialStyle) ?? .machined)
             }
         }
         .padding(.vertical, 4)

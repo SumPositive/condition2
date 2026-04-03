@@ -39,6 +39,7 @@ struct AZDialView: View {
     let step: Int           // ダイアルの1ステップ値
     let stepperStep: Int    // ステッパーボタンの刻み（0=非表示）
     var decimals: Int = 0   // 表示小数点桁数（ステップラベルのフォーマットに使用）
+    var style: DialStyle = .machined
 
     private var stepLabelText: String {
         if decimals == 0 {
@@ -63,7 +64,7 @@ struct AZDialView: View {
                             .allowsHitTesting(false)
                     }
             }
-            AZDialScrollArea(value: $value, min: min, max: max, step: step)
+            AZDialScrollArea(value: $value, min: min, max: max, step: step, style: style)
                 .frame(width: 220)
         }
         .frame(height: 44)
@@ -78,6 +79,7 @@ private struct AZDialScrollArea: View {
     let min: Int
     let max: Int
     let step: Int
+    let style: DialStyle
 
     /// 1ステップあたりのドラッグ感度（px）
     private let pitch: CGFloat = 15.0
@@ -96,10 +98,9 @@ private struct AZDialScrollArea: View {
     private var rimSoft:       CGFloat { colorScheme == .dark ? 0.18 : 0.12 }
 
     var body: some View {
-        let currentStyle = DialStyle(rawValue: AppSettings.shared.dialStyle) ?? .machined
         ZStack {
             // ── スクロールする目盛り背景 ──
-            AZDialBack(offset: scrollOffset, tickGap: tickGap, style: currentStyle)
+            AZDialBack(offset: scrollOffset, tickGap: tickGap, style: style)
                 .clipShape(RoundedRectangle(cornerRadius: 10))
 
             // ── 左右エッジフェード（深い沈み込み）──
