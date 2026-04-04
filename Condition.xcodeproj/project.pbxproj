@@ -28,6 +28,7 @@
 		9AEA2B0965601F94C251CA2F /* GoogleMobileAds in Frameworks */ = {isa = PBXBuildFile; productRef = E34D8E33BC77DA54E6C61D52 /* GoogleMobileAds */; };
 		B01892399930A51751ED92F1 /* RecordEditView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C5B54F260937D2BF7A3B8E0 /* RecordEditView.swift */; };
 		BFF8BE17437CFD77E63A1B44 /* TipStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 132A076B61B2C635E9A5FADA /* TipStore.swift */; };
+		C394AF052F80F53C00F9C557 /* AZDial in Frameworks */ = {isa = PBXBuildFile; productRef = C3713DD32F7FF32400DF8BB3 /* AZDial */; };
 		C3DC29A22F7040EA007F4C3A /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = C3DC29A12F7040EA007F4C3A /* PrivacyInfo.xcprivacy */; };
 		C3DC29A42F72BE25007F4C3A /* PDFPanelExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3DC29A32F72BE25007F4C3A /* PDFPanelExporter.swift */; };
 		CC257634A8AF415F5F40872E /* MigrationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = D11FAFC4E99DE815E66D2AEB /* MigrationService.swift */; };
@@ -84,6 +85,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C394AF052F80F53C00F9C557 /* AZDial in Frameworks */,
 				9AEA2B0965601F94C251CA2F /* GoogleMobileAds in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -663,7 +665,7 @@
 			repositoryURL = "https://github.com/SumPositive/AZDial";
 			requirement = {
 				kind = upToNextMajorVersion;
-				minimumVersion = 1.0.1;
+				minimumVersion = 3.0.0;
 			};
 		};
 /* End XCRemoteSwiftPackageReference section */

@@ -397,7 +397,7 @@ struct GraphSettingsView: View {
                         max: 250,
                         step: 1,
                         stepperStep: 5,
-                        style: DialStyle(rawValue: settings.dialStyle) ?? .machined
+                        style: DialStyle.builtin(id: settings.dialStyle) ?? .varnia
                     )
                 }
                 .padding(.vertical, 4)
@@ -412,17 +412,17 @@ struct GraphSettingsView: View {
             }
 
             Section(String(localized: "GraphSett_DialStyle", defaultValue: "ダイアルデザイン")) {
-                VStack(spacing: 10) {
-                    ForEach([Array(DialStyle.allCases.prefix(5)),
-                             Array(DialStyle.allCases.dropFirst(5))], id: \.first?.rawValue) { row in
+                VStack(spacing: 8) {
+                    ForEach([Array(DialStyle.allBuiltin.prefix(4)),
+                             Array(DialStyle.allBuiltin.suffix(4))], id: \.first!.id) { row in
                         HStack(spacing: 12) {
-                            ForEach(row, id: \.rawValue) { style in
-                                let selected = settings.dialStyle == style.rawValue
+                            ForEach(row, id: \.id) { style in
+                                let selected = settings.dialStyle == style.id
                                 Button {
-                                    settings.dialStyle = style.rawValue
+                                    settings.dialStyle = style.id
                                 } label: {
                                     VStack(spacing: 6) {
-                                        AZDialBack(offset: 5, tickGap: 10, style: style)
+                                        AZDialSurface(offset: 5, tickGap: 10, style: style)
                                             .frame(height: 40)
                                             .clipShape(RoundedRectangle(cornerRadius: 8))
                                             .overlay(
@@ -674,7 +674,7 @@ struct GoalSettingsView: View {
                     .labelsHidden()
             }
             if enabled.wrappedValue {
-                AZDialView(value: value, min: spec.min, max: spec.max, step: 1, stepperStep: stepperStep, decimals: decimals, style: DialStyle(rawValue: AppSettings.shared.dialStyle) ?? .machined)
+                AZDialView(value: value, min: spec.min, max: spec.max, step: 1, stepperStep: stepperStep, decimals: decimals, style: DialStyle.builtin(id: AppSettings.shared.dialStyle) ?? .varnia)
             }
         }
         .padding(.vertical, 4)

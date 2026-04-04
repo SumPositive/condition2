@@ -4,6 +4,7 @@
 
 import Foundation
 import Observation
+import AZDial
 
 @Observable
 @MainActor
@@ -78,7 +79,7 @@ final class AppSettings {
     var graphWeightChange: Bool = true {
         didSet { kvs.set(graphWeightChange, forKey: KVSKeys.settGraphWeightChange) }
     }
-    var dialStyle: Int = 3 {
+    var dialStyle: String = DialStyle.varnia.id {
         didSet { kvs.set(dialStyle, forKey: KVSKeys.settDialStyle) }
     }
 
@@ -259,7 +260,24 @@ final class AppSettings {
         if tall > 0 { graphBMITall = Int(tall) }
         if kvs.object(forKey: KVSKeys.settGraphWeightMA)     != nil { graphWeightMA     = kvs.bool(forKey: KVSKeys.settGraphWeightMA) }
         if kvs.object(forKey: KVSKeys.settGraphWeightChange) != nil { graphWeightChange = kvs.bool(forKey: KVSKeys.settGraphWeightChange) }
-        if kvs.object(forKey: KVSKeys.settDialStyle)         != nil { dialStyle         = Int(kvs.longLong(forKey: KVSKeys.settDialStyle)) }
+        if kvs.object(forKey: KVSKeys.settDialStyle) != nil {
+            if let str = kvs.string(forKey: KVSKeys.settDialStyle), DialStyle.builtin(id: str) != nil {
+                // 新形式（String）
+                dialStyle = str
+            } else {
+                // 旧形式（Int）→ 新形式へ移行
+                let oldInt = Int(kvs.longLong(forKey: KVSKeys.settDialStyle))
+                let migrated: String
+                switch oldInt {
+                case 2:  migrated = DialStyle.chrome.id
+                case 4:  migrated = DialStyle.hairline.id
+                case 5:  migrated = DialStyle.rubber.id
+                default: migrated = DialStyle.varnia.id
+                }
+                dialStyle = migrated
+                kvs.set(migrated, forKey: KVSKeys.settDialStyle)
+            }
+        }
 
         let sd = kvs.longLong(forKey: KVSKeys.settStatDays)
         if sd > 0 { statDays = Int(sd) }
