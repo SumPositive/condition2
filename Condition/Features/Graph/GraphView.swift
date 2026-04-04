@@ -173,7 +173,7 @@ private struct GraphContentView: View {
                 ProgressView()
                     .progressViewStyle(.circular)
                     .scaleEffect(1.4)
-                Text("PDF生成中...")
+                Text(String(format: String(localized: "%@生成中..."), "PDF"))
                     .font(.subheadline.weight(.medium))
             }
             .padding(.horizontal, 28)
@@ -187,7 +187,7 @@ private struct GraphContentView: View {
             VStack(spacing: 16) {
                 Picker("期間", selection: $period) {
                     ForEach(GraphPeriod.allCases, id: \.self) { p in
-                        Text(p.label).tag(p)
+                        Text(LocalizedStringKey(p.label)).tag(p)
                     }
                 }
                 .pickerStyle(.segmented)
@@ -268,11 +268,12 @@ private struct GraphContentView: View {
         df.setLocalizedDateFormatFromTemplate("yMd")
         let now = Date()
         let fromDate = Calendar.current.date(byAdding: .day, value: -period.rawValue, to: now) ?? now
-        let subtitle = period.label + "  " + df.string(from: fromDate) + " 〜 " + df.string(from: now)
-        let title = "グラフ"
+        let localizedPeriod = NSLocalizedString(period.label, comment: "")
+        let subtitle = localizedPeriod + "  " + df.string(from: fromDate) + " 〜 " + df.string(from: now)
+        let title = String(localized: "グラフ")
 
         let data = PDFPanelExporter.export(panels: panels, title: title, subtitle: subtitle)
-        let tabName = "グラフ"
+        let tabName = String(localized: "グラフ")
         let dateTag = Self.exportDateTag()
         guard let url = PDFPanelExporter.writeTempFile(name: "\(tabName)_\(dateTag).pdf", data: data) else { return }
 
@@ -658,7 +659,7 @@ struct BpChartView: View {
         PanelContainer {
             // ヘッダー
             HStack(alignment: .firstTextBaseline) {
-                Text(GraphKind.bp.title)
+                Text(LocalizedStringKey(GraphKind.bp.title))
                     .font(.callout.weight(.semibold))
                 Spacer()
                 if settings.graphBpMean, let map = avgMap {
@@ -1018,7 +1019,7 @@ struct LineChartView: View {
         PanelContainer {
             // ヘッダー
             HStack(alignment: .firstTextBaseline) {
-                Text(title).font(.callout.weight(.semibold))
+                Text(LocalizedStringKey(title)).font(.callout.weight(.semibold))
                 Spacer()
                 if let avg = avgValue {
                     StatCell(label: "平均", value: "\(fmt(avg))")

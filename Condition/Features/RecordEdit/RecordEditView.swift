@@ -36,7 +36,7 @@ struct RecordEditView: View {
         return false
     }
 
-    private var title: String {
+    private var title: LocalizedStringKey {
         switch vm.mode {
         case .addNew:    return "新規記録"
         case .edit:      return "記録編集"
@@ -320,7 +320,7 @@ struct RecordEditView: View {
     private var dateOptRow: some View {
         Picker(selection: $vm.dateOpt) {
             ForEach(DateOpt.allCases, id: \.self) { opt in
-                Label(opt.label, systemImage: opt.icon).tag(opt)
+                Label(LocalizedStringKey(opt.label), systemImage: opt.icon).tag(opt)
             }
         } label: {
             Text("区分")
@@ -377,7 +377,7 @@ struct RecordEditView: View {
 
     // MARK: - メモ行
 
-    private func noteRow(title: String, text: Binding<String>) -> some View {
+    private func noteRow(title: LocalizedStringKey, text: Binding<String>) -> some View {
         HStack {
             Text(title)
                 .font(.callout)

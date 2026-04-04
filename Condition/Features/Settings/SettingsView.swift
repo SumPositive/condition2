@@ -304,7 +304,7 @@ struct DateOptMatrixView: View {
                             Image(systemName: kind.icon)
                                 .font(.caption)
                                 .foregroundStyle(kind.color)
-                            Text(kind.label)
+                            Text(LocalizedStringKey(kind.label))
                                 .font(.system(size: 10))
                                 .lineLimit(1)
                                 .minimumScaleFactor(0.5)
@@ -455,7 +455,7 @@ struct GraphSettingsView: View {
                                     }
                                 }
                             )) {
-                                Text(kind.title)
+                                Text(LocalizedStringKey(kind.title))
                             }
                             Image(systemName: "line.3.horizontal")
                                 .foregroundStyle(.tertiary)
@@ -511,7 +511,7 @@ struct FieldOrderSettingsView: View {
                                 }
                             }
                         )) {
-                            Text(kind.title)
+                            Text(LocalizedStringKey(kind.title))
                         }
                     }
                 }
@@ -552,7 +552,7 @@ struct StatSettingsView: View {
                                 }
                             }
                         )) {
-                            Text(section.title)
+                            Text(LocalizedStringKey(section.title))
                         }
                     }
                 }

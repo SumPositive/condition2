@@ -112,7 +112,7 @@ struct StatisticsView: View {
             VStack(spacing: 16) {
                 Picker("期間", selection: periodBinding) {
                     ForEach(GraphPeriod.allCases, id: \.self) { p in
-                        Text(p.label).tag(p)
+                        Text(LocalizedStringKey(p.label)).tag(p)
                     }
                 }
                 .pickerStyle(.segmented)
@@ -151,7 +151,7 @@ struct StatisticsView: View {
                 ProgressView()
                     .progressViewStyle(.circular)
                     .scaleEffect(1.4)
-                Text("PDF生成中...")
+                Text(String(format: String(localized: "%@生成中..."), "PDF"))
                     .font(.subheadline.weight(.medium))
             }
             .padding(.horizontal, 28)
@@ -174,11 +174,12 @@ struct StatisticsView: View {
         df.setLocalizedDateFormatFromTemplate("yMd")
         let now = Date()
         let fromDate = Calendar.current.date(byAdding: .day, value: -currentPeriod.rawValue, to: now) ?? now
-        let subtitle = currentPeriod.label + "  " + df.string(from: fromDate) + " 〜 " + df.string(from: now)
-        let title = "統計"
+        let localizedPeriod = NSLocalizedString(currentPeriod.label, comment: "")
+        let subtitle = localizedPeriod + "  " + df.string(from: fromDate) + " 〜 " + df.string(from: now)
+        let title = String(localized: "統計")
 
         let data = PDFPanelExporter.export(panels: panels, title: title, subtitle: subtitle)
-        let tabName = "統計"
+        let tabName = String(localized: "統計")
         let dateTag = { let f = DateFormatter(); f.dateFormat = "yyyyMMdd"; return f.string(from: Date()) }()
         guard let url = PDFPanelExporter.writeTempFile(name: "\(tabName)_\(dateTag).pdf", data: data) else { return }
 
@@ -391,7 +392,7 @@ struct BpJshView: View {
                             Image(systemName: opt.icon)
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
-                            Text(opt.label)
+                            Text(LocalizedStringKey(opt.label))
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                         }
@@ -829,7 +830,7 @@ struct BpDateOptCorrView: View {
             AxisMarks { value in
                 AxisValueLabel {
                     if let s = value.as(String.self) {
-                        Text(s).font(.system(size: 10))
+                        Text(LocalizedStringKey(s)).font(.system(size: 10))
                     }
                 }
             }
@@ -1270,7 +1271,7 @@ struct TempHistogramView: View {
         }
     }
 
-    private func legendItem(color: Color, label: String) -> some View {
+    private func legendItem(color: Color, label: LocalizedStringKey) -> some View {
         HStack(spacing: 4) {
             RoundedRectangle(cornerRadius: 2).fill(color.opacity(0.8)).frame(width: 10, height: 10)
             Text(label).font(.caption).foregroundStyle(.secondary)

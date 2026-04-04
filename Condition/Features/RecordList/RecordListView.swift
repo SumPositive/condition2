@@ -84,7 +84,7 @@ struct RecordListView: View {
                             AppSettings.shared.hkDisabledByDemo = true
                             AppSettings.shared.hkEnabled = false
                             DemoDataGenerator.generate(in: context)
-                            toastMessage = "1年分のDemoデータを追加しました"
+                            toastMessage = String(localized: "1年分のDemoデータを追加しました")
                             DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
                                 toastMessage = nil
                             }
@@ -239,7 +239,7 @@ struct RecordListView: View {
 
     private func showImportToast(count: Int) {
         guard count > 0 else { return }
-        toastMessage = String(format: "ヘルスケアから %d 件取得しました", count)
+        toastMessage = String(format: String(localized: "ヘルスケアから %d 件取得しました"), count)
         Task {
             try? await Task.sleep(for: .seconds(3))
             toastMessage = nil
@@ -516,7 +516,7 @@ struct RecordRowView: View {
     }()
     private static let weekdayFormatter: DateFormatter = {
         let f = DateFormatter()
-        f.locale = Locale(identifier: "ja_JP")
+        f.locale = Locale.current
         f.dateFormat = "E"
         return f
     }()
@@ -789,16 +789,13 @@ private struct ExportSheetView: View {
         while let presented = topVC.presentedViewController { topVC = presented }
 
         let activityVC = UIActivityViewController(activityItems: items, applicationActivities: nil)
-        let isGeneratingBinding = $isGenerating
-        activityVC.completionWithItemsHandler = { _, _, _, _ in
-            isGeneratingBinding.wrappedValue = false
-        }
+        isGenerating = false
         topVC.present(activityVC, animated: true)
     }
 
     @MainActor
     private func buildShareItems() -> [Any] {
-        let appName = "体調メモ"
+        let appName = String(localized: "体調メモ")
         let f = DateFormatter(); f.dateFormat = "yyyyMMdd"
         let dateTag = f.string(from: Date())
         switch format {
@@ -835,7 +832,7 @@ private struct ExportSheetView: View {
         for r in targetRecords {
             var obj: [String: Any] = [
                 "dateTime":  iso.string(from: r.dateTime),
-                "condition": r.dateOpt.label,
+                "condition": NSLocalizedString(r.dateOpt.label, comment: ""),
             ]
             for kind in visibleKinds {
                 switch kind {
@@ -879,28 +876,29 @@ private struct ExportSheetView: View {
             return "\"" + s.replacingOccurrences(of: "\"", with: "\"\"") + "\""
         }
 
+        let L = { NSLocalizedString($0, comment: "") }
         var headers = [
-            escape("日時"),
-            escape("区分"),
+            escape(L("日時")),
+            escape(L("区分")),
         ]
         for kind in visibleKinds {
             switch kind {
             case .bp:
-                headers.append(escape("収縮期血圧 mmHg"))
-                headers.append(escape("拡張期血圧 mmHg"))
-            case .pulse:    headers.append(escape("心拍数 bpm"))
-            case .temp:     headers.append(escape("体温 ℃"))
-            case .weight:   headers.append(escape("体重 kg"))
-            case .bodyFat:  headers.append(escape("体脂肪率 %"))
-            case .skMuscle: headers.append(escape("骨格筋率 %"))
+                headers.append(escape(L("収縮期血圧 mmHg")))
+                headers.append(escape(L("拡張期血圧 mmHg")))
+            case .pulse:    headers.append(escape(L("心拍数 bpm")))
+            case .temp:     headers.append(escape(L("体温 ℃")))
+            case .weight:   headers.append(escape(L("体重 kg")))
+            case .bodyFat:  headers.append(escape(L("体脂肪率 %")))
+            case .skMuscle: headers.append(escape(L("骨格筋率 %")))
             default: break
             }
         }
         headers += [
-            escape("注意フラグ"),
-            escape("メモ1"),
-            escape("メモ2"),
-            escape("計測機器"),
+            escape(L("注意フラグ")),
+            escape(L("メモ1")),
+            escape(L("メモ2")),
+            escape(L("計測機器")),
         ]
 
         let df = DateFormatter()
@@ -908,7 +906,7 @@ private struct ExportSheetView: View {
 
         var rows: [String] = [headers.joined(separator: ",")]
         for r in targetRecords {
-            var fields = [escape(df.string(from: r.dateTime)), escape(r.dateOpt.label)]
+            var fields = [escape(df.string(from: r.dateTime)), escape(NSLocalizedString(r.dateOpt.label, comment: ""))]
             for kind in visibleKinds {
                 switch kind {
                 case .bp:
@@ -990,7 +988,9 @@ private enum PDFLayout {
     static let margin:    CGFloat = 16
     static let contentW:  CGFloat = pageW - margin * 2   // 563
     static let dateColW:  CGFloat = 138
-    static let optColW:   CGFloat = 44
+    static var optColW:   CGFloat {
+        Locale.current.language.languageCode?.identifier == "ja" ? 44 : 82
+    }
     static let notesW:    CGFloat = contentW - dateColW  // 425
     static let rowH:      CGFloat = 22
     static let memoLineH: CGFloat = 14
@@ -1048,7 +1048,7 @@ private struct ExportPDFPageView: View {
                         Text(Self.datedf.string(from: fromDate)
                              + " 〜 "
                              + Self.datedf.string(from: toDate))
-                        Text("作成:"
+                        Text(NSLocalizedString("作成:", comment: "")
                              + " " + Self.datedf.string(from: Date()))
                     }
                     .font(.caption)
@@ -1102,8 +1102,7 @@ private struct ExportPDFPageView: View {
                 Text(Self.dtdf.string(from: r.dateTime))
                     .lineLimit(1)
                     .frame(width: PDFLayout.dateColW, alignment: .leading).padding(3)
-                Text(Locale.current.language.languageCode?.identifier == "ja"
-                     ? r.dateOpt.label : r.dateOpt.shortLabel)
+                Text(NSLocalizedString(r.dateOpt.label, comment: ""))
                     .lineLimit(1)
                     .frame(width: PDFLayout.optColW, alignment: .center).padding(3)
                 ForEach(visibleKinds, id: \.rawValue) { kind in
@@ -1131,13 +1130,13 @@ private struct ExportPDFPageView: View {
     private func pdfColumnHeaders(_ kind: GraphKind) -> [String] {
         switch kind {
         case .bp:
-            return ["上 mmHg",
-                    "下 mmHg"]
-        case .pulse:    return ["心拍 bpm"]
-        case .temp:     return ["体温 ℃"]
-        case .weight:   return ["体重 kg"]
-        case .bodyFat:  return ["体脂肪 %"]
-        case .skMuscle: return ["骨格筋 %"]
+            return [NSLocalizedString("上 mmHg", comment: ""),
+                    NSLocalizedString("下 mmHg", comment: "")]
+        case .pulse:    return [NSLocalizedString("心拍 bpm", comment: "")]
+        case .temp:     return [NSLocalizedString("体温 ℃", comment: "")]
+        case .weight:   return [NSLocalizedString("体重 kg", comment: "")]
+        case .bodyFat:  return [NSLocalizedString("体脂肪 %", comment: "")]
+        case .skMuscle: return [NSLocalizedString("骨格筋 %", comment: "")]
         default:        return []
         }
     }
