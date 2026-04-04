@@ -28,7 +28,6 @@
 		9AEA2B0965601F94C251CA2F /* GoogleMobileAds in Frameworks */ = {isa = PBXBuildFile; productRef = E34D8E33BC77DA54E6C61D52 /* GoogleMobileAds */; };
 		B01892399930A51751ED92F1 /* RecordEditView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C5B54F260937D2BF7A3B8E0 /* RecordEditView.swift */; };
 		BFF8BE17437CFD77E63A1B44 /* TipStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 132A076B61B2C635E9A5FADA /* TipStore.swift */; };
-		C3713DD42F7FF32400DF8BB3 /* AZDial in Frameworks */ = {isa = PBXBuildFile; productRef = C3713DD32F7FF32400DF8BB3 /* AZDial */; };
 		C3DC29A22F7040EA007F4C3A /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = C3DC29A12F7040EA007F4C3A /* PrivacyInfo.xcprivacy */; };
 		C3DC29A42F72BE25007F4C3A /* PDFPanelExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3DC29A32F72BE25007F4C3A /* PDFPanelExporter.swift */; };
 		CC257634A8AF415F5F40872E /* MigrationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = D11FAFC4E99DE815E66D2AEB /* MigrationService.swift */; };
@@ -86,7 +85,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				9AEA2B0965601F94C251CA2F /* GoogleMobileAds in Frameworks */,
-				C3713DD42F7FF32400DF8BB3 /* AZDial in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -244,8 +242,16 @@
 			children = (
 				6F2F46A619452CEF46C1BE19 /* Condition */,
 				250EBD942338B04481840BD8 /* ConditionTests */,
+				C394AF032F7FF91E00F9C557 /* Frameworks */,
 				758C2EFE3946876AA265CABE /* Products */,
 			);
+			sourceTree = "<group>";
+		};
+		C394AF032F7FF91E00F9C557 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 		DD27FB837464EED7ACADE894 /* Services */ = {
@@ -333,7 +339,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				BC598EFC28CA017618D0E615 /* XCRemoteSwiftPackageReference "swift-package-manager-google-mobile-ads" */,
-				C3713DD22F7FF32400DF8BB3 /* XCLocalSwiftPackageReference "../AZDial" */,
+				C394AF022F7FF8D000F9C557 /* XCRemoteSwiftPackageReference "AZDial" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 758C2EFE3946876AA265CABE /* Products */;
@@ -643,13 +649,6 @@
 		};
 /* End XCConfigurationList section */
 
-/* Begin XCLocalSwiftPackageReference section */
-		C3713DD22F7FF32400DF8BB3 /* XCLocalSwiftPackageReference "../AZDial" */ = {
-			isa = XCLocalSwiftPackageReference;
-			relativePath = ../AZDial;
-		};
-/* End XCLocalSwiftPackageReference section */
-
 /* Begin XCRemoteSwiftPackageReference section */
 		BC598EFC28CA017618D0E615 /* XCRemoteSwiftPackageReference "swift-package-manager-google-mobile-ads" */ = {
 			isa = XCRemoteSwiftPackageReference;
@@ -657,6 +656,14 @@
 			requirement = {
 				kind = upToNextMajorVersion;
 				minimumVersion = 12.0.0;
+			};
+		};
+		C394AF022F7FF8D000F9C557 /* XCRemoteSwiftPackageReference "AZDial" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/SumPositive/AZDial";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.0.1;
 			};
 		};
 /* End XCRemoteSwiftPackageReference section */
