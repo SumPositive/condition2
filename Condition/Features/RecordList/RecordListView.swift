@@ -61,15 +61,15 @@ struct RecordListView: View {
             Group {
                 if visibleRecords.isEmpty {
                     ContentUnavailableView(
-                        String(localized: "List_Empty", defaultValue: "記録がありません"),
+                        "記録がありません",
                         systemImage: "heart.text.square",
-                        description: Text(String(localized: "List_Empty_Hint", defaultValue: "+ ボタンで記録を追加してください"))
+                        description: Text("+ ボタンで記録を追加してください")
                     )
                 } else {
                     listContent
                 }
             }
-            .navigationTitle(String(localized: "Tab_List", defaultValue: "記録"))
+            .navigationTitle("記録")
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     Button { showExportSheet = true } label: {
@@ -141,12 +141,12 @@ struct RecordListView: View {
                 if timedOut { showHKTimeoutAlert = true }
             }
             .alert(
-                String(localized: "HKTimeout_Title", defaultValue: "ヘルスケア連携エラー"),
+                "ヘルスケア連携エラー",
                 isPresented: $showHKTimeoutAlert
             ) {
                 Button("OK") { hkService.importTimedOut = false }
             } message: {
-                Text(String(localized: "HKTimeout_Message", defaultValue: "ヘルスケアに異常がないか確認してください。「データなし」や「すべてのデータを表示」ができない場合、iCloud同期エラーが発生しています。たいていはデバイスを再起動すれば正常に戻るようです"))
+                Text("ヘルスケアに異常がないか確認してください。「データなし」や「すべてのデータを表示」ができない場合、iCloud同期エラーが発生しています。たいていはデバイスを再起動すれば正常に戻るようです")
             }
         }
     }
@@ -239,8 +239,7 @@ struct RecordListView: View {
 
     private func showImportToast(count: Int) {
         guard count > 0 else { return }
-        toastMessage = String(format: String(localized: "HK_Toast_Imported",
-                                             defaultValue: "ヘルスケアから %d 件取得しました"), count)
+        toastMessage = String(format: "ヘルスケアから %d 件取得しました", count)
         Task {
             try? await Task.sleep(for: .seconds(3))
             toastMessage = nil
@@ -667,6 +666,13 @@ private enum ExportFormat: String, CaseIterable, Identifiable {
     case csv = "CSV (→Excel)"
     case json = "JSON"
     var id: String { rawValue }
+    var shortLabel: String {
+        switch self {
+        case .pdf:  return "PDF"
+        case .csv:  return "CSV"
+        case .json: return "JSON"
+        }
+    }
 }
 
 private struct ExportSheetView: View {
@@ -697,15 +703,15 @@ private struct ExportSheetView: View {
     var body: some View {
         NavigationStack {
             Form {
-                Section(String(localized: "Export_Period", defaultValue: "期間")) {
-                    DatePicker(String(localized: "Export_From", defaultValue: "開始"),
+                Section("期間") {
+                    DatePicker("開始",
                                selection: $fromDate, in: ...toDate,
                                displayedComponents: .date)
-                    DatePicker(String(localized: "Export_To", defaultValue: "終了"),
+                    DatePicker("終了",
                                selection: $toDate, in: fromDate...,
                                displayedComponents: .date)
                 }
-                Section(String(localized: "Export_Format", defaultValue: "形式")) {
+                Section("形式") {
                     Picker("", selection: $format) {
                         ForEach(ExportFormat.allCases) { f in
                             Text(f.rawValue).tag(f)
@@ -713,26 +719,25 @@ private struct ExportSheetView: View {
                     }
                     .pickerStyle(.segmented)
                     .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
-                    Picker(String(localized: "Export_SortOrder", defaultValue: "並び順"), selection: $ascending) {
-                        Text(String(localized: "Export_Sort_Desc", defaultValue: "降順（新しい順）")).tag(false)
-                        Text(String(localized: "Export_Sort_Asc",  defaultValue: "昇順（古い順）")).tag(true)
+                    Picker("並び順", selection: $ascending) {
+                        Text("降順（新しい順）").tag(false)
+                        Text("昇順（古い順）").tag(true)
                     }
                 }
                 Section {
                     HStack {
-                        Text(String(localized: "Export_Count", defaultValue: "対象件数"))
+                        Text("対象件数")
                         Spacer()
-                        Text(String(format: String(localized: "Export_CountFormat",
-                                                   defaultValue: "%d 件"), targetRecords.count))
+                        Text(String(format: "%d 件", targetRecords.count))
                             .foregroundStyle(.secondary)
                     }
                 }
             }
-            .navigationTitle(String(localized: "Export_Title", defaultValue: "エクスポート"))
+            .navigationTitle("エクスポート")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button(String(localized: "Cancel", defaultValue: "キャンセル")) { dismiss() }
+                    Button("キャンセル") { dismiss() }
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button {
@@ -741,7 +746,7 @@ private struct ExportSheetView: View {
                         if isGenerating {
                             ProgressView()
                         } else {
-                            Text(String(localized: "Export_Share", defaultValue: "書き出し")).bold()
+                            Text("書き出し").bold()
                         }
                     }
                     .disabled(targetRecords.isEmpty || isGenerating)
@@ -758,7 +763,7 @@ private struct ExportSheetView: View {
                 ProgressView()
                     .progressViewStyle(.circular)
                     .scaleEffect(1.4)
-                Text("\(format.rawValue)生成中...")
+                Text(String(format: String(localized: "%@生成中..."), format.shortLabel))
                     .font(.subheadline.weight(.medium))
             }
             .padding(.horizontal, 28)
@@ -793,7 +798,7 @@ private struct ExportSheetView: View {
 
     @MainActor
     private func buildShareItems() -> [Any] {
-        let appName = String(localized: "Export_PDF_Title", defaultValue: "体調メモ")
+        let appName = "体調メモ"
         let f = DateFormatter(); f.dateFormat = "yyyyMMdd"
         let dateTag = f.string(from: Date())
         switch format {
@@ -875,27 +880,27 @@ private struct ExportSheetView: View {
         }
 
         var headers = [
-            escape(String(localized: "CSV_DateTime", defaultValue: "日時")),
-            escape(String(localized: "CSV_DateOpt",  defaultValue: "区分")),
+            escape("日時"),
+            escape("区分"),
         ]
         for kind in visibleKinds {
             switch kind {
             case .bp:
-                headers.append(escape(String(localized: "Export_XLS_BpHi",    defaultValue: "収縮期血圧 mmHg")))
-                headers.append(escape(String(localized: "Export_XLS_BpLo",    defaultValue: "拡張期血圧 mmHg")))
-            case .pulse:    headers.append(escape(String(localized: "Export_XLS_Pulse",   defaultValue: "心拍数 bpm")))
-            case .temp:     headers.append(escape(String(localized: "Export_XLS_Temp",    defaultValue: "体温 ℃")))
-            case .weight:   headers.append(escape(String(localized: "Export_XLS_Weight",  defaultValue: "体重 kg")))
-            case .bodyFat:  headers.append(escape(String(localized: "Export_XLS_BodyFat", defaultValue: "体脂肪率 %")))
-            case .skMuscle: headers.append(escape(String(localized: "Export_XLS_Muscle",  defaultValue: "骨格筋率 %")))
+                headers.append(escape("収縮期血圧 mmHg"))
+                headers.append(escape("拡張期血圧 mmHg"))
+            case .pulse:    headers.append(escape("心拍数 bpm"))
+            case .temp:     headers.append(escape("体温 ℃"))
+            case .weight:   headers.append(escape("体重 kg"))
+            case .bodyFat:  headers.append(escape("体脂肪率 %"))
+            case .skMuscle: headers.append(escape("骨格筋率 %"))
             default: break
             }
         }
         headers += [
-            escape(String(localized: "CSV_Caution",   defaultValue: "注意フラグ")),
-            escape(String(localized: "CSV_Note1",     defaultValue: "メモ1")),
-            escape(String(localized: "CSV_Note2",     defaultValue: "メモ2")),
-            escape(String(localized: "CSV_Equipment", defaultValue: "計測機器")),
+            escape("注意フラグ"),
+            escape("メモ1"),
+            escape("メモ2"),
+            escape("計測機器"),
         ]
 
         let df = DateFormatter()
@@ -1035,15 +1040,15 @@ private struct ExportPDFPageView: View {
         VStack(alignment: .leading, spacing: 0) {
             if isFirstPage {
                 HStack(alignment: .top) {
-                    Text(String(localized: "Export_PDF_Title", defaultValue: "体調メモ"))
+                    Text("体調メモ")
                         .font(.title2.bold())
                         .fixedSize(horizontal: false, vertical: true)
                     Spacer(minLength: 8)
                     VStack(alignment: .trailing, spacing: 1) {
                         Text(Self.datedf.string(from: fromDate)
-                             + String(localized: "Export_PDF_Range", defaultValue: " 〜 ")
+                             + " 〜 "
                              + Self.datedf.string(from: toDate))
-                        Text(String(localized: "Export_PDF_Created", defaultValue: "作成:")
+                        Text("作成:"
                              + " " + Self.datedf.string(from: Date()))
                     }
                     .font(.caption)
@@ -1072,9 +1077,9 @@ private struct ExportPDFPageView: View {
 
     private var pdfHeaderRow: some View {
         HStack(spacing: 0) {
-            Text(String(localized: "Export_PDF_DateTime", defaultValue: "日時"))
+            Text("日時")
                 .frame(width: PDFLayout.dateColW, alignment: .leading).padding(3)
-            Text(String(localized: "Export_PDF_DateOpt", defaultValue: "区分"))
+            Text("区分")
                 .frame(width: PDFLayout.optColW, alignment: .center).padding(3)
             ForEach(visibleKinds, id: \.rawValue) { kind in
                 ForEach(Array(pdfColumnHeaders(kind).enumerated()), id: \.offset) { _, header in
@@ -1126,13 +1131,13 @@ private struct ExportPDFPageView: View {
     private func pdfColumnHeaders(_ kind: GraphKind) -> [String] {
         switch kind {
         case .bp:
-            return [String(localized: "Export_Col_BpHi",    defaultValue: "上 mmHg"),
-                    String(localized: "Export_Col_BpLo",    defaultValue: "下 mmHg")]
-        case .pulse:    return [String(localized: "Export_Col_Pulse",   defaultValue: "心拍 bpm")]
-        case .temp:     return [String(localized: "Export_Col_Temp",    defaultValue: "体温 ℃")]
-        case .weight:   return [String(localized: "Export_Col_Weight",  defaultValue: "体重 kg")]
-        case .bodyFat:  return [String(localized: "Export_Col_BodyFat", defaultValue: "体脂肪 %")]
-        case .skMuscle: return [String(localized: "Export_Col_Muscle",  defaultValue: "骨格筋 %")]
+            return ["上 mmHg",
+                    "下 mmHg"]
+        case .pulse:    return ["心拍 bpm"]
+        case .temp:     return ["体温 ℃"]
+        case .weight:   return ["体重 kg"]
+        case .bodyFat:  return ["体脂肪 %"]
+        case .skMuscle: return ["骨格筋 %"]
         default:        return []
         }
     }

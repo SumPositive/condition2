@@ -14,12 +14,12 @@ enum DateOpt: Int, CaseIterable, Codable {
 
     var label: String {
         switch self {
-        case .wake:         return String(localized: "DateOpt_Wake",         defaultValue: "起床時")
-        case .rest:         return String(localized: "DateOpt_Rest",         defaultValue: "安静時")
-        case .down:         return String(localized: "DateOpt_Down",         defaultValue: "就寝前")
-        case .sleep:        return String(localized: "DateOpt_Sleep",        defaultValue: "就寝時")
-        case .preExercise:  return String(localized: "DateOpt_PreExercise",  defaultValue: "運動前")
-        case .postExercise: return String(localized: "DateOpt_PostExercise", defaultValue: "運動後")
+        case .wake:         return "起床時"
+        case .rest:         return "安静時"
+        case .down:         return "就寝前"
+        case .sleep:        return "就寝時"
+        case .preExercise:  return "運動前"
+        case .postExercise: return "運動後"
         }
     }
 
@@ -47,12 +47,12 @@ enum DateOpt: Int, CaseIterable, Codable {
 
     var shortLabel: String {
         switch self {
-        case .wake:         return String(localized: "DateOpt_Wake_Short",         defaultValue: "起")
-        case .rest:         return String(localized: "DateOpt_Rest_Short",         defaultValue: "安")
-        case .down:         return String(localized: "DateOpt_Down_Short",         defaultValue: "前")
-        case .sleep:        return String(localized: "DateOpt_Sleep_Short",        defaultValue: "眠")
-        case .preExercise:  return String(localized: "DateOpt_PreExercise_Short",  defaultValue: "運前")
-        case .postExercise: return String(localized: "DateOpt_PostExercise_Short", defaultValue: "運後")
+        case .wake:         return "起"
+        case .rest:         return "安"
+        case .down:         return "前"
+        case .sleep:        return "眠"
+        case .preExercise:  return "運前"
+        case .postExercise: return "運後"
         }
     }
 }
@@ -80,10 +80,10 @@ enum RecordDataSource: Int {
 
     var label: String {
         switch self {
-        case .appInput:    return String(localized: "DataSource_AppInput",    defaultValue: "このアプリで入力された記録です")
-        case .appModified: return String(localized: "DataSource_AppModified", defaultValue: "このアプリで入力後に変更された記録です")
-        case .hkImport:    return String(localized: "DataSource_HKImport",    defaultValue: "ヘルスケアから読み込まれた記録です。変更や削除が可能ですがヘルスケア側には影響(連携)しません")
-        case .hkModified:  return String(localized: "DataSource_HKModified",  defaultValue: "ヘルスケアから読み込まれた後に変更された記録です。ヘルスケア側は変更されていません。必要ならばヘルスケア側で修正してください")
+        case .appInput:    return "このアプリで入力された記録です"
+        case .appModified: return "このアプリで入力後に変更された記録です"
+        case .hkImport:    return "ヘルスケアから読み込まれた記録です。変更や削除が可能ですがヘルスケア側には影響(連携)しません"
+        case .hkModified:  return "ヘルスケアから読み込まれた後に変更された記録です。ヘルスケア側は変更されていません。必要ならばヘルスケア側で修正してください"
         }
     }
 }

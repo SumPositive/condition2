@@ -9,7 +9,7 @@ struct ContentView: View {
             RecordListView()
                 .tabItem {
                     Label(
-                        String(localized: "Tab_List", defaultValue: "記録"),
+                        "記録",
                         systemImage: "list.bullet.clipboard"
                     )
                 }
@@ -17,7 +17,7 @@ struct ContentView: View {
             GraphView()
                 .tabItem {
                     Label(
-                        String(localized: "Tab_Graph", defaultValue: "グラフ"),
+                        "グラフ",
                         systemImage: "chart.line.uptrend.xyaxis"
                     )
                 }
@@ -25,7 +25,7 @@ struct ContentView: View {
             StatisticsView()
                 .tabItem {
                     Label(
-                        String(localized: "Tab_Statistics", defaultValue: "統計"),
+                        "統計",
                         systemImage: "chart.dots.scatter"
                     )
                 }
@@ -33,7 +33,7 @@ struct ContentView: View {
             SettingsView()
                 .tabItem {
                     Label(
-                        String(localized: "Tab_Settings", defaultValue: "設定"),
+                        "設定",
                         systemImage: "gear"
                     )
                 }

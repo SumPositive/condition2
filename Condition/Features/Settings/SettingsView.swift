@@ -26,14 +26,14 @@ struct SettingsView: View {
         NavigationStack {
             Form {
                 // MARK: - 記録
-                Section(String(localized: "Settings_Record", defaultValue: "記録")) {
-                    NavigationLink(String(localized: "Settings_FieldOrder", defaultValue: "項目の表示と順序")) {
+                Section("記録") {
+                    NavigationLink("項目の表示と順序") {
                         FieldOrderSettingsView()
                     }
                     NavigationLink {
                         DateOptMatrixView()
                     } label: {
-                        Text(String(localized: "Settings_DateOpt", defaultValue: "時間帯と区分の初期値"))
+                        Text("時間帯と区分の初期値")
                     }
 
                     // ヘルスケア
@@ -42,7 +42,7 @@ struct SettingsView: View {
                             HealthKitSettingsView()
                         } label: {
                             Toggle(
-                                String(localized: "Settings_HealthKit", defaultValue: "ヘルスケア連携"),
+                                "ヘルスケア連携",
                                 isOn: $settings.hkEnabled
                             )
                             .onChange(of: settings.hkEnabled) { _, enabled in
@@ -61,18 +61,18 @@ struct SettingsView: View {
                 }
 
                 // MARK: - 分析
-                Section(String(localized: "Settings_Graph", defaultValue: "分析")) {
-                    NavigationLink(String(localized: "Settings_GraphDetail", defaultValue: "グラフ設定")) {
+                Section("分析") {
+                    NavigationLink("グラフ設定") {
                         GraphSettingsView()
                     }
-                    NavigationLink(String(localized: "Settings_StatDetail", defaultValue: "統計設定")) {
+                    NavigationLink("統計設定") {
                         StatSettingsView()
                     }
                 }
 
                 // MARK: - アプリ情報
                 Section {
-                    Button(String(localized: "Settings_About", defaultValue: "このアプリについて")) {
+                    Button("このアプリについて") {
                         showSafari = true
                     }
                 }
@@ -82,7 +82,7 @@ struct SettingsView: View {
                     SupportDeveloperView()
                 }
             }
-            .navigationTitle(String(localized: "Tab_Settings", defaultValue: "設定"))
+            .navigationTitle("設定")
         }
         .sheet(isPresented: $showSafari) {
             SafariView(url: aboutURL)
@@ -143,8 +143,7 @@ private class WebViewController: UIViewController, WKNavigationDelegate {
         }
 #if targetEnvironment(simulator)
         let alert = UIAlertController(title: nil,
-                                      message: String(localized: "AppStore_SimulatorOnly",
-                                                      defaultValue: "シミュレータでは開けません"),
+                                      message: "シミュレータでは開けません",
                                       preferredStyle: .alert)
         alert.addAction(UIAlertAction(title: "OK", style: .default))
         present(alert, animated: true)
@@ -166,7 +165,7 @@ private struct SupportDeveloperView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             Label {
-                Text(String(localized: "Support_Title", defaultValue: "開発者を応援"))
+                Text("開発者を応援")
                     .font(.body.weight(.medium))
             } icon: {
                 Image(systemName: "heart.fill")
@@ -178,7 +177,7 @@ private struct SupportDeveloperView: View {
             Button {
                 showTip = true
             } label: {
-                Text(String(localized: "Support_Tip", defaultValue: "投げ銭　寄付する"))
+                Text("投げ銭　寄付する")
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(.borderedProminent)
@@ -190,7 +189,7 @@ private struct SupportDeveloperView: View {
             Button {
                 showAd = true
             } label: {
-                Text(String(localized: "Support_WatchAd", defaultValue: "広告を見て応援する"))
+                Text("広告を見て応援する")
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(.borderedProminent)
@@ -204,13 +203,12 @@ private struct SupportDeveloperView: View {
         .padding(.vertical, 4)
         .task { await store.loadProducts() }
         .alert(
-            String(localized: "Support_ThankYou", defaultValue: "ありがとうございます！"),
+            "ありがとうございます！",
             isPresented: $showAdThankYou
         ) {
             Button("OK") {}
         } message: {
-            Text(String(localized: "Support_AdThankYouMessage",
-                        defaultValue: "広告をご覧いただきありがとうございます。これからも改善を続けてまいります！"))
+            Text("広告をご覧いただきありがとうございます。これからも改善を続けてまいります！")
         }
     }
 }
@@ -228,8 +226,7 @@ private struct TipSheetView: View {
                     .foregroundStyle(.pink)
                     .symbolEffect(.breathe.pulse.byLayer, options: .repeat(.periodic(delay: 0.0)))
 
-                Text(String(localized: "Support_TipMessage",
-                            defaultValue: "このアプリの開発を応援していただけると励みになります。"))
+                Text("このアプリの開発を応援していただけると励みになります。")
                     .font(.callout)
                     .multilineTextAlignment(.center)
                     .foregroundStyle(.secondary)
@@ -238,8 +235,7 @@ private struct TipSheetView: View {
                 if store.isLoadingProducts {
                     ProgressView()
                 } else if store.products.isEmpty {
-                    Text(String(localized: "Support_TipUnavailable",
-                                defaultValue: "現在ご利用いただけません。"))
+                    Text("現在ご利用いただけません。")
                         .font(.callout)
                         .foregroundStyle(.secondary)
                 } else {
@@ -279,13 +275,12 @@ private struct TipSheetView: View {
                 }
             }
             .alert(
-                String(localized: "Support_ThankYou", defaultValue: "ありがとうございます！"),
+                "ありがとうございます！",
                 isPresented: $showThankYou
             ) {
                 Button("OK") { dismiss() }
             } message: {
-                Text(String(localized: "Support_ThankYouMessage",
-                            defaultValue: "応援いただきありがとうございます。これからも改善を続けてまいります！"))
+                Text("応援いただきありがとうございます。これからも改善を続けてまいります！")
             }
         }
     }
@@ -356,7 +351,7 @@ struct DateOptMatrixView: View {
             .padding(.vertical, 4)
         }
         .background(Color(.systemGroupedBackground))
-        .navigationTitle(String(localized: "Settings_DateOpt", defaultValue: "時間帯と区分の初期値"))
+        .navigationTitle("時間帯と区分の初期値")
         .navigationBarTitleDisplayMode(.inline)
     }
 }
@@ -372,18 +367,18 @@ struct GraphSettingsView: View {
 
     var body: some View {
         List {
-            Section(String(localized: "GraphSett_Display", defaultValue: "補助グラフ")) {
+            Section("補助グラフ") {
                 Toggle(
-                    String(localized: "GraphSett_BpMean", defaultValue: "平均血圧（（上－下）÷3＋下）"),
+                    "平均血圧（（上－下）÷3＋下）",
                     isOn: $settings.graphBpMean
                 )
                 Toggle(
-                    String(localized: "GraphSett_WeightMA", defaultValue: "体重移動平均（直近7件）"),
+                    "体重移動平均（直近7件）",
                     isOn: $settings.graphWeightMA
                 )
                 VStack(alignment: .leading, spacing: 4) {
                     HStack {
-                        Text(String(localized: "GraphSett_Tall", defaultValue: "身長（BMI 計算用）"))
+                        Text("身長（BMI 計算用）")
                             .font(.callout)
                         Spacer()
                         NumpadValueText(value: $settings.graphBMITall, min: 100, max: 250, decimals: 0, color: .primary)
@@ -405,13 +400,13 @@ struct GraphSettingsView: View {
                     GoalSettingsView()
                 } label: {
                     LabeledContent(
-                        String(localized: "GraphSett_Goal", defaultValue: "目標ライン"),
-                        value: String(localized: "GraphSett_GoalAction", defaultValue: "設定")
+                        "目標ライン",
+                        value: "設定"
                     )
                 }
             }
 
-            Section(String(localized: "GraphSett_DialStyle", defaultValue: "ダイアルデザイン")) {
+            Section("ダイアルデザイン") {
                 VStack(spacing: 8) {
                     ForEach([Array(DialStyle.allBuiltin.prefix(4)),
                              Array(DialStyle.allBuiltin.suffix(4))], id: \.first!.id) { row in
@@ -471,13 +466,13 @@ struct GraphSettingsView: View {
                     settings.graphDisplayOrder.move(fromOffsets: from, toOffset: to)
                 }
             } header: {
-                Text(String(localized: "GraphSett_PanelOrder", defaultValue: "グラフ表示と並び順"))
+                Text("グラフ表示と並び順")
             } footer: {
-                Text(String(localized: "GraphSett_PanelOrder_Footer", defaultValue: "並び順はグラフに反映されます"))
+                Text("並び順はグラフに反映されます")
             }
             .environment(\.editMode, .constant(.active))
         }
-        .navigationTitle(String(localized: "GraphSett_Title", defaultValue: "グラフ設定"))
+        .navigationTitle("グラフ設定")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             if isModal {
@@ -524,11 +519,11 @@ struct FieldOrderSettingsView: View {
                     settings.graphPanelOrder.move(fromOffsets: from, toOffset: to)
                 }
             } footer: {
-                Text(String(localized: "FieldOrder_Footer", defaultValue: "並び順は記録入力に反映されます"))
+                Text("並び順は記録入力に反映されます")
             }
         }
         .environment(\.editMode, .constant(.active))
-        .navigationTitle(String(localized: "Settings_FieldOrder", defaultValue: "項目の表示と順序"))
+        .navigationTitle("項目の表示と順序")
         .navigationBarTitleDisplayMode(.inline)
     }
 }
@@ -565,13 +560,13 @@ struct StatSettingsView: View {
                     settings.statSectionOrder.move(fromOffsets: from, toOffset: to)
                 }
             } header: {
-                Text(String(localized: "StatSett_PanelOrder", defaultValue: "統計表示と並び順"))
+                Text("統計表示と並び順")
             } footer: {
-                Text(String(localized: "StatSett_Footer", defaultValue: "並び順は統計画面に反映されます"))
+                Text("並び順は統計画面に反映されます")
             }
         }
         .environment(\.editMode, .constant(.active))
-        .navigationTitle(String(localized: "StatSett_Title", defaultValue: "統計設定"))
+        .navigationTitle("統計設定")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             if isModal {
@@ -623,7 +618,7 @@ struct GoalSettingsView: View {
     var body: some View {
         NavigationStack {
             Form {
-                Section(String(localized: "Goal_Title", defaultValue: "目標値")) {
+                Section("目標値") {
                     goalDialRow(title: "上（収縮期血圧）", value: $settings.goalBpHi,      spec: MeasureRange.bpHi,      recordVal: latestBpHi,   unit: "mmHg", stepperStep: 10, color: .red)
                     goalDialRow(title: "下（拡張期血圧）", value: $settings.goalBpLo,      spec: MeasureRange.bpLo,      recordVal: latestBpLo,   unit: "mmHg", stepperStep: 5,  color: .blue)
                     goalDialRow(title: "脈圧",             value: $settings.goalBpPp,      spec: MeasureRange.bpPp,      recordVal: latestBpPp,   unit: "mmHg", stepperStep: 5,  color: .orange)
@@ -635,7 +630,7 @@ struct GoalSettingsView: View {
                     goalDialRow(title: "骨格筋率",         value: $settings.goalSkMuscle,  spec: MeasureRange.skMuscle,  recordVal: latestSkMuscle,unit: "%",   stepperStep: 5,  decimals: 1, color: .teal)
                 }
             }
-            .navigationTitle(String(localized: "GoalLine_Title", defaultValue: "目標設定"))
+            .navigationTitle("目標設定")
             .navigationBarTitleDisplayMode(.inline)
         }
     }
@@ -704,15 +699,15 @@ struct HealthKitSettingsView: View {
 
     var body: some View {
         Form {
-            Section(String(localized: "HKSett_Auth", defaultValue: "アクセス権限")) {
+            Section("アクセス権限") {
                 HStack {
-                    Text(String(localized: "HKSett_Status", defaultValue: "ステータス"))
+                    Text("ステータス")
                     Spacer()
                     Text(hkService.isAuthorized
-                         ? String(localized: "HKSett_Authorized", defaultValue: "許可済み")
-                         : String(localized: "HKSett_NotAuthorized", defaultValue: "未許可"))
+                         ? "許可済み"
+                         : "未許可")
                         .foregroundStyle(hkService.isAuthorized ? Color.secondary : Color.orange)
-                    Button(String(localized: "HKSett_ChangePermission", defaultValue: "許可を変更")) {
+                    Button("許可を変更") {
                         if hkService.isAuthorized {
                             showGuideAlert = true
                         } else {
@@ -725,26 +720,26 @@ struct HealthKitSettingsView: View {
                 }
             }
 
-            Section(String(localized: "HKSett_Direction", defaultValue: "同期方向")) {
-                Picker(String(localized: "HKSett_Direction", defaultValue: "同期方向"),
+            Section("同期方向") {
+                Picker("同期方向",
                        selection: directionBinding) {
-                    Text(String(localized: "HKDir_Write", defaultValue: "書き込みのみ（アプリ → ヘルスケア）"))
+                    Text("書き込みのみ（アプリ → ヘルスケア）")
                         .tag(HKSyncDirection.writeOnly)
-                    Text(String(localized: "HKDir_Read", defaultValue: "読み込みのみ（ヘルスケア → アプリ）"))
+                    Text("読み込みのみ（ヘルスケア → アプリ）")
                         .tag(HKSyncDirection.readOnly)
-                    Text(String(localized: "HKDir_Both", defaultValue: "双方向"))
+                    Text("双方向")
                         .tag(HKSyncDirection.both)
                 }
                 .pickerStyle(.inline)
                 .labelsHidden()
             }
 
-            Section(String(localized: "HKSett_Timing", defaultValue: "タイミング")) {
-                Picker(String(localized: "HKSett_Timing", defaultValue: "タイミング"),
+            Section("タイミング") {
+                Picker("タイミング",
                        selection: timingBinding) {
-                    Text(String(localized: "HKTiming_Auto", defaultValue: "自動（保存時 / 画面表示時）"))
+                    Text("自動（保存時 / 画面表示時）")
                         .tag(HKSyncTiming.automatic)
-                    Text(String(localized: "HKTiming_Manual", defaultValue: "手動（ボタン操作）"))
+                    Text("手動（ボタン操作）")
                         .tag(HKSyncTiming.manual)
                 }
                 .pickerStyle(.inline)
@@ -752,32 +747,29 @@ struct HealthKitSettingsView: View {
             }
 
             Section {
-                Text(String(localized: "HKSett_Note",
-                            defaultValue: "連携対象：上・下血圧、心拍数、体重、体温、体脂肪率"))
+                Text("連携対象：上・下血圧、心拍数、体重、体温、体脂肪率")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
-                Text(String(localized: "HKSett_Note2",
-                            defaultValue: "このアプリからヘルスケアのデータは変更・削除できません。常に追加されるだけです。不要なデータがあればヘルスケア側で項目毎に「すべてのデータを表示」し、編集にて削除してください"))
+                Text("このアプリからヘルスケアのデータは変更・削除できません。常に追加されるだけです。不要なデータがあればヘルスケア側で項目毎に「すべてのデータを表示」し、編集にて削除してください")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
             }
         }
-        .navigationTitle(String(localized: "HKSett_Title", defaultValue: "ヘルスケア連携"))
+        .navigationTitle("ヘルスケア連携")
         .navigationBarTitleDisplayMode(.inline)
         .onAppear { hkService.checkAuthorization() }
         .onChange(of: settings.hkDirection) { _, _ in updateNeedsAutoImport() }
         .onChange(of: settings.hkTiming)    { _, _ in updateNeedsAutoImport() }
         .alert(
-            String(localized: "HKGuide_Title", defaultValue: "ヘルスケアの許可を変更"),
+            "ヘルスケアの許可を変更",
             isPresented: $showGuideAlert
         ) {
-            Button(String(localized: "HKGuide_Open", defaultValue: "ヘルスケアを開く")) {
+            Button("ヘルスケアを開く") {
                 if let url = URL(string: "x-apple-health://") { openURL(url) }
             }
-            Button(String(localized: "Cancel", defaultValue: "キャンセル"), role: .cancel) {}
+            Button("キャンセル", role: .cancel) {}
         } message: {
-            Text(String(localized: "HKGuide_Message",
-                        defaultValue: "ヘルスケア右上のアイコンをタップ → プライバシー → アプリ → 体調メモ を表示し、許可スイッチを操作してください"))
+            Text("ヘルスケア右上のアイコンをタップ → プライバシー → アプリ → 体調メモ を表示し、許可スイッチを操作してください")
         }
     }
 
@@ -801,7 +793,7 @@ struct AboutView: View {
                         Image(systemName: "heart.text.square.fill")
                             .font(.system(size: 68))
                             .foregroundStyle(Color.azuki)
-                        Text(String(localized: "App_Name", defaultValue: "体調メモ"))
+                        Text("体調メモ")
                             .font(.title.bold())
                         Text(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "")
                             .font(.footnote)
@@ -815,18 +807,18 @@ struct AboutView: View {
                 .padding(.vertical)
             }
 
-            Section(String(localized: "About_Support", defaultValue: "サポート")) {
+            Section("サポート") {
                 Link(
-                    String(localized: "About_Website", defaultValue: "公式サイト"),
+                    "公式サイト",
                     destination: URL(string: "https://azukid.com")!
                 )
                 Link(
-                    String(localized: "About_Review", defaultValue: "App Store でレビュー"),
+                    "App Store でレビュー",
                     destination: URL(string: "https://apps.apple.com/app/id\(AppConstants.productName)")!
                 )
             }
         }
-        .navigationTitle(String(localized: "About_Title", defaultValue: "このアプリについて"))
+        .navigationTitle("このアプリについて")
         .navigationBarTitleDisplayMode(.inline)
     }
 }

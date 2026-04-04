@@ -38,9 +38,9 @@ struct RecordEditView: View {
 
     private var title: String {
         switch vm.mode {
-        case .addNew:    return String(localized: "Edit_Title_Add",  defaultValue: "新規記録")
-        case .edit:      return String(localized: "Edit_Title_Edit", defaultValue: "記録編集")
-        case .goalEdit:  return String(localized: "Edit_Title_Goal", defaultValue: "目標値")
+        case .addNew:    return "新規記録"
+        case .edit:      return "記録編集"
+        case .goalEdit:  return "目標値"
         }
     }
 
@@ -56,7 +56,7 @@ struct RecordEditView: View {
             Form {
                 hkImportSection
                 dateSection
-                Section(String(localized: "Section_Measure", defaultValue: "計測値")) {
+                Section("計測値") {
                     ForEach(orderedRecordFields, id: \.rawValue) { kind in
                         fieldRow(for: kind)
                     }
@@ -64,17 +64,17 @@ struct RecordEditView: View {
                 healthKitSection
 
                 // メモセクション
-                Section(String(localized: "Section_Note", defaultValue: "メモ")) {
+                Section("メモ") {
                     noteRow(
-                        title: String(localized: "Field_Note1", defaultValue: "メモ1"),
+                        title: "メモ1",
                         text: $vm.sNote1
                     )
                     noteRow(
-                        title: String(localized: "Field_Note2", defaultValue: "メモ2"),
+                        title: "メモ2",
                         text: $vm.sNote2
                     )
                     noteRow(
-                        title: String(localized: "Field_Equipment", defaultValue: "計測機器"),
+                        title: "計測機器",
                         text: $vm.sEquipment
                     )
                 }
@@ -87,7 +87,7 @@ struct RecordEditView: View {
                                 Image(systemName: "flag.fill")
                                     .foregroundStyle(.orange)
                             }
-                            Text(String(localized: "Field_Caution", defaultValue: "注意フラグ"))
+                            Text("注意フラグ")
                         }
                     }
                 }
@@ -99,21 +99,21 @@ struct RecordEditView: View {
                             showDeleteAlert = true
                         } label: {
                             Label(
-                                String(localized: "Delete_Record", defaultValue: "この記録を削除"),
+                                "この記録を削除",
                                 systemImage: "trash"
                             )
                             .frame(maxWidth: .infinity)
                         }
                     }
                     .alert(
-                        String(localized: "Delete_Confirm", defaultValue: "この記録を削除しますか？"),
+                        "この記録を削除しますか？",
                         isPresented: $showDeleteAlert
                     ) {
-                        Button(String(localized: "Delete", defaultValue: "削除"), role: .destructive) {
+                        Button("削除", role: .destructive) {
                             try? vm.delete(record: record, context: context)
                             dismiss()
                         }
-                        Button(String(localized: "Cancel", defaultValue: "キャンセル"), role: .cancel) {}
+                        Button("キャンセル", role: .cancel) {}
                     }
                 }
             }
@@ -121,14 +121,14 @@ struct RecordEditView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
-                    Button(String(localized: "Save", defaultValue: "保存")) {
+                    Button("保存") {
                         saveAndDismiss()
                     }
                     .disabled(!vm.isModified && !isNewRecord)
                     .bold()
                 }
                 ToolbarItem(placement: .cancellationAction) {
-                    Button(String(localized: "Cancel", defaultValue: "キャンセル")) {
+                    Button("キャンセル") {
                         dismiss()
                     }
                 }
@@ -217,7 +217,7 @@ struct RecordEditView: View {
                 } label: {
                     HStack {
                         Label(
-                            String(localized: "HK_Import", defaultValue: "ヘルスケアから取得"),
+                            "ヘルスケアから取得",
                             systemImage: "arrow.down.heart"
                         )
                         Spacer()
@@ -231,7 +231,7 @@ struct RecordEditView: View {
                 if vm.isLoadingFromHK, !hkService.importProgress.isEmpty {
                     Text(hkService.importProgress)
                 } else {
-                    Text(String(localized: "HK_Import_Footer", defaultValue: "過去1年の未読記録を読み込みます"))
+                    Text("過去1年の未読記録を読み込みます")
                 }
             }
         }
@@ -288,12 +288,12 @@ struct RecordEditView: View {
         let isHKRecord = vm.dataSource == .hkImport || vm.dataSource == .hkModified
         let showWrite = settings.hkEnabled && hkDirection.canWrite && hkTiming == .manual && !isHKRecord
         if showWrite {
-            Section(String(localized: "HK_Section", defaultValue: "ヘルスケア")) {
+            Section("ヘルスケア") {
                 Button {
                     vm.writeToHealthKit()
                 } label: {
                     Label(
-                        String(localized: "HK_Export", defaultValue: "ヘルスケアへ書き込み"),
+                        "ヘルスケアへ書き込み",
                         systemImage: "arrow.up.heart"
                     )
                 }
@@ -308,7 +308,7 @@ struct RecordEditView: View {
             showDatePicker = true
         } label: {
             HStack {
-                Text(String(localized: "Field_DateTime", defaultValue: "日時"))
+                Text("日時")
                     .foregroundStyle(.primary)
                 Spacer()
                 Text(Self.dateTimeFormatter.string(from: vm.dateTime))
@@ -323,7 +323,7 @@ struct RecordEditView: View {
                 Label(opt.label, systemImage: opt.icon).tag(opt)
             }
         } label: {
-            Text(String(localized: "Field_DateOpt", defaultValue: "区分"))
+            Text("区分")
         }
         .onChange(of: vm.dateOpt) { _, _ in vm.isModified = true }
     }
@@ -417,11 +417,11 @@ struct DatePickerSheet: View {
             .datePickerStyle(.graphical)
             .labelsHidden()
             .padding()
-            .navigationTitle(String(localized: "DatePicker_Title", defaultValue: "日時を選択"))
+            .navigationTitle("日時を選択")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
-                    Button(String(localized: "Done", defaultValue: "完了")) {
+                    Button("完了") {
                         onChanged()
                         dismiss()
                     }

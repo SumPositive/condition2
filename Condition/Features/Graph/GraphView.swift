@@ -41,11 +41,11 @@ enum GraphPeriod: Int, CaseIterable {
 
     var label: String {
         switch self {
-        case .week:        return String(localized: "Period_Week",    defaultValue: "1週")
-        case .month:       return String(localized: "Period_Month",   defaultValue: "1ヶ月")
-        case .threeMonths: return String(localized: "Period_3Month",  defaultValue: "3ヶ月")
-        case .sixMonths:   return String(localized: "Period_6Month",  defaultValue: "6ヶ月")
-        case .year:        return String(localized: "Period_1Year",   defaultValue: "1年")
+        case .week:        return "1週"
+        case .month:       return "1ヶ月"
+        case .threeMonths: return "3ヶ月"
+        case .sixMonths:   return "6ヶ月"
+        case .year:        return "1年"
         }
     }
 
@@ -78,7 +78,7 @@ struct GraphView: View {
     var body: some View {
         NavigationStack {
             GraphContentView(cutoffDate: cutoffDate, period: $period)
-                .navigationTitle(String(localized: "Tab_Graph", defaultValue: "グラフ"))
+                .navigationTitle("グラフ")
                 .toolbar {
                     ToolbarItem(placement: .primaryAction) {
                         Button { showSettings = true } label: {
@@ -140,7 +140,7 @@ private struct GraphContentView: View {
         Group {
             if records.isEmpty {
                 ContentUnavailableView(
-                    String(localized: "Graph_Empty", defaultValue: "データがありません"),
+                    "データがありません",
                     systemImage: "chart.line.uptrend.xyaxis"
                 )
             } else {
@@ -173,7 +173,7 @@ private struct GraphContentView: View {
                 ProgressView()
                     .progressViewStyle(.circular)
                     .scaleEffect(1.4)
-                Text(String(localized: "Export_Generating", defaultValue: "PDF生成中..."))
+                Text("PDF生成中...")
                     .font(.subheadline.weight(.medium))
             }
             .padding(.horizontal, 28)
@@ -269,10 +269,10 @@ private struct GraphContentView: View {
         let now = Date()
         let fromDate = Calendar.current.date(byAdding: .day, value: -period.rawValue, to: now) ?? now
         let subtitle = period.label + "  " + df.string(from: fromDate) + " 〜 " + df.string(from: now)
-        let title = String(localized: "Tab_Graph", defaultValue: "グラフ")
+        let title = "グラフ"
 
         let data = PDFPanelExporter.export(panels: panels, title: title, subtitle: subtitle)
-        let tabName = String(localized: "Tab_Graph", defaultValue: "グラフ")
+        let tabName = "グラフ"
         let dateTag = Self.exportDateTag()
         guard let url = PDFPanelExporter.writeTempFile(name: "\(tabName)_\(dateTag).pdf", data: data) else { return }
 

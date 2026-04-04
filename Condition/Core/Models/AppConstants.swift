@@ -110,15 +110,15 @@ enum GraphKind: Int, CaseIterable, Identifiable, Codable {
 
     var title: String {
         switch self {
-        case .bp:           return String(localized: "Graph_Bp",           defaultValue: "血圧")
-        case .bpAvg:        return String(localized: "Graph_BpAvg",        defaultValue: "脈圧（上ー下）")
-        case .pulse:        return String(localized: "Graph_Pulse",        defaultValue: "心拍数")
-        case .temp:         return String(localized: "Graph_Temp",         defaultValue: "体温")
-        case .weight:       return String(localized: "Graph_Weight",       defaultValue: "体重")
-        case .bodyFat:      return String(localized: "Graph_BodyFat",      defaultValue: "体脂肪率")
-        case .skMuscle:     return String(localized: "Graph_SkMuscle",     defaultValue: "骨格筋率")
-        case .bmi:          return String(localized: "Graph_BMI",          defaultValue: "BMI（体重÷身長×身長）")
-        case .weightChange: return String(localized: "Graph_WeightChange", defaultValue: "体重変化量")
+        case .bp:           return "血圧"
+        case .bpAvg:        return "脈圧（上ー下）"
+        case .pulse:        return "心拍数"
+        case .temp:         return "体温"
+        case .weight:       return "体重"
+        case .bodyFat:      return "体脂肪率"
+        case .skMuscle:     return "骨格筋率"
+        case .bmi:          return "BMI（体重÷身長×身長）"
+        case .weightChange: return "体重変化量"
         }
     }
 
@@ -145,14 +145,14 @@ enum StatSection: Int, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .bpJsh:          return String(localized: "StatSection_BpJsh",          defaultValue: "血圧 分布")
-        case .bpRatio:        return String(localized: "StatSection_BpRatio",        defaultValue: "血圧 JSH基準割合")
-        case .bpDateOptCorr:  return String(localized: "StatSection_BpDateOptCorr",  defaultValue: "血圧・区分 相関")
-        case .bp24h:          return String(localized: "StatSection_Bp24h",          defaultValue: "血圧 24時間分布")
-        case .weightSummary:  return String(localized: "StatSection_WeightSummary",  defaultValue: "体重 サマリー")
-        case .tempSummary:    return String(localized: "StatSection_TempSummary",    defaultValue: "体温 サマリー")
-        case .temp24h:        return String(localized: "StatSection_Temp24h",        defaultValue: "体温 24時間分布")
-        case .tempHist:       return String(localized: "StatSection_TempHist",       defaultValue: "体温 分布")
+        case .bpJsh:          return "血圧 分布"
+        case .bpRatio:        return "血圧 JSH基準割合"
+        case .bpDateOptCorr:  return "血圧・区分 相関"
+        case .bp24h:          return "血圧 24時間分布"
+        case .weightSummary:  return "体重 サマリー"
+        case .tempSummary:    return "体温 サマリー"
+        case .temp24h:        return "体温 24時間分布"
+        case .tempHist:       return "体温 分布"
         }
     }
 }

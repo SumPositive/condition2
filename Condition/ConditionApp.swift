@@ -22,7 +22,7 @@ struct ConditionApp: App {
             Group {
                 switch migrationService.phase {
                 case .idle, .checking:
-                    ProgressView(String(localized: "Launch_Checking", defaultValue: "起動中..."))
+                    ProgressView("起動中...")
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
 
                 case .migrating(let progress):
@@ -64,7 +64,7 @@ private struct MigrationProgressView: View {
                 .font(.system(size: 68))
                 .foregroundStyle(Color.azuki)
 
-            Text(String(localized: "Migration_Title", defaultValue: "データを移行中..."))
+            Text("データを移行中...")
                 .font(.title3)
 
             ProgressView(value: progress)
@@ -91,7 +91,7 @@ private struct MigrationErrorView: View {
                 .font(.system(size: 54))
                 .foregroundStyle(.orange)
 
-            Text(String(localized: "Migration_Error", defaultValue: "データ移行に失敗しました"))
+            Text("データ移行に失敗しました")
                 .font(.title3)
 
             Text(message)
@@ -100,10 +100,10 @@ private struct MigrationErrorView: View {
                 .multilineTextAlignment(.center)
                 .padding(.horizontal)
 
-            Button(String(localized: "Migration_Retry", defaultValue: "再試行"), action: onRetry)
+            Button("再試行", action: onRetry)
                 .buttonStyle(.borderedProminent)
 
-            Text(String(localized: "Migration_Note", defaultValue: "元のデータは保護されています"))
+            Text("元のデータは保護されています")
                 .font(.caption)
                 .foregroundStyle(.tertiary)
         }

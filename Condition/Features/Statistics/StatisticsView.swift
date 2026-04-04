@@ -62,7 +62,7 @@ struct StatisticsView: View {
             Group {
                 if allRecords.isEmpty {
                     ContentUnavailableView(
-                        String(localized: "Stat_Empty", defaultValue: "データがありません"),
+                        "データがありません",
                         systemImage: "chart.dots.scatter"
                     )
                 } else {
@@ -70,7 +70,7 @@ struct StatisticsView: View {
                 }
             }
             .overlay { if isExporting { exportingOverlay } }
-            .navigationTitle(String(localized: "Tab_Statistics", defaultValue: "統計"))
+            .navigationTitle("統計")
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     Button {
@@ -151,7 +151,7 @@ struct StatisticsView: View {
                 ProgressView()
                     .progressViewStyle(.circular)
                     .scaleEffect(1.4)
-                Text(String(localized: "Export_Generating", defaultValue: "PDF生成中..."))
+                Text("PDF生成中...")
                     .font(.subheadline.weight(.medium))
             }
             .padding(.horizontal, 28)
@@ -175,10 +175,10 @@ struct StatisticsView: View {
         let now = Date()
         let fromDate = Calendar.current.date(byAdding: .day, value: -currentPeriod.rawValue, to: now) ?? now
         let subtitle = currentPeriod.label + "  " + df.string(from: fromDate) + " 〜 " + df.string(from: now)
-        let title = String(localized: "Tab_Statistics", defaultValue: "統計")
+        let title = "統計"
 
         let data = PDFPanelExporter.export(panels: panels, title: title, subtitle: subtitle)
-        let tabName = String(localized: "Tab_Statistics", defaultValue: "統計")
+        let tabName = "統計"
         let dateTag = { let f = DateFormatter(); f.dateFormat = "yyyyMMdd"; return f.string(from: Date()) }()
         guard let url = PDFPanelExporter.writeTempFile(name: "\(tabName)_\(dateTag).pdf", data: data) else { return }
 
@@ -208,26 +208,26 @@ struct StatisticsView: View {
 
         return AnyView(
             VStack(spacing: 8) {
-                Text(String(localized: "Stat_Summary", defaultValue: "血圧サマリー"))
+                Text("血圧サマリー")
                     .font(.title3)
 
                 Grid(horizontalSpacing: 16, verticalSpacing: 4) {
                     GridRow {
                         Text("").frame(width: 40)
-                        Text(String(localized: "Stat_Avg", defaultValue: "平均")).font(.footnote).foregroundStyle(.secondary)
+                        Text("平均").font(.footnote).foregroundStyle(.secondary)
                         if settings.statShowAvg {
                             Text("±SD").font(.footnote).foregroundStyle(.secondary)
                         }
                     }
                     GridRow {
-                        Text(String(localized: "Stat_BpHi", defaultValue: "上")).foregroundStyle(.red)
+                        Text("上").foregroundStyle(.red)
                         Text(String(format: "%.1f", hiAvg)).font(.title2.monospacedDigit())
                         if settings.statShowAvg {
                             Text(String(format: "%.1f", hiStd)).font(.footnote).foregroundStyle(.secondary)
                         }
                     }
                     GridRow {
-                        Text(String(localized: "Stat_BpLo", defaultValue: "下")).foregroundStyle(.blue)
+                        Text("下").foregroundStyle(.blue)
                         Text(String(format: "%.1f", loAvg)).font(.title2.monospacedDigit())
                         if settings.statShowAvg {
                             Text(String(format: "%.1f", loStd)).font(.footnote).foregroundStyle(.secondary)
@@ -269,7 +269,7 @@ struct BpJshView: View {
         return AnyView(
             VStack(alignment: .leading, spacing: 10) {
                 HStack {
-                    Text(String(localized: "Stat_JshDist_Title", defaultValue: "血圧 分布"))
+                    Text("血圧 分布")
                         .font(.title3)
                     Spacer()
                     Button {
@@ -374,7 +374,7 @@ struct BpJshView: View {
                 .padding(.horizontal, 4)
                 .overlay {
                     if validRecords.isEmpty {
-                        Text(String(localized: "Stat_NoData", defaultValue: "期間内にデータがありません"))
+                        Text("期間内にデータがありません")
                             .font(.callout)
                             .foregroundStyle(.secondary)
                     }
@@ -625,7 +625,7 @@ struct BpJshRatioView: View {
 
         return AnyView(
             VStack(alignment: .leading, spacing: 10) {
-                Text(String(localized: "Stat_JshRatio_Title", defaultValue: "血圧 JSH基準割合"))
+                Text("血圧 JSH基準割合")
                     .font(.title3)
                     .padding(.horizontal)
 
@@ -741,7 +741,7 @@ struct BpDateOptCorrView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
-                Text(String(localized: "Stat_BpDateOptCorr_Title", defaultValue: "血圧・区分 相関"))
+                Text("血圧・区分 相関")
                     .font(.title3)
                 Button {
                     showInfo = true
@@ -772,14 +772,14 @@ struct BpDateOptCorrView: View {
             .padding(.horizontal)
 
             if points.isEmpty {
-                Text(String(localized: "Stat_NoData", defaultValue: "期間内にデータがありません"))
+                Text("期間内にデータがありません")
                     .font(.callout)
                     .foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity)
                     .padding()
             } else {
                 chartContent
-                Text(String(localized: "Stat_DiamondMean", defaultValue: "◆ = 区分平均"))
+                Text("◆ = 区分平均")
                     .font(.caption)
                     .foregroundStyle(.tertiary)
                     .frame(maxWidth: .infinity, alignment: .trailing)
@@ -942,7 +942,7 @@ struct Bp24HChartView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(String(localized: "Stat_24H_Title", defaultValue: "血圧 24時間分布"))
+            Text("血圧 24時間分布")
                 .font(.title3)
                 .padding(.horizontal)
 
@@ -973,8 +973,8 @@ struct Bp24HChartView: View {
             }
             .chartXScale(domain: 0...23)
             .chartYScale(domain: yDomain)
-            .chartXAxisLabel(String(localized: "Stat_Hour", defaultValue: "時刻"))
-            .chartYAxisLabel(String(localized: "Stat_mmHg", defaultValue: "mmHg"))
+            .chartXAxisLabel("時刻")
+            .chartYAxisLabel("mmHg")
             .frame(height: adaptiveChartHeight(base: 220, width: chartWidth))
             .padding(.horizontal)
         }
@@ -1002,23 +1002,23 @@ struct WeightSummaryView: View {
         let change = values.count >= 2 ? values.last! - values.first! : 0.0
 
         return VStack(spacing: 8) {
-            Text(String(localized: "Stat_WeightSummary_Title", defaultValue: "体重 サマリー"))
+            Text("体重 サマリー")
                 .font(.title3)
 
             if values.isEmpty {
-                Text(String(localized: "Stat_NoData", defaultValue: "期間内にデータがありません"))
+                Text("期間内にデータがありません")
                     .font(.callout)
                     .foregroundStyle(.secondary)
             } else {
                 Grid(horizontalSpacing: 12, verticalSpacing: 4) {
                     GridRow {
-                        Text(String(localized: "Stat_Avg", defaultValue: "平均"))
+                        Text("平均")
                             .font(.footnote).foregroundStyle(.secondary)
-                        Text(String(localized: "Stat_Min", defaultValue: "最小"))
+                        Text("最小")
                             .font(.footnote).foregroundStyle(.secondary)
-                        Text(String(localized: "Stat_Max", defaultValue: "最大"))
+                        Text("最大")
                             .font(.footnote).foregroundStyle(.secondary)
-                        Text(String(localized: "Stat_Change", defaultValue: "変化"))
+                        Text("変化")
                             .font(.footnote).foregroundStyle(.secondary)
                         Text("").frame(width: 24)
                     }
@@ -1067,24 +1067,24 @@ struct TempSummaryView: View {
         let maxVal = values.max() ?? 0.0
 
         return VStack(spacing: 8) {
-            Text(String(localized: "Stat_TempSummary_Title", defaultValue: "体温 サマリー"))
+            Text("体温 サマリー")
                 .font(.title3)
 
             if values.isEmpty {
-                Text(String(localized: "Stat_NoData", defaultValue: "期間内にデータがありません"))
+                Text("期間内にデータがありません")
                     .font(.callout)
                     .foregroundStyle(.secondary)
             } else {
                 Grid(horizontalSpacing: 12, verticalSpacing: 4) {
                     GridRow {
-                        Text(String(localized: "Stat_Avg", defaultValue: "平均"))
+                        Text("平均")
                             .font(.footnote).foregroundStyle(.secondary)
                         if settings.statShowAvg {
                             Text("±SD").font(.footnote).foregroundStyle(.secondary)
                         }
-                        Text(String(localized: "Stat_Min", defaultValue: "最小"))
+                        Text("最小")
                             .font(.footnote).foregroundStyle(.secondary)
-                        Text(String(localized: "Stat_Max", defaultValue: "最大"))
+                        Text("最大")
                             .font(.footnote).foregroundStyle(.secondary)
                         Text("").frame(width: 24)
                     }
@@ -1136,7 +1136,7 @@ struct Temp24HChartView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(String(localized: "Stat_Temp24H_Title", defaultValue: "体温 24時間分布"))
+            Text("体温 24時間分布")
                 .font(.title3)
                 .padding(.horizontal)
 
@@ -1152,13 +1152,13 @@ struct Temp24HChartView: View {
             }
             .chartXScale(domain: 0...23)
             .chartYScale(domain: yDomain)
-            .chartXAxisLabel(String(localized: "Stat_Hour", defaultValue: "時刻"))
-            .chartYAxisLabel(String(localized: "Stat_Celsius", defaultValue: "°C"))
+            .chartXAxisLabel("時刻")
+            .chartYAxisLabel("°C")
             .frame(height: adaptiveChartHeight(base: 220, width: chartWidth))
             .padding(.horizontal)
             .overlay {
                 if validRecords.isEmpty {
-                    Text(String(localized: "Stat_NoData", defaultValue: "期間内にデータがありません"))
+                    Text("期間内にデータがありません")
                         .font(.callout)
                         .foregroundStyle(.secondary)
                 }
@@ -1209,13 +1209,13 @@ struct TempHistogramView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(String(localized: "Stat_TempHist_Title", defaultValue: "体温 分布"))
+            Text("体温 分布")
                 .font(.title3)
                 .padding(.horizontal)
             if hasData {
                 chartContent
             } else {
-                Text(String(localized: "Stat_NoData", defaultValue: "期間内にデータがありません"))
+                Text("期間内にデータがありません")
                     .font(.callout)
                     .foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity)
@@ -1251,19 +1251,19 @@ struct TempHistogramView: View {
                 }
             }
             .chartXAxisLabel("°C")
-            .chartYAxisLabel(String(localized: "Stat_Count", defaultValue: "件数"))
+            .chartYAxisLabel("件数")
             .frame(height: adaptiveChartHeight(base: 180, width: chartWidth))
             .padding(.horizontal)
 
             LazyVGrid(columns: [GridItem(.fixed(130)), GridItem(.fixed(130))], alignment: .center) {
                 legendItem(color: .blue,
-                           label: String(localized: "Stat_TempHist_Low",    defaultValue: "低体温 (<36°C)"))
+                           label: "低体温 (<36°C)")
                 legendItem(color: .green,
-                           label: String(localized: "Stat_TempHist_Normal", defaultValue: "正常 (36–37°C)"))
+                           label: "正常 (36–37°C)")
                 legendItem(color: Color(red: 1.0, green: 0.7, blue: 0.0),
-                           label: String(localized: "Stat_TempHist_Low37",  defaultValue: "微熱 (37–37.5°C)"))
+                           label: "微熱 (37–37.5°C)")
                 legendItem(color: .orange,
-                           label: String(localized: "Stat_TempHist_Fever",  defaultValue: "発熱 (≥37.5°C)"))
+                           label: "発熱 (≥37.5°C)")
             }
             .frame(maxWidth: .infinity)
             .padding(.horizontal)

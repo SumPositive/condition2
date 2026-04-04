@@ -50,7 +50,7 @@ private struct NumpadInputSheet: View {
 
     var body: some View {
         HStack(spacing: 8) {
-            Button(String(localized: "Cancel", defaultValue: "キャンセル")) {
+            Button("キャンセル") {
                 dismiss()
             }
             .buttonStyle(.bordered)
@@ -59,7 +59,7 @@ private struct NumpadInputSheet: View {
                 .font(.system(size: 48, weight: .bold, design: .rounded).monospacedDigit())
                 .multilineTextAlignment(.center)
                 .focused($focused)
-            Button(String(localized: "Done", defaultValue: "OK")) {
+            Button("OK") {
                 apply()
                 dismiss()
             }
