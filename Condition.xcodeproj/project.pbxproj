@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 77;
+	objectVersion = 90;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -83,12 +83,10 @@
 /* Begin PBXFrameworksBuildPhase section */
 		2F112753C952D7B00999C08D /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
 			files = (
 				C394AF052F80F53C00F9C557 /* AZDial in Frameworks */,
 				9AEA2B0965601F94C251CA2F /* GoogleMobileAds in Frameworks */,
 			);
-			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
 
@@ -286,8 +284,6 @@
 			);
 			buildRules = (
 			);
-			dependencies = (
-			);
 			name = Condition;
 			packageProductDependencies = (
 				E34D8E33BC77DA54E6C61D52 /* GoogleMobileAds */,
@@ -309,8 +305,6 @@
 				2AB3DF4EB06512F528FBF418 /* PBXTargetDependency */,
 			);
 			name = ConditionTests;
-			packageProductDependencies = (
-			);
 			productName = ConditionTests;
 			productReference = 37C42276B20297B0CE85AC5E /* ConditionTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
@@ -343,7 +337,7 @@
 				BC598EFC28CA017618D0E615 /* XCRemoteSwiftPackageReference "swift-package-manager-google-mobile-ads" */,
 				C394AF022F7FF8D000F9C557 /* XCRemoteSwiftPackageReference "AZDial" */,
 			);
-			preferredProjectObjectVersion = 77;
+			preferredProjectObjectVersion = 90;
 			productRefGroup = 758C2EFE3946876AA265CABE /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -357,21 +351,18 @@
 /* Begin PBXResourcesBuildPhase section */
 		77D7F48C56DE5B4BBAA4F624 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
 			files = (
 				94F8FFF55DB8A08ACB41B6C7 /* Assets.xcassets in Resources */,
 				3ED314445BE3B57864296DA3 /* InfoPlist.xcstrings in Resources */,
 				C3DC29A22F7040EA007F4C3A /* PrivacyInfo.xcprivacy in Resources */,
 				92DD1CE7BA9A6B6D06918258 /* Localizable.xcstrings in Resources */,
 			);
-			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		EBD078822FE98A94479EB3FA /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
 			files = (
 				546717AE8E7EBCAB0248C456 /* AdMobViews.swift in Sources */,
 				04F485DCB1ADFC0859E7298C /* AppConstants.swift in Sources */,
@@ -395,15 +386,12 @@
 				BFF8BE17437CFD77E63A1B44 /* TipStore.swift in Sources */,
 				982998F6ABEDB9272F6A6BA1 /* ValueFormatter.swift in Sources */,
 			);
-			runOnlyForDeploymentPostprocessing = 0;
 		};
 		F51E25AB904C2A625EC7EF67 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
 			files = (
 				44C6FAA140856CAAEA0D1BF7 /* ConditionTests.swift in Sources */,
 			);
-			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
 
@@ -416,7 +404,7 @@
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
-		0D892F944DDB6B10C7A8815D /* Release */ = {
+		0D892F944DDB6B10C7A8815D /* Release configuration for PBXNativeTarget "ConditionTests" */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
@@ -432,7 +420,7 @@
 			};
 			name = Release;
 		};
-		7029C9FBAEBA77D01E10F274 /* Release */ = {
+		7029C9FBAEBA77D01E10F274 /* Release configuration for PBXProject "Condition" */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
@@ -492,7 +480,7 @@
 			};
 			name = Release;
 		};
-		77B75E46E0211B3256458D91 /* Debug */ = {
+		77B75E46E0211B3256458D91 /* Debug configuration for PBXNativeTarget "Condition" */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
@@ -507,14 +495,17 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 2.0.0;
+				MARKETING_VERSION = 2.0.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.azukid.AzBodyNote;
 				SDKROOT = iphoneos;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Debug;
 		};
-		84DE75889E433B6FF3DB6EA5 /* Release */ = {
+		84DE75889E433B6FF3DB6EA5 /* Release configuration for PBXNativeTarget "Condition" */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
@@ -529,14 +520,17 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 2.0.0;
+				MARKETING_VERSION = 2.0.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.azukid.AzBodyNote;
 				SDKROOT = iphoneos;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Release;
 		};
-		A36B5BF46A8BFE323898BD96 /* Debug */ = {
+		A36B5BF46A8BFE323898BD96 /* Debug configuration for PBXProject "Condition" */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
@@ -603,7 +597,7 @@
 			};
 			name = Debug;
 		};
-		FCC5B3BCC6B31932E89A5A1D /* Debug */ = {
+		FCC5B3BCC6B31932E89A5A1D /* Debug configuration for PBXNativeTarget "ConditionTests" */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
@@ -625,28 +619,25 @@
 		A584C66B2BB01171E979CBEB /* Build configuration list for PBXNativeTarget "Condition" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				77B75E46E0211B3256458D91 /* Debug */,
-				84DE75889E433B6FF3DB6EA5 /* Release */,
+				77B75E46E0211B3256458D91 /* Debug configuration for PBXNativeTarget "Condition" */,
+				84DE75889E433B6FF3DB6EA5 /* Release configuration for PBXNativeTarget "Condition" */,
 			);
-			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;
 		};
 		C51E0D523DBA60C91C3EA6CE /* Build configuration list for PBXNativeTarget "ConditionTests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				FCC5B3BCC6B31932E89A5A1D /* Debug */,
-				0D892F944DDB6B10C7A8815D /* Release */,
+				FCC5B3BCC6B31932E89A5A1D /* Debug configuration for PBXNativeTarget "ConditionTests" */,
+				0D892F944DDB6B10C7A8815D /* Release configuration for PBXNativeTarget "ConditionTests" */,
 			);
-			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;
 		};
 		F3EE15DBC3F06B0F84E316B5 /* Build configuration list for PBXProject "Condition" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				A36B5BF46A8BFE323898BD96 /* Debug */,
-				7029C9FBAEBA77D01E10F274 /* Release */,
+				A36B5BF46A8BFE323898BD96 /* Debug configuration for PBXProject "Condition" */,
+				7029C9FBAEBA77D01E10F274 /* Release configuration for PBXProject "Condition" */,
 			);
-			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;
 		};
 /* End XCConfigurationList section */
