@@ -81,6 +81,16 @@ struct SettingsView: View {
                 Section {
                     SupportDeveloperView()
                 }
+
+                // MARK: - バージョン
+                let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? ""
+                let build   = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? ""
+                Text("Version \(version).\(build)")
+                    .font(.footnote.monospacedDigit())
+                    .foregroundStyle(.tertiary)
+                    .frame(maxWidth: .infinity)
+                    .listRowBackground(Color.clear)
+                    .listRowSeparator(.hidden)
             }
             .navigationTitle("設定")
         }
