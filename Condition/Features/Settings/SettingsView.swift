@@ -402,7 +402,7 @@ struct GraphSettingsView: View {
                         max: 250,
                         step: 1,
                         stepperStep: 5,
-                        style: DialStyle.builtin(id: settings.dialStyle) ?? .varnia
+                        style: DialStyle.builtin(id: settings.dialStyle) ?? .shape
                     )
                 }
                 .padding(.vertical, 4)
@@ -418,8 +418,9 @@ struct GraphSettingsView: View {
 
             Section("ダイアルデザイン") {
                 VStack(spacing: 8) {
-                    ForEach([Array(DialStyle.allBuiltin.prefix(4)),
-                             Array(DialStyle.allBuiltin.suffix(4))], id: \.first!.id) { row in
+                    ForEach(stride(from: 0, to: DialStyle.allBuiltin.count, by: 3).map {
+                        Array(DialStyle.allBuiltin[$0..<min($0+3, DialStyle.allBuiltin.count)])
+                    }, id: \.first!.id) { row in
                         HStack(spacing: 12) {
                             ForEach(row, id: \.id) { style in
                                 let selected = settings.dialStyle == style.id
@@ -679,7 +680,7 @@ struct GoalSettingsView: View {
                     .labelsHidden()
             }
             if enabled.wrappedValue {
-                AZDialView(value: value, min: spec.min, max: spec.max, step: 1, stepperStep: stepperStep, decimals: decimals, style: DialStyle.builtin(id: AppSettings.shared.dialStyle) ?? .varnia)
+                AZDialView(value: value, min: spec.min, max: spec.max, step: 1, stepperStep: stepperStep, decimals: decimals, style: DialStyle.builtin(id: AppSettings.shared.dialStyle) ?? .shape)
             }
         }
         .padding(.vertical, 4)

@@ -79,7 +79,7 @@ final class AppSettings {
     var graphWeightChange: Bool = true {
         didSet { kvs.set(graphWeightChange, forKey: KVSKeys.settGraphWeightChange) }
     }
-    var dialStyle: String = DialStyle.varnia.id {
+    var dialStyle: String = DialStyle.shape.id {
         didSet { kvs.set(dialStyle, forKey: KVSKeys.settDialStyle) }
     }
 
@@ -260,6 +260,11 @@ final class AppSettings {
         if tall > 0 { graphBMITall = Int(tall) }
         if kvs.object(forKey: KVSKeys.settGraphWeightMA)     != nil { graphWeightMA     = kvs.bool(forKey: KVSKeys.settGraphWeightMA) }
         if kvs.object(forKey: KVSKeys.settGraphWeightChange) != nil { graphWeightChange = kvs.bool(forKey: KVSKeys.settGraphWeightChange) }
+        // dialStyle: 強制デフォルト移行バージョン
+        let dialStyleForceVersion = 1  // Shape をデフォルトにした版
+        let dialStyleForcedKey = "KVS_DialStyleForcedVersion"
+        let forcedVersion = Int(kvs.longLong(forKey: dialStyleForcedKey))
+
         if kvs.object(forKey: KVSKeys.settDialStyle) != nil {
             if let str = kvs.string(forKey: KVSKeys.settDialStyle), DialStyle.builtin(id: str) != nil {
                 // 新形式（String）
@@ -277,6 +282,12 @@ final class AppSettings {
                 dialStyle = migrated
                 kvs.set(migrated, forKey: KVSKeys.settDialStyle)
             }
+        }
+        // アップデートで強制的にデフォルトへ上書き
+        if forcedVersion < dialStyleForceVersion {
+            dialStyle = DialStyle.shape.id
+            kvs.set(dialStyle, forKey: KVSKeys.settDialStyle)
+            kvs.set(dialStyleForceVersion, forKey: dialStyleForcedKey)
         }
 
         let sd = kvs.longLong(forKey: KVSKeys.settStatDays)

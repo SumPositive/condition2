@@ -368,7 +368,7 @@ struct RecordEditView: View {
                     step: 1,
                     stepperStep: stepperStep,
                     decimals: decimals,
-                    style: DialStyle.builtin(id: AppSettings.shared.dialStyle) ?? .varnia
+                    style: DialStyle.builtin(id: AppSettings.shared.dialStyle) ?? .shape
                 )
             }
         }
