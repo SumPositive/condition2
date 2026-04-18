@@ -69,6 +69,7 @@ struct AdMobAdSheetView: View {
                 .padding(.vertical, 8)
             }
             .background(Color(uiColor: .systemGroupedBackground).ignoresSafeArea())
+            .navigationTitle("広告を見て応援する")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {

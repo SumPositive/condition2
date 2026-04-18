@@ -187,7 +187,7 @@ private struct SupportDeveloperView: View {
             Button {
                 showTip = true
             } label: {
-                Text("投げ銭　寄付する")
+                Text("投げ銭で応援する")
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(.borderedProminent)
@@ -272,6 +272,7 @@ private struct TipSheetView: View {
                 Spacer()
             }
             .padding(.top, 32)
+            .navigationTitle("投げ銭で応援する")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
