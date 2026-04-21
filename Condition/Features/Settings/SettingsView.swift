@@ -110,7 +110,7 @@ struct SettingsView: View {
                 // MARK: - バージョン
                 let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? ""
                 let build   = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? ""
-                Text("Version \(version).\(build)")
+                Text(String(format: String(localized: "format.version"), version, build))
                     .font(.footnote.monospacedDigit())
                     .foregroundStyle(.tertiary)
                     .frame(maxWidth: .infinity)
@@ -434,14 +434,6 @@ struct GraphSettingsView: View {
     var body: some View {
         List {
             Section("settings.helperGraphs") {
-                Toggle(
-                    "metric.meanBloodPressure",
-                    isOn: $settings.graphBpMean
-                )
-                Toggle(
-                    "metric.weightMovingAverage",
-                    isOn: $settings.graphWeightMA
-                )
                 VStack(alignment: .leading, spacing: 4) {
                     HStack {
                         Text("metric.heightForBMI")
@@ -466,32 +458,14 @@ struct GraphSettingsView: View {
                 NavigationLink {
                     GoalSettingsView()
                 } label: {
-                    LabeledContent(
-                        "goal.line",
-                        value: "tab.settings"
-                    )
+                    Text("goal.line")
                 }
             }
 
             Section {
                 ForEach(settings.graphDisplayOrder, id: \.self) { raw in
                     if let kind = GraphKind(rawValue: raw) {
-                        HStack {
-                            Toggle(isOn: Binding(
-                                get: { !hiddenSet.contains(raw) },
-                                set: { visible in
-                                    if visible {
-                                        settings.graphHiddenPanels.removeAll { $0 == raw }
-                                    } else if !settings.graphHiddenPanels.contains(raw) {
-                                        settings.graphHiddenPanels.append(raw)
-                                    }
-                                }
-                            )) {
-                                Text(LocalizedStringKey(kind.title))
-                            }
-                            Image(systemName: "line.3.horizontal")
-                                .foregroundStyle(.tertiary)
-                        }
+                        graphDisplayOrderRow(kind: kind, raw: raw)
                     }
                 }
                 .onMove { from, to in
@@ -516,6 +490,68 @@ struct GraphSettingsView: View {
                 }
             }
         }
+    }
+
+    @ViewBuilder
+    private func graphDisplayOrderRow(kind: GraphKind, raw: Int) -> some View {
+        let hasChildSettings = kind == .bp || kind == .weight
+        VStack(alignment: .leading, spacing: hasChildSettings ? 4 : 0) {
+            HStack {
+                Toggle(isOn: graphPanelVisibleBinding(raw: raw)) {
+                    Text(LocalizedStringKey(kind.title))
+                }
+                Image(systemName: "line.3.horizontal")
+                    .foregroundStyle(.tertiary)
+            }
+
+            if kind == .bp {
+                childGraphVisibilityRow(
+                    isVisible: $settings.graphBpMean,
+                    titleKey: "metric.meanBloodPressure"
+                )
+            }
+            if kind == .weight {
+                childGraphVisibilityRow(
+                    isVisible: $settings.graphWeightMA,
+                    titleKey: "metric.weightMovingAverage"
+                )
+            }
+        }
+        .padding(.top, hasChildSettings ? 4 : 0)
+        .padding(.bottom, hasChildSettings ? 0 : 0)
+    }
+
+    private func childGraphVisibilityRow(isVisible: Binding<Bool>, titleKey: LocalizedStringKey) -> some View {
+        HStack(spacing: 8) {
+            Button {
+                isVisible.wrappedValue.toggle()
+            } label: {
+                Image(systemName: isVisible.wrappedValue ? "eye" : "eye.slash")
+                    .font(.callout.weight(.semibold))
+                    .foregroundStyle(isVisible.wrappedValue ? Color.accentColor : Color.secondary)
+                    .frame(width: 26, height: 22)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(titleKey)
+            Text(titleKey)
+                .font(.callout)
+            Spacer()
+        }
+        .padding(.leading, 28)
+    }
+
+    private func graphPanelVisibleBinding(raw: Int) -> Binding<Bool> {
+        Binding(
+            get: { !hiddenSet.contains(raw) },
+            set: { visible in
+                if visible {
+                    settings.graphHiddenPanels.removeAll { $0 == raw }
+                } else if !settings.graphHiddenPanels.contains(raw) {
+                    settings.graphHiddenPanels.append(raw)
+                }
+            }
+        )
     }
 }
 
@@ -611,6 +647,7 @@ struct StatSettingsView: View {
             }
         }
     }
+
 }
 
 // MARK: - 目標値設定

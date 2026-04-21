@@ -662,9 +662,6 @@ struct BpChartView: View {
                 Text(LocalizedStringKey(GraphKind.bp.title))
                     .font(.callout.weight(.semibold))
                 Spacer()
-                if settings.graphBpMean, let map = avgMap {
-                    StatCell(label: "metric.meanBloodPressure", value: "\(map)")
-                }
                 if let mnHi = periodRecords.map(\.nBpHi_mmHg).min(),
                    let mxHi = periodRecords.map(\.nBpHi_mmHg).max(),
                    let mnLo = periodRecords.map(\.nBpLo_mmHg).min(),
@@ -720,11 +717,20 @@ struct BpChartView: View {
                 // 平均血圧ライン（graphBpMean ON 時のみ）
                 if settings.graphBpMean {
                     ForEach(dailyAverages) { d in
-                        LineMark(x: .value("record.datetime", d.date), y: .value("metric.meanBloodPressure", d.map),
-                                 series: .value("chart.series", "metric.meanBloodPressure"))
+                        LineMark(x: .value("record.datetime", d.date), y: .value("metric.meanBloodPressure.short", d.map),
+                                 series: .value("chart.series", "metric.meanBloodPressure.short"))
                             .foregroundStyle(.purple)
                             .lineStyle(StrokeStyle(lineWidth: 1.5, dash: [4, 2]))
                             .interpolationMethod(.catmullRom)
+                    }
+                    if let last = dailyAverages.last {
+                        PointMark(x: .value("record.datetime", last.date), y: .value("metric.meanBloodPressure.short", last.map))
+                            .symbolSize(0)
+                            .annotation(position: .trailing, alignment: .center, spacing: 3) {
+                                Text("metric.meanBloodPressure.short")
+                                    .font(.caption2.weight(.semibold))
+                                    .foregroundStyle(.purple)
+                            }
                     }
                 }
                 // 選択ルール
