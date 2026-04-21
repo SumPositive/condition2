@@ -13,6 +13,7 @@ struct SettingsView: View {
     @State private var healthKit = HealthKitService.shared
     @State private var showHKSettings = false
     @State private var showSafari = false
+    @State private var showDialSettings = false
 
     private var aboutURL: URL {
         let isJapanese = Locale.preferredLanguages.first?.hasPrefix("ja") ?? false
@@ -70,6 +71,30 @@ struct SettingsView: View {
                     }
                 }
 
+                // MARK: - 表示
+                Section("settings.display") {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("appearance.mode")
+                            .font(.callout)
+                        Picker("", selection: $settings.appearanceMode) {
+                            ForEach(AppAppearanceMode.allCases) { mode in
+                                Text(LocalizedStringKey(mode.titleKey)).tag(mode)
+                            }
+                        }
+                        .pickerStyle(.segmented)
+                        .labelsHidden()
+                    }
+
+                    Button {
+                        showDialSettings = true
+                    } label: {
+                        LabeledContent(
+                            "settings.dialSettings",
+                            value: DialStyle.builtin(id: settings.dialStyle)?.label ?? DialStyle.shape.label
+                        )
+                    }
+                }
+
                 // MARK: - アプリ情報
                 Section {
                     Button("app.about") {
@@ -97,6 +122,36 @@ struct SettingsView: View {
         .sheet(isPresented: $showSafari) {
             SafariView(url: aboutURL)
         }
+        .sheet(isPresented: $showDialSettings) {
+            NavigationStack {
+                AZDialSettingsView(
+                    tuning: $settings.dialTuning,
+                    style: dialStyleBinding,
+                    configuration: dialSettingsConfiguration
+                )
+                .toolbar {
+                    ToolbarItem(placement: .confirmationAction) {
+                        Button("action.done") {
+                            showDialSettings = false
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private var dialStyleBinding: Binding<DialStyle> {
+        Binding(
+            get: { DialStyle.builtin(id: settings.dialStyle) ?? .shape },
+            set: { settings.dialStyle = $0.id }
+        )
+    }
+
+    private var dialSettingsConfiguration: AZDialSettingsConfiguration {
+        AZDialSettingsConfiguration(
+            title: "settings.dialSettings",
+            localizationBundle: .main
+        )
     }
 
 }
@@ -403,7 +458,8 @@ struct GraphSettingsView: View {
                         max: 250,
                         step: 1,
                         stepperStep: 5,
-                        style: DialStyle.builtin(id: settings.dialStyle) ?? .shape
+                        style: DialStyle.builtin(id: settings.dialStyle) ?? .shape,
+                        tuning: settings.dialTuning
                     )
                 }
                 .padding(.vertical, 4)
@@ -415,42 +471,6 @@ struct GraphSettingsView: View {
                         value: "tab.settings"
                     )
                 }
-            }
-
-            Section("settings.dialDesign") {
-                VStack(spacing: 8) {
-                    ForEach(stride(from: 0, to: DialStyle.allBuiltin.count, by: 3).map {
-                        Array(DialStyle.allBuiltin[$0..<min($0+3, DialStyle.allBuiltin.count)])
-                    }, id: \.first!.id) { row in
-                        HStack(spacing: 12) {
-                            ForEach(row, id: \.id) { style in
-                                let selected = settings.dialStyle == style.id
-                                Button {
-                                    settings.dialStyle = style.id
-                                } label: {
-                                    VStack(spacing: 6) {
-                                        AZDialSurface(offset: 5, tickGap: 10, style: style)
-                                            .frame(height: 40)
-                                            .clipShape(RoundedRectangle(cornerRadius: 8))
-                                            .overlay(
-                                                RoundedRectangle(cornerRadius: 8)
-                                                    .stroke(
-                                                        selected ? Color.accentColor : Color.secondary.opacity(0.3),
-                                                        lineWidth: selected ? 2 : 1
-                                                    )
-                                            )
-                                        Text(style.label)
-                                            .font(.caption)
-                                            .foregroundStyle(selected ? .primary : .secondary)
-                                    }
-                                    .frame(maxWidth: .infinity)
-                                }
-                                .buttonStyle(.plain)
-                            }
-                        }
-                    }
-                }
-                .padding(.vertical, 4)
             }
 
             Section {
@@ -681,7 +701,16 @@ struct GoalSettingsView: View {
                     .labelsHidden()
             }
             if enabled.wrappedValue {
-                AZDialView(value: value, min: spec.min, max: spec.max, step: 1, stepperStep: stepperStep, decimals: decimals, style: DialStyle.builtin(id: AppSettings.shared.dialStyle) ?? .shape)
+                AZDialView(
+                    value: value,
+                    min: spec.min,
+                    max: spec.max,
+                    step: 1,
+                    stepperStep: stepperStep,
+                    decimals: decimals,
+                    style: DialStyle.builtin(id: AppSettings.shared.dialStyle) ?? .shape,
+                    tuning: AppSettings.shared.dialTuning
+                )
             }
         }
         .padding(.vertical, 4)

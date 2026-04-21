@@ -9,6 +9,7 @@ import SwiftData
 struct ConditionApp: App {
 
     @State private var migrationService = MigrationService()
+    @State private var settings = AppSettings.shared
 
     init() {
         let font = UIFont.systemFont(ofSize: 13, weight: .semibold)
@@ -48,8 +49,20 @@ struct ConditionApp: App {
             .task {
                 await MobileAds.shared.start()
             }
+            .preferredColorScheme(settings.appearanceMode.colorScheme)
         }
         .modelContainer(ModelContainer.shared)
+    }
+}
+
+private extension AppAppearanceMode {
+    var colorScheme: ColorScheme? {
+        // 自動はシステム設定へ任せる
+        switch self {
+        case .automatic: return nil
+        case .light:     return .light
+        case .dark:      return .dark
+        }
     }
 }
 

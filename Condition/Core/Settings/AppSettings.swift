@@ -6,6 +6,23 @@ import Foundation
 import Observation
 import AZDial
 
+// アプリ全体の外観モード
+enum AppAppearanceMode: Int, CaseIterable, Identifiable {
+    case automatic = 0
+    case light = 1
+    case dark = 2
+
+    var id: Int { rawValue }
+
+    var titleKey: String {
+        switch self {
+        case .automatic: return "appearance.automatic"
+        case .light:     return "appearance.light"
+        case .dark:      return "appearance.dark"
+        }
+    }
+}
+
 @Observable
 @MainActor
 final class AppSettings {
@@ -81,6 +98,14 @@ final class AppSettings {
     }
     var dialStyle: String = DialStyle.shape.id {
         didSet { kvs.set(dialStyle, forKey: KVSKeys.settDialStyle) }
+    }
+    var dialTuning: AZDialInteractionTuning = .default {
+        didSet { saveDialTuning() }
+    }
+
+    // MARK: - 表示設定（端末別）
+    var appearanceMode: AppAppearanceMode = .automatic {
+        didSet { ud.set(appearanceMode.rawValue, forKey: UDefKeys.appearanceMode) }
     }
 
     // MARK: - 統計設定
@@ -211,12 +236,14 @@ final class AppSettings {
         ud.register(defaults: [
             UDefKeys.hkDirection: HKSyncDirection.both.rawValue,
             UDefKeys.hkTiming:    HKSyncTiming.automatic.rawValue,
+            UDefKeys.appearanceMode: AppAppearanceMode.automatic.rawValue,
         ])
         // UserDefaults（デバイス個別）読み込み
         hkDisabledByDemo = ud.bool(forKey: UDefKeys.hkDisabledByDemo)
         hkEnabled   = hkDisabledByDemo ? false : ud.bool(forKey: UDefKeys.hkEnabled)
         hkDirection = ud.integer(forKey: UDefKeys.hkDirection)
         hkTiming    = ud.integer(forKey: UDefKeys.hkTiming)
+        appearanceMode = AppAppearanceMode(rawValue: ud.integer(forKey: UDefKeys.appearanceMode)) ?? .automatic
         // iCloud KVS 外部変更通知
         NotificationCenter.default.addObserver(
             self,
@@ -289,6 +316,7 @@ final class AppSettings {
             kvs.set(dialStyle, forKey: KVSKeys.settDialStyle)
             kvs.set(dialStyleForceVersion, forKey: dialStyleForcedKey)
         }
+        loadDialTuning()
 
         let sd = kvs.longLong(forKey: KVSKeys.settStatDays)
         if sd > 0 { statDays = Int(sd) }
@@ -341,6 +369,22 @@ final class AppSettings {
         let gbmi = kvs.longLong(forKey: KVSKeys.goalBMI)
         if gbmi > 0 { goalBMI = Int(gbmi) }
 
+    }
+
+    private func loadDialTuning() {
+        // 保存済みの操作感度がなければ標準値を使う
+        guard let data = kvs.data(forKey: KVSKeys.settDialTuning),
+              let tuning = try? JSONDecoder().decode(AZDialInteractionTuning.self, from: data) else {
+            dialTuning = .default
+            return
+        }
+        dialTuning = tuning
+    }
+
+    private func saveDialTuning() {
+        // KVSに入れられるようJSONデータへ変換する
+        guard let data = try? JSONEncoder().encode(dialTuning) else { return }
+        kvs.set(data, forKey: KVSKeys.settDialTuning)
     }
 
     @objc nonisolated private func kvsDidChangeExternally(_ notification: Notification) {

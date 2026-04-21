@@ -16,6 +16,7 @@ enum KVSKeys {
     static let settGraphWeightMA     = "KVS_SettGraphWeightMA"       // 体重移動平均
     static let settGraphWeightChange = "KVS_SettGraphWeightChange"   // 体重変化量
     static let settDialStyle         = "KVS_SettDialStyle"           // ダイアルスタイル (DialStyle.rawValue)
+    static let settDialTuning        = "KVS_SettDialTuning"          // ダイアル操作感度 (JSONデータ)
 
     // MARK: - 統計設定
     static let settStatType            = "KVS_SettStatType"           // 統計タイプ (0=Hi-Lo, 1=24H)
@@ -62,4 +63,5 @@ static let migrationDone = "MigrationV2Done"    // CoreData→SwiftData移行完
     static let hkDirection      = "UDEF_HKDirection"       // HKSyncDirection.rawValue
     static let hkTiming         = "UDEF_HKTiming"          // HKSyncTiming.rawValue
     static let hkDisabledByDemo = "UDEF_HKDisabledByDemo"  // Demo生成後は再有効化不可
+    static let appearanceMode   = "UDEF_AppearanceMode"    // 外観モード rawValue
 }
