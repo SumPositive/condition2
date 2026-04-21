@@ -714,7 +714,7 @@ private struct ExportSheetView: View {
                 Section("export.format") {
                     Picker("", selection: $format) {
                         ForEach(ExportFormat.allCases) { f in
-                            Text(f.rawValue).tag(f)
+                            Text(LocalizedStringKey(f.rawValue)).tag(f)
                         }
                     }
                     .pickerStyle(.segmented)
