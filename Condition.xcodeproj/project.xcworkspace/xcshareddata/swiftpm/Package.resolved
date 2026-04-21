@@ -6,8 +6,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/SumPositive/AZDial",
       "state" : {
-        "revision" : "69642751c5cfc4cab17fd745c24160577d2b5092",
-        "version" : "3.0.4"
+        "branch" : "develop",
+        "revision" : "23d88280a8890d1f1290c17fa9958f0db1c94f18"
       }
     },
     {

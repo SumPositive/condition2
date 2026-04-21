@@ -62,7 +62,7 @@ struct StatisticsView: View {
             Group {
                 if allRecords.isEmpty {
                     ContentUnavailableView(
-                        "データがありません",
+                        "empty.noData",
                         systemImage: "chart.dots.scatter"
                     )
                 } else {
@@ -70,7 +70,7 @@ struct StatisticsView: View {
                 }
             }
             .overlay { if isExporting { exportingOverlay } }
-            .navigationTitle("統計")
+            .navigationTitle("tab.statistics")
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     Button {
@@ -110,7 +110,7 @@ struct StatisticsView: View {
     private var scrollContent: some View {
         ScrollView {
             VStack(spacing: 16) {
-                Picker("期間", selection: periodBinding) {
+                Picker("filter.period", selection: periodBinding) {
                     ForEach(GraphPeriod.allCases, id: \.self) { p in
                         Text(LocalizedStringKey(p.label)).tag(p)
                     }
@@ -151,7 +151,7 @@ struct StatisticsView: View {
                 ProgressView()
                     .progressViewStyle(.circular)
                     .scaleEffect(1.4)
-                Text(String(format: String(localized: "%@生成中..."), "PDF"))
+                Text(String(format: String(localized: "export.generating"), "PDF"))
                     .font(.subheadline.weight(.medium))
             }
             .padding(.horizontal, 28)
@@ -175,11 +175,11 @@ struct StatisticsView: View {
         let now = Date()
         let fromDate = Calendar.current.date(byAdding: .day, value: -currentPeriod.rawValue, to: now) ?? now
         let localizedPeriod = NSLocalizedString(currentPeriod.label, comment: "")
-        let subtitle = localizedPeriod + "  " + df.string(from: fromDate) + " 〜 " + df.string(from: now)
-        let title = String(localized: "統計")
+        let subtitle = localizedPeriod + "  " + df.string(from: fromDate) + String(localized: "format.range.separator") + df.string(from: now)
+        let title = String(localized: "tab.statistics")
 
         let data = PDFPanelExporter.export(panels: panels, title: title, subtitle: subtitle)
-        let tabName = String(localized: "統計")
+        let tabName = String(localized: "tab.statistics")
         let dateTag = { let f = DateFormatter(); f.dateFormat = "yyyyMMdd"; return f.string(from: Date()) }()
         guard let url = PDFPanelExporter.writeTempFile(name: "\(tabName)_\(dateTag).pdf", data: data) else { return }
 
@@ -209,26 +209,26 @@ struct StatisticsView: View {
 
         return AnyView(
             VStack(spacing: 8) {
-                Text("血圧サマリー")
+                Text("metric.bloodPressureSummary")
                     .font(.title3)
 
                 Grid(horizontalSpacing: 16, verticalSpacing: 4) {
                     GridRow {
                         Text("").frame(width: 40)
-                        Text("平均").font(.footnote).foregroundStyle(.secondary)
+                        Text("stat.avg").font(.footnote).foregroundStyle(.secondary)
                         if settings.statShowAvg {
-                            Text("±SD").font(.footnote).foregroundStyle(.secondary)
+                            Text("stat.standardDeviation.short").font(.footnote).foregroundStyle(.secondary)
                         }
                     }
                     GridRow {
-                        Text("上").foregroundStyle(.red)
+                        Text("metric.systolic.short").foregroundStyle(.red)
                         Text(String(format: "%.1f", hiAvg)).font(.title2.monospacedDigit())
                         if settings.statShowAvg {
                             Text(String(format: "%.1f", hiStd)).font(.footnote).foregroundStyle(.secondary)
                         }
                     }
                     GridRow {
-                        Text("下").foregroundStyle(.blue)
+                        Text("metric.diastolic.short").foregroundStyle(.blue)
                         Text(String(format: "%.1f", loAvg)).font(.title2.monospacedDigit())
                         if settings.statShowAvg {
                             Text(String(format: "%.1f", loStd)).font(.footnote).foregroundStyle(.secondary)
@@ -270,7 +270,7 @@ struct BpJshView: View {
         return AnyView(
             VStack(alignment: .leading, spacing: 10) {
                 HStack {
-                    Text("血圧 分布")
+                    Text("metric.bloodPressureDistribution")
                         .font(.title3)
                     Spacer()
                     Button {
@@ -279,7 +279,7 @@ struct BpJshView: View {
                         HStack(spacing: 4) {
                             Image(systemName: "info.circle")
                                 .font(.title3)
-                            Text(isJapanese ? "JSH基準" : "ESC/ESH 2018")
+                            Text(isJapanese ? String(localized: "text.jshStandard") : "ESC/ESH 2018")
                                 .font(.footnote)
                         }
                         .foregroundStyle(.secondary)
@@ -325,8 +325,8 @@ struct BpJshView: View {
                     // データ点
                     ForEach(validRecords) { r in
                         PointMark(
-                            x: .value("下", r.nBpLo_mmHg),
-                            y: .value("上", r.nBpHi_mmHg)
+                            x: .value("metric.diastolic.short", r.nBpLo_mmHg),
+                            y: .value("metric.systolic.short", r.nBpHi_mmHg)
                         )
                         .foregroundStyle(DateOpt(rawValue: r.nDateOpt)?.color ?? .secondary)
                         .symbolSize(32)
@@ -345,7 +345,7 @@ struct BpJshView: View {
                                 if showLabel {
                                     HStack(spacing: 2) {
                                         Text("\(v)").font(.caption)
-                                        Text("下").font(.caption).foregroundStyle(.secondary)
+                                        Text("metric.diastolic.short").font(.caption).foregroundStyle(.secondary)
                                     }
                                 } else {
                                     Text("\(v)").font(.caption)
@@ -361,7 +361,7 @@ struct BpJshView: View {
                             if let v = value.as(Int.self) {
                                 if v == 200 {
                                     VStack(spacing: 0) {
-                                        Text("上").font(.caption).foregroundStyle(.secondary)
+                                        Text("metric.systolic.short").font(.caption).foregroundStyle(.secondary)
                                         Text("\(v)").font(.caption)
                                     }
                                 } else {
@@ -375,7 +375,7 @@ struct BpJshView: View {
                 .padding(.horizontal, 4)
                 .overlay {
                     if validRecords.isEmpty {
-                        Text("期間内にデータがありません")
+                        Text("empty.noDataInPeriod")
                             .font(.callout)
                             .foregroundStyle(.secondary)
                     }
@@ -440,9 +440,7 @@ struct BpJshView: View {
     // 各ゾーン中央にラベルを表示（Y軸寄り）
     @ChartContentBuilder
     private func jshZoneLabels() -> some ChartContent {
-        let names: [String] = isJapanese
-            ? ["正常血圧", "正常高値", "高値血圧", "高血圧I度", "高血圧II度", "高血圧III度"]
-            : ["Optimal",  "Normal",  "High Normal", "Grade 1", "Grade 2",  "Grade 3"]
+        let names = ["metric.normal", "text.elevated", "metric.highNormal", "metric.grade1Htn", "metric.grade2Htn", "metric.grade3Htn"]
         let labels: [(name: String, color: Color, y: Int)] = [
             (names[0], Color(red: 0.20, green: 0.50, blue: 0.90),  95),
             (names[1], Color(red: 0.25, green: 0.72, blue: 0.35), 125),
@@ -455,7 +453,7 @@ struct BpJshView: View {
             PointMark(x: .value("", 41), y: .value("", label.y))
                 .symbolSize(0)
                 .annotation(position: .trailing, alignment: .leading, spacing: 3) {
-                    Text(label.name)
+                    Text(LocalizedStringKey(label.name))
                         .font(.system(size: 10))
                         .foregroundStyle(label.color.opacity(0.85))
                 }
@@ -472,18 +470,18 @@ private struct JSHStandardsPopover: View {
         let criteria: String
     }
     private let rows: [Row] = [
-        Row(name: "高血圧III度", color: Color(red: 0.80, green: 0.00, blue: 0.00), criteria: "上 ≥ 180 または 下 ≥ 110"),
-        Row(name: "高血圧II度",  color: Color(red: 0.95, green: 0.25, blue: 0.00), criteria: "上 160-179 または 下 100-109"),
-        Row(name: "高血圧I度",   color: Color(red: 1.00, green: 0.55, blue: 0.00), criteria: "上 140-159 または 下 90-99"),
-        Row(name: "高値血圧",    color: Color(white: 0.55),                         criteria: "上 130-139 または 下 80-89"),
-        Row(name: "正常高値",    color: Color(red: 0.25, green: 0.72, blue: 0.35), criteria: "上 120-129 かつ 下 < 80"),
-        Row(name: "正常血圧",    color: Color(red: 0.20, green: 0.50, blue: 0.90), criteria: "上 < 120 かつ 下 < 80"),
+        Row(name: "metric.grade3Htn", color: Color(red: 0.80, green: 0.00, blue: 0.00), criteria: "jsh.criteria.grade3"),
+        Row(name: "metric.grade2Htn",  color: Color(red: 0.95, green: 0.25, blue: 0.00), criteria: "jsh.criteria.grade2"),
+        Row(name: "metric.grade1Htn",   color: Color(red: 1.00, green: 0.55, blue: 0.00), criteria: "jsh.criteria.grade1"),
+        Row(name: "metric.highNormal",    color: Color(white: 0.55),                         criteria: "jsh.criteria.highNormal"),
+        Row(name: "text.elevated",    color: Color(red: 0.25, green: 0.72, blue: 0.35), criteria: "jsh.criteria.elevated"),
+        Row(name: "metric.normal",    color: Color(red: 0.20, green: 0.50, blue: 0.90), criteria: "jsh.criteria.normal"),
     ]
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
-                Text("JSH血圧分類基準（2019）")
+                Text("metric.jshBpClassification2019")
                     .font(.footnote.weight(.semibold))
                     .foregroundStyle(.secondary)
                     .padding(.horizontal, 16)
@@ -499,10 +497,10 @@ private struct JSHStandardsPopover: View {
                                     .strokeBorder(.secondary.opacity(0.3), lineWidth: 0.5)
                             )
                             .frame(width: 18, height: 18)
-                        Text(row.name)
+                        Text(LocalizedStringKey(row.name))
                             .font(.callout)
                         Spacer()
-                        Text(row.criteria)
+                        Text(LocalizedStringKey(row.criteria))
                             .font(.footnote.monospacedDigit())
                             .foregroundStyle(.secondary)
                     }
@@ -541,7 +539,7 @@ private struct ESHStandardsPopover: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
-                Text("ESC/ESH Hypertension Guidelines (2018)")
+                Text("text.escEshHypertensionGuidelines2018")
                     .font(.footnote.weight(.semibold))
                     .foregroundStyle(.secondary)
                     .padding(.horizontal, 16)
@@ -598,9 +596,7 @@ struct BpJshRatioView: View {
     ]
 
     private var categoryNames: [(name: String, color: Color)] {
-        let names: [String] = isJapanese
-            ? ["正常血圧", "正常高値", "高値血圧", "高血圧I度", "高血圧II度", "高血圧III度"]
-            : ["Optimal",  "Normal",  "High Normal", "Grade 1", "Grade 2",  "Grade 3"]
+        let names = ["metric.normal", "text.elevated", "metric.highNormal", "metric.grade1Htn", "metric.grade2Htn", "metric.grade3Htn"]
         return zip(names, Self.categoryColors).map { ($0, $1) }
     }
 
@@ -626,7 +622,7 @@ struct BpJshRatioView: View {
 
         return AnyView(
             VStack(alignment: .leading, spacing: 10) {
-                Text("血圧 JSH基準割合")
+                Text("metric.bpJshRatio")
                     .font(.title3)
                     .padding(.horizontal)
 
@@ -707,7 +703,7 @@ struct BpDateOptCorrView: View {
         var result: [BpPoint] = []
         var idx = 0
         for r in validRecords {
-            let cat = DateOpt(rawValue: r.nDateOpt)?.label ?? "その他"
+            let cat = DateOpt(rawValue: r.nDateOpt)?.label ?? "category.other"
             result.append(BpPoint(id: idx,     category: cat, value: r.nBpHi_mmHg, isHi: true))
             result.append(BpPoint(id: idx + 1, category: cat, value: r.nBpLo_mmHg, isHi: false))
             idx += 2
@@ -742,7 +738,7 @@ struct BpDateOptCorrView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
-                Text("血圧・区分 相関")
+                Text("metric.bpByCategory")
                     .font(.title3)
                 Button {
                     showInfo = true
@@ -762,25 +758,25 @@ struct BpDateOptCorrView: View {
                 HStack(spacing: 10) {
                     HStack(spacing: 4) {
                         Circle().fill(Color.red.opacity(0.8)).frame(width: 8, height: 8)
-                        Text("上").font(.caption).foregroundStyle(.secondary)
+                        Text("metric.systolic.short").font(.caption).foregroundStyle(.secondary)
                     }
                     HStack(spacing: 4) {
                         Circle().fill(Color.blue.opacity(0.8)).frame(width: 8, height: 8)
-                        Text("下").font(.caption).foregroundStyle(.secondary)
+                        Text("metric.diastolic.short").font(.caption).foregroundStyle(.secondary)
                     }
                 }
             }
             .padding(.horizontal)
 
             if points.isEmpty {
-                Text("期間内にデータがありません")
+                Text("empty.noDataInPeriod")
                     .font(.callout)
                     .foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity)
                     .padding()
             } else {
                 chartContent
-                Text("◆ = 区分平均")
+                Text("chart.legend.categoryAverage")
                     .font(.caption)
                     .foregroundStyle(.tertiary)
                     .frame(maxWidth: .infinity, alignment: .trailing)
@@ -798,8 +794,8 @@ struct BpDateOptCorrView: View {
         return Chart {
             ForEach(points) { pt in
                 PointMark(
-                    x: .value("区分", pt.category),
-                    y: .value("mmHg", pt.value)
+                    x: .value("record.category", pt.category),
+                    y: .value("unit.mmHg", pt.value)
                 )
                 .symbol(.circle)
                 .symbolSize(16)
@@ -807,16 +803,16 @@ struct BpDateOptCorrView: View {
             }
             ForEach(ms) { m in
                 PointMark(
-                    x: .value("区分", m.category),
-                    y: .value("mmHg", m.hiAvg)
+                    x: .value("record.category", m.category),
+                    y: .value("unit.mmHg", m.hiAvg)
                 )
                 .symbol(.diamond)
                 .symbolSize(80)
                 .foregroundStyle(Color.red.opacity(0.9))
 
                 PointMark(
-                    x: .value("区分", m.category),
-                    y: .value("mmHg", m.loAvg)
+                    x: .value("record.category", m.category),
+                    y: .value("unit.mmHg", m.loAvg)
                 )
                 .symbol(.diamond)
                 .symbolSize(80)
@@ -825,7 +821,7 @@ struct BpDateOptCorrView: View {
         }
         .chartXScale(domain: order)
         .chartYScale(domain: yDomain)
-        .chartYAxisLabel("mmHg")
+        .chartYAxisLabel("unit.mmHg")
         .chartXAxis {
             AxisMarks { value in
                 AxisValueLabel {
@@ -850,7 +846,7 @@ private struct BpDateOptCorrInfoPopover: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
-                Text(isJapanese ? "相関図の見方" : "How to Read This Chart")
+                Text(isJapanese ? String(localized: "chart.howToReadTheScatterPlot") : "How to Read This Chart")
                     .font(.footnote.weight(.semibold))
                     .foregroundStyle(.secondary)
                     .padding(.horizontal, 16)
@@ -861,26 +857,26 @@ private struct BpDateOptCorrInfoPopover: View {
                 VStack(alignment: .leading, spacing: 10) {
                     Label(
                         isJapanese
-                            ? "各区分（起床・安静など）ごとに血圧値を縦に並べて表示します"
+                            ? String(localized: "chart.corrInfo.byCategory")
                             : "Blood pressure values are plotted vertically for each category (e.g. morning, rest)",
                         systemImage: "circle.fill"
                     )
                     .font(.footnote).foregroundStyle(.secondary)
                     Label(
-                        isJapanese ? "小さな円が個別の測定値です"
+                        isJapanese ? String(localized: "chart.corrInfo.measurementDots")
                                    : "Small circles represent individual measurements",
                         systemImage: "circle"
                     )
                     .font(.footnote).foregroundStyle(.secondary)
                     Label(
-                        isJapanese ? "ダイヤモンド◆がその区分の平均値です"
+                        isJapanese ? String(localized: "chart.corrInfo.averageDiamond")
                                    : "Diamond ◆ marks the category average",
                         systemImage: "diamond.fill"
                     )
                     .font(.footnote).foregroundStyle(.secondary)
                     Label(
                         isJapanese
-                            ? "区分間で◆の高さを比べると、時間帯による血圧の傾向がわかります"
+                            ? String(localized: "chart.corrInfo.compareAverages")
                             : "Comparing ◆ heights across categories reveals time-of-day BP patterns",
                         systemImage: "arrow.left.arrow.right"
                     )
@@ -894,12 +890,12 @@ private struct BpDateOptCorrInfoPopover: View {
                 VStack(alignment: .leading, spacing: 6) {
                     HStack(spacing: 8) {
                         Circle().fill(Color.red.opacity(0.8)).frame(width: 10, height: 10)
-                        Text(isJapanese ? "赤 = 上（収縮期血圧）" : "Red = Systolic (Upper)")
+                        Text(isJapanese ? String(localized: "metric.redSystolicUpper") : "Red = Systolic (Upper)")
                             .font(.footnote).foregroundStyle(.secondary)
                     }
                     HStack(spacing: 8) {
                         Circle().fill(Color.blue.opacity(0.8)).frame(width: 10, height: 10)
-                        Text(isJapanese ? "青 = 下（拡張期血圧）" : "Blue = Diastolic (Lower)")
+                        Text(isJapanese ? String(localized: "metric.blueDiastolicLower") : "Blue = Diastolic (Lower)")
                             .font(.footnote).foregroundStyle(.secondary)
                     }
                 }
@@ -943,22 +939,22 @@ struct Bp24HChartView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("血圧 24時間分布")
+            Text("metric.bp24hDistribution")
                 .font(.title3)
                 .padding(.horizontal)
 
             Chart {
                 ForEach(Array(validRecords.enumerated()), id: \.offset) { _, item in
                     PointMark(
-                        x: .value("時刻", item.hour),
-                        y: .value("上血圧", item.hi)
+                        x: .value("text.time", item.hour),
+                        y: .value("metric.systolic", item.hi)
                     )
                     .foregroundStyle(.red.opacity(0.6))
                     .symbolSize(35)
 
                     PointMark(
-                        x: .value("時刻", item.hour),
-                        y: .value("下血圧", item.lo)
+                        x: .value("text.time", item.hour),
+                        y: .value("metric.diastolic", item.lo)
                     )
                     .foregroundStyle(.blue.opacity(0.6))
                     .symbolSize(35)
@@ -966,16 +962,16 @@ struct Bp24HChartView: View {
 
                 // 時刻ライン（設定時刻に垂直線）
                 if settings.statShow24HLine {
-                    RuleMark(x: .value("起床", settings.wakeHour))
+                    RuleMark(x: .value("category.wake.line", settings.wakeHour))
                         .foregroundStyle(.green.opacity(0.4))
-                    RuleMark(x: .value("就寝", settings.sleepHour))
+                    RuleMark(x: .value("category.bedtime.line", settings.sleepHour))
                         .foregroundStyle(.purple.opacity(0.4))
                 }
             }
             .chartXScale(domain: 0...23)
             .chartYScale(domain: yDomain)
-            .chartXAxisLabel("時刻")
-            .chartYAxisLabel("mmHg")
+            .chartXAxisLabel("text.time")
+            .chartYAxisLabel("unit.mmHg")
             .frame(height: adaptiveChartHeight(base: 220, width: chartWidth))
             .padding(.horizontal)
         }
@@ -1003,23 +999,23 @@ struct WeightSummaryView: View {
         let change = values.count >= 2 ? values.last! - values.first! : 0.0
 
         return VStack(spacing: 8) {
-            Text("体重 サマリー")
+            Text("metric.weightSummary")
                 .font(.title3)
 
             if values.isEmpty {
-                Text("期間内にデータがありません")
+                Text("empty.noDataInPeriod")
                     .font(.callout)
                     .foregroundStyle(.secondary)
             } else {
                 Grid(horizontalSpacing: 12, verticalSpacing: 4) {
                     GridRow {
-                        Text("平均")
+                        Text("stat.avg")
                             .font(.footnote).foregroundStyle(.secondary)
-                        Text("最小")
+                        Text("stat.min")
                             .font(.footnote).foregroundStyle(.secondary)
-                        Text("最大")
+                        Text("stat.max")
                             .font(.footnote).foregroundStyle(.secondary)
-                        Text("変化")
+                        Text("text.change")
                             .font(.footnote).foregroundStyle(.secondary)
                         Text("").frame(width: 24)
                     }
@@ -1035,7 +1031,7 @@ struct WeightSummaryView: View {
                                 .font(.title2.monospacedDigit())
                                 .foregroundStyle(change > 0.05 ? .red : change < -0.05 ? .blue : .secondary)
                         }
-                        Text("kg").font(.footnote).foregroundStyle(.secondary)
+                        Text("unit.kg").font(.footnote).foregroundStyle(.secondary)
                     }
                 }
             }
@@ -1068,24 +1064,24 @@ struct TempSummaryView: View {
         let maxVal = values.max() ?? 0.0
 
         return VStack(spacing: 8) {
-            Text("体温 サマリー")
+            Text("metric.bodyTempSummary")
                 .font(.title3)
 
             if values.isEmpty {
-                Text("期間内にデータがありません")
+                Text("empty.noDataInPeriod")
                     .font(.callout)
                     .foregroundStyle(.secondary)
             } else {
                 Grid(horizontalSpacing: 12, verticalSpacing: 4) {
                     GridRow {
-                        Text("平均")
+                        Text("stat.avg")
                             .font(.footnote).foregroundStyle(.secondary)
                         if settings.statShowAvg {
-                            Text("±SD").font(.footnote).foregroundStyle(.secondary)
+                            Text("stat.standardDeviation.short").font(.footnote).foregroundStyle(.secondary)
                         }
-                        Text("最小")
+                        Text("stat.min")
                             .font(.footnote).foregroundStyle(.secondary)
-                        Text("最大")
+                        Text("stat.max")
                             .font(.footnote).foregroundStyle(.secondary)
                         Text("").frame(width: 24)
                     }
@@ -1096,7 +1092,7 @@ struct TempSummaryView: View {
                         }
                         Text(String(format: "%.1f", minVal)).font(.title2.monospacedDigit())
                         Text(String(format: "%.1f", maxVal)).font(.title2.monospacedDigit())
-                        Text("°C").font(.footnote).foregroundStyle(.secondary)
+                        Text("unit.celsiusSymbol").font(.footnote).foregroundStyle(.secondary)
                     }
                 }
             }
@@ -1137,15 +1133,15 @@ struct Temp24HChartView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("体温 24時間分布")
+            Text("metric.bodyTemp24hDistribution")
                 .font(.title3)
                 .padding(.horizontal)
 
             Chart {
                 ForEach(Array(validRecords.enumerated()), id: \.offset) { _, item in
                     PointMark(
-                        x: .value("時刻", item.hour),
-                        y: .value("体温", item.temp)
+                        x: .value("text.time", item.hour),
+                        y: .value("metric.bodyTemp", item.temp)
                     )
                     .foregroundStyle(Color.pink.opacity(0.6))
                     .symbolSize(35)
@@ -1153,13 +1149,13 @@ struct Temp24HChartView: View {
             }
             .chartXScale(domain: 0...23)
             .chartYScale(domain: yDomain)
-            .chartXAxisLabel("時刻")
-            .chartYAxisLabel("°C")
+            .chartXAxisLabel("text.time")
+            .chartYAxisLabel("unit.celsiusSymbol")
             .frame(height: adaptiveChartHeight(base: 220, width: chartWidth))
             .padding(.horizontal)
             .overlay {
                 if validRecords.isEmpty {
-                    Text("期間内にデータがありません")
+                    Text("empty.noDataInPeriod")
                         .font(.callout)
                         .foregroundStyle(.secondary)
                 }
@@ -1210,13 +1206,13 @@ struct TempHistogramView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("体温 分布")
+            Text("metric.bodyTempDistribution")
                 .font(.title3)
                 .padding(.horizontal)
             if hasData {
                 chartContent
             } else {
-                Text("期間内にデータがありません")
+                Text("empty.noDataInPeriod")
                     .font(.callout)
                     .foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity)
@@ -1251,20 +1247,20 @@ struct TempHistogramView: View {
                     }
                 }
             }
-            .chartXAxisLabel("°C")
-            .chartYAxisLabel("件数")
+            .chartXAxisLabel("unit.celsiusSymbol")
+            .chartYAxisLabel("text.count")
             .frame(height: adaptiveChartHeight(base: 180, width: chartWidth))
             .padding(.horizontal)
 
             LazyVGrid(columns: [GridItem(.fixed(130)), GridItem(.fixed(130))], alignment: .center) {
                 legendItem(color: .blue,
-                           label: "低体温 (<36°C)")
+                           label: "metric.hypothermia36C")
                 legendItem(color: .green,
-                           label: "正常 (36–37°C)")
+                           label: "text.normal3637C")
                 legendItem(color: Color(red: 1.0, green: 0.7, blue: 0.0),
-                           label: "微熱 (37–37.5°C)")
+                           label: "text.lowFever37375C")
                 legendItem(color: .orange,
-                           label: "発熱 (≥37.5°C)")
+                           label: "text.fever375C")
             }
             .frame(maxWidth: .infinity)
             .padding(.horizontal)

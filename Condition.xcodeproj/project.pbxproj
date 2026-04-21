@@ -324,7 +324,7 @@
 				};
 			};
 			buildConfigurationList = F3EE15DBC3F06B0F84E316B5 /* Build configuration list for PBXProject "Condition" */;
-			developmentRegion = en;
+			developmentRegion = ja;
 			hasScannedForEncodings = 0;
 			knownRegions = (
 				Base,
@@ -655,8 +655,8 @@
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/SumPositive/AZDial";
 			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 3.0.0;
+				branch = develop;
+				kind = branch;
 			};
 		};
 /* End XCRemoteSwiftPackageReference section */

@@ -38,9 +38,9 @@ struct RecordEditView: View {
 
     private var title: LocalizedStringKey {
         switch vm.mode {
-        case .addNew:    return "新規記録"
-        case .edit:      return "記録編集"
-        case .goalEdit:  return "目標値"
+        case .addNew:    return "record.new.title"
+        case .edit:      return "record.edit.title"
+        case .goalEdit:  return "goal.values"
         }
     }
 
@@ -56,7 +56,7 @@ struct RecordEditView: View {
             Form {
                 hkImportSection
                 dateSection
-                Section("計測値") {
+                Section("record.measurements") {
                     ForEach(orderedRecordFields, id: \.rawValue) { kind in
                         fieldRow(for: kind)
                     }
@@ -64,17 +64,17 @@ struct RecordEditView: View {
                 healthKitSection
 
                 // メモセクション
-                Section("メモ") {
+                Section("record.memo.section") {
                     noteRow(
-                        title: "メモ1",
+                        title: "record.memo1",
                         text: $vm.sNote1
                     )
                     noteRow(
-                        title: "メモ2",
+                        title: "record.memo2",
                         text: $vm.sNote2
                     )
                     noteRow(
-                        title: "計測機器",
+                        title: "record.device",
                         text: $vm.sEquipment
                     )
                 }
@@ -87,7 +87,7 @@ struct RecordEditView: View {
                                 Image(systemName: "flag.fill")
                                     .foregroundStyle(.orange)
                             }
-                            Text("注意フラグ")
+                            Text("record.cautionFlag")
                         }
                     }
                 }
@@ -99,21 +99,21 @@ struct RecordEditView: View {
                             showDeleteAlert = true
                         } label: {
                             Label(
-                                "この記録を削除",
+                                "record.delete.button",
                                 systemImage: "trash"
                             )
                             .frame(maxWidth: .infinity)
                         }
                     }
                     .alert(
-                        "この記録を削除しますか？",
+                        "record.delete.confirm",
                         isPresented: $showDeleteAlert
                     ) {
-                        Button("削除", role: .destructive) {
+                        Button("action.delete", role: .destructive) {
                             try? vm.delete(record: record, context: context)
                             dismiss()
                         }
-                        Button("キャンセル", role: .cancel) {}
+                        Button("action.cancel", role: .cancel) {}
                     }
                 }
             }
@@ -121,14 +121,14 @@ struct RecordEditView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("保存") {
+                    Button("action.save") {
                         saveAndDismiss()
                     }
                     .disabled(!vm.isModified && !isNewRecord)
                     .bold()
                 }
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("キャンセル") {
+                    Button("action.cancel") {
                         dismiss()
                     }
                 }
@@ -168,18 +168,18 @@ struct RecordEditView: View {
     private func fieldRow(for kind: GraphKind) -> some View {
         switch kind {
         case .bp:
-            dialRow(title: "上（収縮期血圧）", value: $vm.nBpHi_mmHg, enabled: $vm.bpHiEnabled, spec: MeasureRange.bpHi, unit: "mmHg", stepperStep: 10, color: .red)
-            dialRow(title: "下（拡張期血圧）", value: $vm.nBpLo_mmHg, enabled: $vm.bpLoEnabled, spec: MeasureRange.bpLo, unit: "mmHg", stepperStep: 5,  color: .blue)
+            dialRow(title: "metric.systolic.long", value: $vm.nBpHi_mmHg, enabled: $vm.bpHiEnabled, spec: MeasureRange.bpHi, unit: "unit.mmHg", stepperStep: 10, color: .red)
+            dialRow(title: "metric.diastolic.long", value: $vm.nBpLo_mmHg, enabled: $vm.bpLoEnabled, spec: MeasureRange.bpLo, unit: "unit.mmHg", stepperStep: 5,  color: .blue)
         case .pulse:
-            dialRow(title: "心拍数", value: $vm.nPulse_bpm, enabled: $vm.pulseEnabled, spec: MeasureRange.pulse, unit: "bpm", stepperStep: 5, color: .orange)
+            dialRow(title: "metric.heartRate", value: $vm.nPulse_bpm, enabled: $vm.pulseEnabled, spec: MeasureRange.pulse, unit: "unit.bpm", stepperStep: 5, color: .orange)
         case .weight:
-            dialRow(title: "体重", value: $vm.nWeight_10Kg, enabled: $vm.weightEnabled, spec: MeasureRange.weight, unit: "kg", stepperStep: 10, decimals: 1, color: .indigo)
+            dialRow(title: "metric.weight", value: $vm.nWeight_10Kg, enabled: $vm.weightEnabled, spec: MeasureRange.weight, unit: "unit.kg", stepperStep: 10, decimals: 1, color: .indigo)
         case .temp:
-            dialRow(title: "体温", value: $vm.nTemp_10c, enabled: $vm.tempEnabled, spec: MeasureRange.temp, unit: "℃", stepperStep: 1, decimals: 1, color: .pink)
+            dialRow(title: "metric.bodyTemp", value: $vm.nTemp_10c, enabled: $vm.tempEnabled, spec: MeasureRange.temp, unit: "unit.celsius", stepperStep: 1, decimals: 1, color: .pink)
         case .bodyFat:
-            dialRow(title: "体脂肪率", value: $vm.nBodyFat_10p, enabled: $vm.bodyFatEnabled, spec: MeasureRange.bodyFat, unit: "%", stepperStep: 5, decimals: 1, color: .purple)
+            dialRow(title: "metric.bodyFat", value: $vm.nBodyFat_10p, enabled: $vm.bodyFatEnabled, spec: MeasureRange.bodyFat, unit: "%", stepperStep: 5, decimals: 1, color: .purple)
         case .skMuscle:
-            dialRow(title: "骨格筋率", value: $vm.nSkMuscle_10p, enabled: $vm.skMuscleEnabled, spec: MeasureRange.skMuscle, unit: "%", stepperStep: 5, decimals: 1, color: .teal)
+            dialRow(title: "metric.skeletalMuscle", value: $vm.nSkMuscle_10p, enabled: $vm.skMuscleEnabled, spec: MeasureRange.skMuscle, unit: "%", stepperStep: 5, decimals: 1, color: .teal)
         case .bpAvg, .bmi, .weightChange:
             EmptyView()
         }
@@ -217,7 +217,7 @@ struct RecordEditView: View {
                 } label: {
                     HStack {
                         Label(
-                            "ヘルスケアから取得",
+                            "health.import",
                             systemImage: "arrow.down.heart"
                         )
                         Spacer()
@@ -229,9 +229,9 @@ struct RecordEditView: View {
                 .disabled(vm.isLoadingFromHK)
             } footer: {
                 if vm.isLoadingFromHK, !hkService.importProgress.isEmpty {
-                    Text(hkService.importProgress)
+                    Text(LocalizedStringKey(hkService.importProgress))
                 } else {
-                    Text("過去1年の未読記録を読み込みます")
+                    Text("health.importPastYear")
                 }
             }
         }
@@ -288,12 +288,12 @@ struct RecordEditView: View {
         let isHKRecord = vm.dataSource == .hkImport || vm.dataSource == .hkModified
         let showWrite = settings.hkEnabled && hkDirection.canWrite && hkTiming == .manual && !isHKRecord
         if showWrite {
-            Section("ヘルスケア") {
+            Section("health.title") {
                 Button {
                     vm.writeToHealthKit()
                 } label: {
                     Label(
-                        "ヘルスケアへ書き込み",
+                        "health.write",
                         systemImage: "arrow.up.heart"
                     )
                 }
@@ -308,7 +308,7 @@ struct RecordEditView: View {
             showDatePicker = true
         } label: {
             HStack {
-                Text("日時")
+                Text("record.datetime")
                     .foregroundStyle(.primary)
                 Spacer()
                 Text(Self.dateTimeFormatter.string(from: vm.dateTime))
@@ -323,7 +323,7 @@ struct RecordEditView: View {
                 Label(LocalizedStringKey(opt.label), systemImage: opt.icon).tag(opt)
             }
         } label: {
-            Text("区分")
+            Text("record.category")
         }
         .onChange(of: vm.dateOpt) { _, _ in vm.isModified = true }
     }
@@ -352,7 +352,7 @@ struct RecordEditView: View {
                         .font(.callout.weight(.semibold))
                         .foregroundStyle(color.opacity(0.7))
                 } else {
-                    Text("－")
+                    Text("placeholder.none")
                         .font(.title)
                         .foregroundStyle(.tertiary)
                 }
@@ -417,11 +417,11 @@ struct DatePickerSheet: View {
             .datePickerStyle(.graphical)
             .labelsHidden()
             .padding()
-            .navigationTitle("日時を選択")
+            .navigationTitle("record.datetime.select")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("完了") {
+                    Button("action.done") {
                         onChanged()
                         dismiss()
                     }

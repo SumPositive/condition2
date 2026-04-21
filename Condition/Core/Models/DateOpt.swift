@@ -14,12 +14,12 @@ enum DateOpt: Int, CaseIterable, Codable {
 
     var label: String {
         switch self {
-        case .wake:         return "起床時"
-        case .rest:         return "安静時"
-        case .down:         return "就寝前"
-        case .sleep:        return "就寝時"
-        case .preExercise:  return "運動前"
-        case .postExercise: return "運動後"
+        case .wake:         return "category.wake"
+        case .rest:         return "category.rest"
+        case .down:         return "category.beforeBed"
+        case .sleep:        return "category.bedtime"
+        case .preExercise:  return "category.preExercise"
+        case .postExercise: return "category.postExercise"
         }
     }
 
@@ -47,12 +47,12 @@ enum DateOpt: Int, CaseIterable, Codable {
 
     var shortLabel: String {
         switch self {
-        case .wake:         return "起"
-        case .rest:         return "安"
-        case .down:         return "前"
-        case .sleep:        return "眠"
-        case .preExercise:  return "運前"
-        case .postExercise: return "運後"
+        case .wake:         return "category.wake.short"
+        case .rest:         return "category.rest.short"
+        case .down:         return "category.beforeBed.short"
+        case .sleep:        return "category.bedtime.short"
+        case .preExercise:  return "category.preExercise.short"
+        case .postExercise: return "category.postExercise.short"
         }
     }
 }
@@ -80,10 +80,10 @@ enum RecordDataSource: Int {
 
     var label: String {
         switch self {
-        case .appInput:    return "このアプリで入力された記録です"
-        case .appModified: return "このアプリで入力後に変更された記録です"
-        case .hkImport:    return "ヘルスケアから読み込まれた記録です。変更や削除が可能ですがヘルスケア側には影響(連携)しません"
-        case .hkModified:  return "ヘルスケアから読み込まれた後に変更された記録です。ヘルスケア側は変更されていません。必要ならばヘルスケア側で修正してください"
+        case .appInput:    return "text.enteredInThisApp"
+        case .appModified: return "text.enteredInThisAppAndLater"
+        case .hkImport:    return "health.thisRecordWasImportedFromHealthkit"
+        case .hkModified:  return "health.thisRecordWasModifiedAfterBeing"
         }
     }
 }

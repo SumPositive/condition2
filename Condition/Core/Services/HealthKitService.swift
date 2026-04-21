@@ -337,7 +337,7 @@ final class HealthKitService {
 
         // 血圧
         if !hiddenFields.contains(GraphKind.bp.rawValue) {
-            importProgress = "血圧を取得中..."
+            importProgress = "health.progress.bloodPressure"
             let bpSamples = await allBPSamples(from: startDate, to: endDate)
             logger.info("血圧サンプル数: \(bpSamples.count)")
             for (date, hi, lo) in bpSamples {
@@ -349,7 +349,7 @@ final class HealthKitService {
 
         // 心拍数
         if !hiddenFields.contains(GraphKind.pulse.rawValue) {
-            importProgress = "心拍数を取得中..."
+            importProgress = "health.progress.heartRate"
             let hrSamples = await allQtySamples(.heartRate, from: startDate, to: endDate, unit: HKUnit(from: "count/min"))
             logger.info("心拍数サンプル数: \(hrSamples.count)")
             for (date, val) in hrSamples {
@@ -361,7 +361,7 @@ final class HealthKitService {
 
         // 体温
         if !hiddenFields.contains(GraphKind.temp.rawValue) {
-            importProgress = "体温を取得中..."
+            importProgress = "health.progress.bodyTemp"
             let tempSamples = await allQtySamples(.bodyTemperature, from: startDate, to: endDate, unit: .degreeCelsius())
             logger.info("体温サンプル数: \(tempSamples.count)")
             for (date, val) in tempSamples {
@@ -373,7 +373,7 @@ final class HealthKitService {
 
         // 体重
         if !hiddenFields.contains(GraphKind.weight.rawValue) {
-            importProgress = "体重を取得中..."
+            importProgress = "health.progress.weight"
             let weightSamples = await allQtySamples(.bodyMass, from: startDate, to: endDate, unit: .gramUnit(with: .kilo))
             logger.info("体重サンプル数: \(weightSamples.count)")
             for (date, val) in weightSamples {
@@ -385,7 +385,7 @@ final class HealthKitService {
 
         // 体脂肪率
         if !hiddenFields.contains(GraphKind.bodyFat.rawValue) {
-            importProgress = "体脂肪率を取得中..."
+            importProgress = "health.progress.bodyFat"
             let fatSamples = await allQtySamples(.bodyFatPercentage, from: startDate, to: endDate, unit: .percent())
             logger.info("体脂肪率サンプル数: \(fatSamples.count)")
             for (date, val) in fatSamples {

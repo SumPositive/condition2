@@ -8,7 +8,7 @@ import UIKit
 
 // アプリID は Info.plist の GADApplicationIdentifier にセット済み
 
-private let adUnavailableMessage = "現在、特典付きの広告がありません。後ほどお試しください"
+private let adUnavailableMessage = "support.noAdsAvailableRightNowPlease"
 
 // 広告ユニットID
 // AdMob コンソールで体調メモ用の広告ユニットを作成後、リリース用 ID に置き換えてください
@@ -69,7 +69,7 @@ struct AdMobAdSheetView: View {
                 .padding(.vertical, 8)
             }
             .background(Color(uiColor: .systemGroupedBackground).ignoresSafeArea())
-            .navigationTitle("広告を見て応援する")
+            .navigationTitle("support.watchAd")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
@@ -88,7 +88,7 @@ struct AdMobAdSheetView: View {
                 loader.loadAd()
             }
             loader.onRewardEarned = { _ in
-                rewardDescription = "広告視聴ありがとうございます！"
+                rewardDescription = "support.adThanks.title"
                 onRewardEarned()
             }
             loader.onAdLoaded = {
@@ -131,7 +131,7 @@ struct AdMobRewardedContentView: View {
         VStack(spacing: 16) {
             HStack(spacing: 66) {
                 Label {
-                    Text("動画広告")
+                    Text("support.videoAd")
                         .font(.headline)
                         .foregroundStyle(.primary)
                 } icon: {
@@ -141,7 +141,7 @@ struct AdMobRewardedContentView: View {
                 }
 
                 Label {
-                    Text("音が出ます")
+                    Text("text.soundWillPlay")
                         .font(.footnote)
                         .foregroundStyle(.red)
                 } icon: {
@@ -151,7 +151,7 @@ struct AdMobRewardedContentView: View {
                 }
             }
 
-            Text("最後まで視聴すると閉じる【×】ボタンが現れます")
+            Text("text.watchToTheEndToSee")
                 .font(.footnote)
                 .multilineTextAlignment(.center)
                 .foregroundStyle(.primary)
@@ -160,14 +160,14 @@ struct AdMobRewardedContentView: View {
             HStack {
                 Spacer()
                 if loader.isLoading {
-                    ProgressView("広告を読み込み中...")
+                    ProgressView("support.loadingAd")
                         .padding()
                 } else {
                     Button {
                         presentAction()
                     } label: {
                         Label {
-                            Text("広告を再生する")
+                            Text("support.playAd")
                                 .font(.body.weight(.semibold))
                                 .padding(.horizontal, 8)
                         } icon: {
@@ -182,14 +182,14 @@ struct AdMobRewardedContentView: View {
             }
 
             if loader.errorMessage != nil {
-                Button("再読み込み") {
+                Button("action.reload") {
                     loader.loadAd()
                 }
                 .buttonStyle(.borderedProminent)
             }
 
             if let rewardDescription {
-                Text(rewardDescription)
+                Text(LocalizedStringKey(rewardDescription))
                     .font(.footnote)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal)
@@ -323,14 +323,14 @@ struct AdMobBannerView: View {
             )
 
             if isLoading {
-                ProgressView("広告を読み込み中...")
+                ProgressView("support.loadingAd")
                     .font(.caption)
             } else if errorMessage != nil {
                 VStack(spacing: 6) {
-                    Text(adUnavailableMessage)
+                    Text(LocalizedStringKey(adUnavailableMessage))
                         .font(.caption.weight(.semibold))
                         .multilineTextAlignment(.center)
-                    Button("再読み込み") {
+                    Button("action.reload") {
                         reloadToken = UUID()
                         isLoading = true
                         errorMessage = nil

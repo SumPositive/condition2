@@ -9,7 +9,7 @@ struct ContentView: View {
             RecordListView()
                 .tabItem {
                     Label(
-                        "記録",
+                        "tab.records",
                         systemImage: "list.bullet.clipboard"
                     )
                 }
@@ -17,7 +17,7 @@ struct ContentView: View {
             GraphView()
                 .tabItem {
                     Label(
-                        "グラフ",
+                        "tab.graph",
                         systemImage: "chart.line.uptrend.xyaxis"
                     )
                 }
@@ -25,7 +25,7 @@ struct ContentView: View {
             StatisticsView()
                 .tabItem {
                     Label(
-                        "統計",
+                        "tab.statistics",
                         systemImage: "chart.dots.scatter"
                     )
                 }
@@ -33,7 +33,7 @@ struct ContentView: View {
             SettingsView()
                 .tabItem {
                     Label(
-                        "設定",
+                        "tab.settings",
                         systemImage: "gear"
                     )
                 }

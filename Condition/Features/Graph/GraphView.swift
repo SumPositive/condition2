@@ -41,11 +41,11 @@ enum GraphPeriod: Int, CaseIterable {
 
     var label: String {
         switch self {
-        case .week:        return "1週"
-        case .month:       return "1ヶ月"
-        case .threeMonths: return "3ヶ月"
-        case .sixMonths:   return "6ヶ月"
-        case .year:        return "1年"
+        case .week:        return "period.week"
+        case .month:       return "period.month"
+        case .threeMonths: return "period.threeMonths"
+        case .sixMonths:   return "period.sixMonths"
+        case .year:        return "period.year"
         }
     }
 
@@ -78,7 +78,7 @@ struct GraphView: View {
     var body: some View {
         NavigationStack {
             GraphContentView(cutoffDate: cutoffDate, period: $period)
-                .navigationTitle("グラフ")
+                .navigationTitle("tab.graph")
                 .toolbar {
                     ToolbarItem(placement: .primaryAction) {
                         Button { showSettings = true } label: {
@@ -140,7 +140,7 @@ private struct GraphContentView: View {
         Group {
             if records.isEmpty {
                 ContentUnavailableView(
-                    "データがありません",
+                    "empty.noData",
                     systemImage: "chart.line.uptrend.xyaxis"
                 )
             } else {
@@ -173,7 +173,7 @@ private struct GraphContentView: View {
                 ProgressView()
                     .progressViewStyle(.circular)
                     .scaleEffect(1.4)
-                Text(String(format: String(localized: "%@生成中..."), "PDF"))
+                Text(String(format: String(localized: "export.generating"), "PDF"))
                     .font(.subheadline.weight(.medium))
             }
             .padding(.horizontal, 28)
@@ -185,7 +185,7 @@ private struct GraphContentView: View {
     private var scrollContent: some View {
         ScrollView(.vertical) {
             VStack(spacing: 16) {
-                Picker("期間", selection: $period) {
+                Picker("filter.period", selection: $period) {
                     ForEach(GraphPeriod.allCases, id: \.self) { p in
                         Text(LocalizedStringKey(p.label)).tag(p)
                     }
@@ -215,17 +215,17 @@ private struct GraphContentView: View {
             BpPpChartView(records: records, period: period, goalValue: settings.goalBpPp)
         case .pulse:
             LineChartView(records: records, keyPath: \.nPulse_bpm,
-                          title: kind.title, unit: "bpm", color: .orange,
+                          title: kind.title, unit: "unit.bpm", color: .orange,
                           goalValue: settings.goalPulse, period: period,
                           tightDomain: true, kind: kind)
         case .temp:
             LineChartView(records: records, keyPath: \.nTemp_10c,
-                          title: kind.title, unit: "℃", color: .pink,
+                          title: kind.title, unit: "unit.celsius", color: .pink,
                           goalValue: settings.goalTemp, decimals: 1, period: period,
                           tightDomain: true, kind: kind)
         case .weight:
             LineChartView(records: records, keyPath: \.nWeight_10Kg,
-                          title: kind.title, unit: "kg", color: .indigo,
+                          title: kind.title, unit: "unit.kg", color: .indigo,
                           goalValue: settings.goalWeight, decimals: 1, period: period,
                           tightDomain: true, showMovingAverage: settings.graphWeightMA, kind: kind)
         case .bmi:
@@ -269,11 +269,11 @@ private struct GraphContentView: View {
         let now = Date()
         let fromDate = Calendar.current.date(byAdding: .day, value: -period.rawValue, to: now) ?? now
         let localizedPeriod = NSLocalizedString(period.label, comment: "")
-        let subtitle = localizedPeriod + "  " + df.string(from: fromDate) + " 〜 " + df.string(from: now)
-        let title = String(localized: "グラフ")
+        let subtitle = localizedPeriod + "  " + df.string(from: fromDate) + String(localized: "format.range.separator") + df.string(from: now)
+        let title = String(localized: "tab.graph")
 
         let data = PDFPanelExporter.export(panels: panels, title: title, subtitle: subtitle)
-        let tabName = String(localized: "グラフ")
+        let tabName = String(localized: "tab.graph")
         let dateTag = Self.exportDateTag()
         guard let url = PDFPanelExporter.writeTempFile(name: "\(tabName)_\(dateTag).pdf", data: data) else { return }
 
@@ -338,7 +338,7 @@ private struct SelectionDetailRow: View {
     var body: some View {
         HStack(spacing: 6) {
             Image(systemName: record.dateOpt.icon)
-            Text(record.dateOpt.label)
+            Text(LocalizedStringKey(record.dateOpt.label))
             Text({
                 let c = Calendar.current
                 let m  = c.component(.month,  from: record.dateTime)
@@ -369,15 +369,15 @@ struct BpZone {
 // MARK: - BMI区分（日本肥満学会 JASSO基準）
 
 struct BMIZone {
-    let min: Double; let max: Double; let color: Color; let swatch: Color; let label: String; let enLabel: String
+    let min: Double; let max: Double; let color: Color; let swatch: Color; let label: String
 }
 
 let bmiZones: [BMIZone] = [
-    .init(min:  0.0, max: 18.5, color: Color(red: 0.30, green: 0.60, blue: 0.95).opacity(0.13), swatch: Color(red: 0.30, green: 0.60, blue: 0.95), label: "低体重",   enLabel: "Underweight"),
-    .init(min: 18.5, max: 25.0, color: Color(red: 0.18, green: 0.65, blue: 0.28).opacity(0.11), swatch: Color(red: 0.18, green: 0.65, blue: 0.28), label: "普通体重", enLabel: "Normal weight"),
-    .init(min: 25.0, max: 30.0, color: Color(red: 0.90, green: 0.75, blue: 0.10).opacity(0.13), swatch: Color(red: 0.90, green: 0.75, blue: 0.10), label: "肥満度1",  enLabel: "Obesity Class 1"),
-    .init(min: 30.0, max: 35.0, color: Color(red: 0.95, green: 0.45, blue: 0.10).opacity(0.14), swatch: Color(red: 0.95, green: 0.45, blue: 0.10), label: "肥満度2",  enLabel: "Obesity Class 2"),
-    .init(min: 35.0, max: 60.0, color: Color(red: 0.80, green: 0.10, blue: 0.10).opacity(0.15), swatch: Color(red: 0.80, green: 0.10, blue: 0.10), label: "肥満度3以上", enLabel: "Obesity Class 3+"),
+    .init(min:  0.0, max: 18.5, color: Color(red: 0.30, green: 0.60, blue: 0.95).opacity(0.13), swatch: Color(red: 0.30, green: 0.60, blue: 0.95), label: "bmi.underweight"),
+    .init(min: 18.5, max: 25.0, color: Color(red: 0.18, green: 0.65, blue: 0.28).opacity(0.11), swatch: Color(red: 0.18, green: 0.65, blue: 0.28), label: "bmi.normalWeight"),
+    .init(min: 25.0, max: 30.0, color: Color(red: 0.90, green: 0.75, blue: 0.10).opacity(0.13), swatch: Color(red: 0.90, green: 0.75, blue: 0.10), label: "bmi.obesity1"),
+    .init(min: 30.0, max: 35.0, color: Color(red: 0.95, green: 0.45, blue: 0.10).opacity(0.14), swatch: Color(red: 0.95, green: 0.45, blue: 0.10), label: "bmi.obesity2"),
+    .init(min: 35.0, max: 60.0, color: Color(red: 0.80, green: 0.10, blue: 0.10).opacity(0.15), swatch: Color(red: 0.80, green: 0.10, blue: 0.10), label: "bmi.obesity3Plus"),
 ]
 
 /// JSH 2019 基準による血圧区分カラー（上・下の高い方で分類）
@@ -429,7 +429,7 @@ struct BpDistributionBar: View {
 
     var body: some View {
         HStack(spacing: 8) {
-            Text(label)
+            Text(LocalizedStringKey(label))
                 .font(.caption.bold())
                 .foregroundStyle(color)
                 .frame(width: 14, alignment: .center)
@@ -663,15 +663,15 @@ struct BpChartView: View {
                     .font(.callout.weight(.semibold))
                 Spacer()
                 if settings.graphBpMean, let map = avgMap {
-                    StatCell(label: "平均血圧", value: "\(map)")
+                    StatCell(label: "metric.meanBloodPressure", value: "\(map)")
                 }
                 if let mnHi = periodRecords.map(\.nBpHi_mmHg).min(),
                    let mxHi = periodRecords.map(\.nBpHi_mmHg).max(),
                    let mnLo = periodRecords.map(\.nBpLo_mmHg).min(),
                    let mxLo = periodRecords.map(\.nBpLo_mmHg).max() {
-                    StatCell(label: "範囲", value: "\(mnHi)–\(mxHi)／\(mnLo)–\(mxLo)")
+                    StatCell(label: "text.range", value: "\(mnHi)–\(mxHi)／\(mnLo)–\(mxLo)")
                 }
-                Text("mmHg").font(.callout.weight(.semibold)).foregroundStyle(.red)
+                Text("unit.mmHg").font(.callout.weight(.semibold)).foregroundStyle(.red)
             }
             .padding(.horizontal, 16)
             .padding(.top, 14)
@@ -682,46 +682,46 @@ struct BpChartView: View {
                 // 上〜下の帯（日次平均）
                 ForEach(dailyAverages) { d in
                     AreaMark(
-                        x: .value("日時", d.date),
-                        yStart: .value("下", d.lo),
-                        yEnd:   .value("上", d.hi)
+                        x: .value("record.datetime", d.date),
+                        yStart: .value("metric.diastolic.short", d.lo),
+                        yEnd:   .value("metric.systolic.short", d.hi)
                     )
                     .foregroundStyle(Color.purple.opacity(0.08))
                     .interpolationMethod(.catmullRom)
                 }
                 // 上ライン（日次平均を経由）
                 ForEach(dailyAverages) { d in
-                    LineMark(x: .value("日時", d.date), y: .value("上", d.hi),
-                             series: .value("系列", "上"))
+                    LineMark(x: .value("record.datetime", d.date), y: .value("metric.systolic.short", d.hi),
+                             series: .value("chart.series", "metric.systolic.short"))
                         .foregroundStyle(.red)
                         .lineStyle(StrokeStyle(lineWidth: 2))
                         .interpolationMethod(.catmullRom)
                 }
                 // 上ポイント（個別レコード、同日は同X）
                 ForEach(validRecords) { r in
-                    PointMark(x: .value("日時", dayStart(r.dateTime)), y: .value("上", Double(r.nBpHi_mmHg)))
+                    PointMark(x: .value("record.datetime", dayStart(r.dateTime)), y: .value("metric.systolic.short", Double(r.nBpHi_mmHg)))
                         .foregroundStyle(r.dateOpt.color)
                         .symbolSize(18)
                 }
                 // 下ライン（日次平均を経由）
                 ForEach(dailyAverages) { d in
-                    LineMark(x: .value("日時", d.date), y: .value("下", d.lo),
-                             series: .value("系列", "下"))
+                    LineMark(x: .value("record.datetime", d.date), y: .value("metric.diastolic.short", d.lo),
+                             series: .value("chart.series", "metric.diastolic.short"))
                         .foregroundStyle(.blue)
                         .lineStyle(StrokeStyle(lineWidth: 2))
                         .interpolationMethod(.catmullRom)
                 }
                 // 下ポイント（個別レコード、同日は同X）
                 ForEach(validRecords) { r in
-                    PointMark(x: .value("日時", dayStart(r.dateTime)), y: .value("下", Double(r.nBpLo_mmHg)))
+                    PointMark(x: .value("record.datetime", dayStart(r.dateTime)), y: .value("metric.diastolic.short", Double(r.nBpLo_mmHg)))
                         .foregroundStyle(r.dateOpt.color)
                         .symbolSize(18)
                 }
                 // 平均血圧ライン（graphBpMean ON 時のみ）
                 if settings.graphBpMean {
                     ForEach(dailyAverages) { d in
-                        LineMark(x: .value("日時", d.date), y: .value("平均血圧", d.map),
-                                 series: .value("系列", "平均血圧"))
+                        LineMark(x: .value("record.datetime", d.date), y: .value("metric.meanBloodPressure", d.map),
+                                 series: .value("chart.series", "metric.meanBloodPressure"))
                             .foregroundStyle(.purple)
                             .lineStyle(StrokeStyle(lineWidth: 1.5, dash: [4, 2]))
                             .interpolationMethod(.catmullRom)
@@ -729,18 +729,18 @@ struct BpChartView: View {
                 }
                 // 選択ルール
                 if let date = selectedDate {
-                    RuleMark(x: .value("選択", dayStart(date)))
+                    RuleMark(x: .value("chart.selected", dayStart(date)))
                         .foregroundStyle(.gray.opacity(0.35))
                         .lineStyle(StrokeStyle(lineWidth: 1, dash: [4]))
                 }
                 // 目標ライン
                 if settings.goalBpHi > 0 {
-                    RuleMark(y: .value("目標上", settings.goalBpHi))
+                    RuleMark(y: .value("chart.goalSystolic", settings.goalBpHi))
                         .foregroundStyle(.red.opacity(0.7))
                         .lineStyle(StrokeStyle(lineWidth: 1, dash: [4]))
                 }
                 if settings.goalBpLo > 0 {
-                    RuleMark(y: .value("目標下", settings.goalBpLo))
+                    RuleMark(y: .value("chart.goalDiastolic", settings.goalBpLo))
                         .foregroundStyle(.blue.opacity(0.7))
                         .lineStyle(StrokeStyle(lineWidth: 1, dash: [4]))
                 }
@@ -764,7 +764,7 @@ struct BpChartView: View {
                 Divider()
                 ForEach(selectedDayRecords) { r in
                     let map = (r.nBpHi_mmHg + 2 * r.nBpLo_mmHg) / 3
-                    let mapStr = settings.graphBpMean ? "  平均 \(map)" : ""
+                    let mapStr = settings.graphBpMean ? "  \(String(localized: "stat.avg")) \(map)" : ""
                     SelectionDetailRow(
                         record: r,
                         detail: "\(r.nBpHi_mmHg)／\(r.nBpLo_mmHg)\(mapStr) mmHg",
@@ -831,16 +831,16 @@ struct BpPpChartView: View {
         PanelContainer {
             // ヘッダー（血圧セクションと同スタイル）
             HStack(alignment: .firstTextBaseline) {
-                Text("脈圧")
+                Text("metric.pulsePressure")
                     .font(.callout.weight(.semibold))
                 Spacer()
                 if let avg = avgPP {
-                    StatCell(label: "平均", value: "\(avg)")
+                    StatCell(label: "stat.avg", value: "\(avg)")
                 }
                 if let mn = minPP, let mx = maxPP {
-                    StatCell(label: "範囲", value: "\(mn)–\(mx)")
+                    StatCell(label: "text.range", value: "\(mn)–\(mx)")
                 }
-                Text("mmHg").font(.callout.weight(.semibold)).foregroundStyle(.orange)
+                Text("unit.mmHg").font(.callout.weight(.semibold)).foregroundStyle(.orange)
             }
             .padding(.horizontal, 16)
             .padding(.top, 14)
@@ -848,18 +848,18 @@ struct BpPpChartView: View {
 
             Chart {
                 // 正常範囲帯（40〜50 mmHg）
-                RectangleMark(yStart: .value("正常下限", 40), yEnd: .value("正常上限", 50))
+                RectangleMark(yStart: .value("chart.normalLower", 40), yEnd: .value("chart.normalUpper", 50))
                     .foregroundStyle(Color.green.opacity(0.12))
                 // 正常範囲の境界線
-                RuleMark(y: .value("正常下限", 40))
+                RuleMark(y: .value("chart.normalLower", 40))
                     .foregroundStyle(Color.green.opacity(0.4))
                     .lineStyle(StrokeStyle(lineWidth: 1, dash: [3, 2]))
-                RuleMark(y: .value("正常上限", 50))
+                RuleMark(y: .value("chart.normalUpper", 50))
                     .foregroundStyle(Color.green.opacity(0.4))
                     .lineStyle(StrokeStyle(lineWidth: 1, dash: [3, 2]))
                 // 日次平均ライン
                 ForEach(dailyPP) { d in
-                    LineMark(x: .value("日時", d.date), y: .value("脈圧", d.pp),
+                    LineMark(x: .value("record.datetime", d.date), y: .value("metric.pulsePressure", d.pp),
                              series: .value("type", "pp"))
                         .foregroundStyle(.orange)
                         .lineStyle(StrokeStyle(lineWidth: 2))
@@ -867,20 +867,20 @@ struct BpPpChartView: View {
                 }
                 // 個別ポイント
                 ForEach(ppValues, id: \.record.dateTime) { item in
-                    PointMark(x: .value("日時", dayStart(item.record.dateTime)),
-                              y: .value("脈圧", Double(item.value)))
+                    PointMark(x: .value("record.datetime", dayStart(item.record.dateTime)),
+                              y: .value("metric.pulsePressure", Double(item.value)))
                         .foregroundStyle(item.record.dateOpt.color)
                         .symbolSize(16)
                 }
                 // 選択ルール
                 if let date = selectedDate {
-                    RuleMark(x: .value("選択", dayStart(date)))
+                    RuleMark(x: .value("chart.selected", dayStart(date)))
                         .foregroundStyle(.gray.opacity(0.35))
                         .lineStyle(StrokeStyle(lineWidth: 1, dash: [4]))
                 }
                 // 目標ライン
                 if goalValue > 0 {
-                    RuleMark(y: .value("目標", goalValue))
+                    RuleMark(y: .value("goal.title", goalValue))
                         .foregroundStyle(Color.orange.opacity(0.7))
                         .lineStyle(StrokeStyle(lineWidth: 1, dash: [4]))
                 }
@@ -903,7 +903,7 @@ struct BpPpChartView: View {
                 Divider()
                 ForEach(selectedDayRecords) { r in
                     SelectionDetailRow(record: r,
-                                       detail: "脈圧 \(r.nBpHi_mmHg - r.nBpLo_mmHg) mmHg",
+                                       detail: "\(String(localized: "metric.pulsePressure")) \(r.nBpHi_mmHg - r.nBpLo_mmHg) \(String(localized: "unit.mmHg"))",
                                        color: r.dateOpt.color)
                 }
             }
@@ -1022,12 +1022,12 @@ struct LineChartView: View {
                 Text(LocalizedStringKey(title)).font(.callout.weight(.semibold))
                 Spacer()
                 if let avg = avgValue {
-                    StatCell(label: "平均", value: "\(fmt(avg))")
+                    StatCell(label: "stat.avg", value: "\(fmt(avg))")
                 }
                 if let mn = minValue, let mx = maxValue {
-                    StatCell(label: "範囲", value: "\(fmt(mn))–\(fmt(mx))")
+                    StatCell(label: "text.range", value: "\(fmt(mn))–\(fmt(mx))")
                 }
-                Text(unit).font(.callout.weight(.semibold)).foregroundStyle(color)
+                Text(LocalizedStringKey(unit)).font(.callout.weight(.semibold)).foregroundStyle(color)
             }
             .padding(.horizontal, 16)
             .padding(.top, 14)
@@ -1039,7 +1039,7 @@ struct LineChartView: View {
                     // 棒グラフ（日次平均）
                     ForEach(dailyValues) { d in
                         BarMark(
-                            x: .value("日時", d.date),
+                            x: .value("record.datetime", d.date),
                             y: .value(unit, d.avg)
                         )
                         .foregroundStyle(color.opacity(0.75))
@@ -1048,8 +1048,8 @@ struct LineChartView: View {
                     // 移動平均ライン（直近7件）― エリア・ライン・ドットより背面になるよう先頭に描画
                     ForEach(movingAverageValues) { d in
                         LineMark(
-                            x: .value("日時", d.date),
-                            y: .value("移動平均", d.avg),
+                            x: .value("record.datetime", d.date),
+                            y: .value("chart.movingAverage", d.avg),
                             series: .value("series", "ma")
                         )
                         .foregroundStyle(Color.orange.opacity(0.4))
@@ -1059,7 +1059,7 @@ struct LineChartView: View {
                     // エリア（日次平均）
                     ForEach(dailyValues) { d in
                         AreaMark(
-                            x: .value("日時", d.date),
+                            x: .value("record.datetime", d.date),
                             y: .value(unit, d.avg)
                         )
                         .foregroundStyle(
@@ -1071,7 +1071,7 @@ struct LineChartView: View {
                     // ライン（日次平均を経由）
                     ForEach(dailyValues) { d in
                         LineMark(
-                            x: .value("日時", d.date),
+                            x: .value("record.datetime", d.date),
                             y: .value(unit, d.avg)
                         )
                         .foregroundStyle(color)
@@ -1081,7 +1081,7 @@ struct LineChartView: View {
                     // ポイント（個別レコード、同日は同X）
                     ForEach(validRecords) { r in
                         PointMark(
-                            x: .value("日時", dayStart(r.dateTime)),
+                            x: .value("record.datetime", dayStart(r.dateTime)),
                             y: .value(unit, Double(r[keyPath: keyPath]))
                         )
                         .foregroundStyle(r.dateOpt.color)
@@ -1090,13 +1090,13 @@ struct LineChartView: View {
                 }
                 // 選択ルール
                 if let date = selectedDate {
-                    RuleMark(x: .value("選択", dayStart(date)))
+                    RuleMark(x: .value("chart.selected", dayStart(date)))
                         .foregroundStyle(.gray.opacity(0.35))
                         .lineStyle(StrokeStyle(lineWidth: 1, dash: [4]))
                 }
                 // 目標ライン
                 if goalValue > 0 {
-                    RuleMark(y: .value("目標", goalValue))
+                    RuleMark(y: .value("goal.title", goalValue))
                         .foregroundStyle(color.opacity(0.7))
                         .lineStyle(StrokeStyle(lineWidth: 1, dash: [4]))
                 }
@@ -1206,14 +1206,14 @@ private struct BMIChartView: View {
         PanelContainer {
             // ヘッダー
             HStack(alignment: .firstTextBaseline) {
-                Text("BMI").font(.callout.weight(.semibold))
+                Text("metric.bmi").font(.callout.weight(.semibold))
                 Button {
                     showBMIInfo = true
                 } label: {
                     HStack(spacing: 4) {
                         Image(systemName: "info.circle")
                             .font(.title3)
-                        Text(isJapanese ? "JASSO基準" : "WHO BMI")
+                        Text(isJapanese ? String(localized: "text.jassoStandard") : "WHO BMI")
                             .font(.footnote)
                     }
                     .foregroundStyle(.secondary)
@@ -1227,10 +1227,10 @@ private struct BMIChartView: View {
                 }
                 Spacer()
                 if let avg = avgValue {
-                    StatCell(label: "平均", value: fmt(avg))
+                    StatCell(label: "stat.avg", value: fmt(avg))
                 }
                 if let mn = minValue, let mx = maxValue {
-                    StatCell(label: "範囲", value: "\(fmt(mn))–\(fmt(mx))")
+                    StatCell(label: "text.range", value: "\(fmt(mn))–\(fmt(mx))")
                 }
             }
             .padding(.horizontal, 16)
@@ -1242,18 +1242,18 @@ private struct BMIChartView: View {
                 // JASSO BMI 肥満度区分 背景帯
                 ForEach(bmiZones, id: \.label) { z in
                     RectangleMark(
-                        yStart: .value("下限", z.min),
-                        yEnd:   .value("上限", z.max)
+                        yStart: .value("chart.lowerBound", z.min),
+                        yEnd:   .value("chart.upperBound", z.max)
                     )
                     .foregroundStyle(z.swatch.opacity(colorScheme == .dark ? 0.22 : 0.16))
                 }
                 // ゾーン境界ライン＋ゾーン名ラベル
                 ForEach(bmiZones.dropFirst(), id: \.label) { z in
-                    RuleMark(y: .value("境界", z.min))
+                    RuleMark(y: .value("chart.boundary", z.min))
                         .foregroundStyle(z.swatch.opacity(colorScheme == .dark ? 0.55 : 0.40))
                         .lineStyle(StrokeStyle(lineWidth: 0.5, dash: [3, 2]))
                         .annotation(position: .overlay, alignment: .topLeading) {
-                            Text(isJapanese ? z.label : z.enLabel)
+                            Text(LocalizedStringKey(z.label))
                                 .font(.system(size: 8, weight: .medium))
                                 .foregroundStyle(z.swatch.opacity(colorScheme == .dark ? 0.90 : 0.75))
                                 .padding(.leading, 2)
@@ -1263,8 +1263,8 @@ private struct BMIChartView: View {
 
                 ForEach(dailyValues) { d in
                     AreaMark(
-                        x: .value("日時", d.date),
-                        y: .value("BMI", d.avg)
+                        x: .value("record.datetime", d.date),
+                        y: .value("metric.bmi", d.avg)
                     )
                     .foregroundStyle(
                         LinearGradient(colors: [Color.cyan.opacity(0.25), Color.cyan.opacity(0.0)],
@@ -1274,8 +1274,8 @@ private struct BMIChartView: View {
                 }
                 ForEach(dailyValues) { d in
                     LineMark(
-                        x: .value("日時", d.date),
-                        y: .value("BMI", d.avg)
+                        x: .value("record.datetime", d.date),
+                        y: .value("metric.bmi", d.avg)
                     )
                     .foregroundStyle(Color.cyan)
                     .lineStyle(StrokeStyle(lineWidth: 2))
@@ -1284,22 +1284,22 @@ private struct BMIChartView: View {
                 ForEach(validRecords) { r in
                     if let b = bmi(for: r) {
                         PointMark(
-                            x: .value("日時", dayStart(r.dateTime)),
-                            y: .value("BMI", b)
+                            x: .value("record.datetime", dayStart(r.dateTime)),
+                            y: .value("metric.bmi", b)
                         )
                         .foregroundStyle(r.dateOpt.color)
                         .symbolSize(16)
                     }
                 }
                 if let date = selectedDate {
-                    RuleMark(x: .value("選択", dayStart(date)))
+                    RuleMark(x: .value("chart.selected", dayStart(date)))
                         .foregroundStyle(.gray.opacity(0.35))
                         .lineStyle(StrokeStyle(lineWidth: 1, dash: [4]))
                 }
                 // 目標ライン
                 if goalValue > 0 {
                     let goalBMIDouble = Double(goalValue) / 10.0
-                    RuleMark(y: .value("目標", goalBMIDouble))
+                    RuleMark(y: .value("goal.title", goalBMIDouble))
                         .foregroundStyle(Color.cyan.opacity(0.7))
                         .lineStyle(StrokeStyle(lineWidth: 1, dash: [4]))
                 }
@@ -1395,27 +1395,27 @@ struct WeightChangeChartView: View {
     var body: some View {
         PanelContainer {
             HStack(alignment: .firstTextBaseline) {
-                Text("体重変化量").font(.callout.weight(.semibold))
+                Text("metric.weightChange").font(.callout.weight(.semibold))
                 Spacer()
-                Text("kg").font(.callout.weight(.semibold)).foregroundStyle(.indigo)
+                Text("unit.kg").font(.callout.weight(.semibold)).foregroundStyle(.indigo)
             }
             .padding(.horizontal, 16)
             .padding(.top, 14)
             .padding(.bottom, 8)
 
             Chart {
-                RuleMark(y: .value("ゼロ", 0))
+                RuleMark(y: .value("chart.zero", 0))
                     .foregroundStyle(.gray.opacity(0.4))
                     .lineStyle(StrokeStyle(lineWidth: 1))
                 ForEach(changeValues) { d in
                     BarMark(
-                        x: .value("日時", d.date),
-                        y: .value("変化量", d.change)
+                        x: .value("record.datetime", d.date),
+                        y: .value("metric.changeAmount", d.change)
                     )
                     .foregroundStyle(d.change >= 0 ? Color.orange.opacity(0.75) : Color.teal.opacity(0.75))
                 }
                 if let date = selectedDate {
-                    RuleMark(x: .value("選択", dayStart(date)))
+                    RuleMark(x: .value("chart.selected", dayStart(date)))
                         .foregroundStyle(.gray.opacity(0.35))
                         .lineStyle(StrokeStyle(lineWidth: 1, dash: [4]))
                 }
@@ -1471,7 +1471,7 @@ private struct BMIStandardsPopover: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text(isJapanese ? "JASSO肥満度分類" : "WHO BMI Classification")
+            Text(isJapanese ? String(localized: "text.jassoObesityClassification") : "WHO BMI Classification")
                 .font(.footnote.weight(.semibold))
                 .foregroundStyle(.secondary)
                 .padding(.horizontal, 16)
@@ -1487,7 +1487,7 @@ private struct BMIStandardsPopover: View {
                                 .strokeBorder(.secondary.opacity(0.3), lineWidth: 0.5)
                         )
                         .frame(width: 18, height: 18)
-                    Text(isJapanese ? row.zone.label : row.zone.enLabel)
+                    Text(LocalizedStringKey(row.zone.label))
                         .font(.callout)
                     Spacer()
                     Text(row.rangeText)

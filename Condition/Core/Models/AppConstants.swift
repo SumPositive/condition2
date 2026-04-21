@@ -110,15 +110,15 @@ enum GraphKind: Int, CaseIterable, Identifiable, Codable {
 
     var title: String {
         switch self {
-        case .bp:           return "血圧"
-        case .bpAvg:        return "脈圧（上ー下）"
-        case .pulse:        return "心拍数"
-        case .temp:         return "体温"
-        case .weight:       return "体重"
-        case .bodyFat:      return "体脂肪率"
-        case .skMuscle:     return "骨格筋率"
-        case .bmi:          return "BMI（体重÷身長×身長）"
-        case .weightChange: return "体重変化量"
+        case .bp:           return "metric.bloodPressure"
+        case .bpAvg:        return "metric.pulsePressure.calc"
+        case .pulse:        return "metric.heartRate"
+        case .temp:         return "metric.bodyTemp"
+        case .weight:       return "metric.weight"
+        case .bodyFat:      return "metric.bodyFat"
+        case .skMuscle:     return "metric.skeletalMuscle"
+        case .bmi:          return "metric.bmi.formula"
+        case .weightChange: return "metric.weightChange"
         }
     }
 
@@ -145,14 +145,14 @@ enum StatSection: Int, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .bpJsh:          return "血圧 分布"
-        case .bpRatio:        return "血圧 JSH基準割合"
-        case .bpDateOptCorr:  return "血圧・区分 相関"
-        case .bp24h:          return "血圧 24時間分布"
-        case .weightSummary:  return "体重 サマリー"
-        case .tempSummary:    return "体温 サマリー"
-        case .temp24h:        return "体温 24時間分布"
-        case .tempHist:       return "体温 分布"
+        case .bpJsh:          return "metric.bloodPressureDistribution"
+        case .bpRatio:        return "metric.bpJshRatio"
+        case .bpDateOptCorr:  return "metric.bpByCategory"
+        case .bp24h:          return "metric.bp24hDistribution"
+        case .weightSummary:  return "metric.weightSummary"
+        case .tempSummary:    return "metric.bodyTempSummary"
+        case .temp24h:        return "metric.bodyTemp24hDistribution"
+        case .tempHist:       return "metric.bodyTempDistribution"
         }
     }
 }
