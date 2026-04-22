@@ -1,6 +1,6 @@
 // AppSettings.swift
-// @Observable 設定ストア（iCloud KVS 同期）
-// 旧 NSUbiquitousKeyValueStore の読み書きを集約
+// @Observable 設定ストア
+// UserDefaults の読み書きを集約
 
 import Foundation
 import Observation
@@ -30,7 +30,6 @@ final class AppSettings {
     // MARK: - シングルトン
     static let shared = AppSettings()
 
-    private let kvs = NSUbiquitousKeyValueStore.default
     private let ud  = UserDefaults.standard
 
     // MARK: - グラフ設定（グラフ専用表示）
@@ -45,14 +44,14 @@ final class AppSettings {
         GraphKind.bodyFat.rawValue,
         GraphKind.skMuscle.rawValue,
     ] {
-        didSet { kvs.set(graphDisplayOrder, forKey: KVSKeys.settGraphDisplayOrder) }
+        didSet { ud.set(graphDisplayOrder, forKey: SettingsKeys.settGraphDisplayOrder) }
     }
     var graphHiddenPanels: [Int] = [
         GraphKind.temp.rawValue,
         GraphKind.bodyFat.rawValue,
         GraphKind.skMuscle.rawValue,
     ] {
-        didSet { kvs.set(graphHiddenPanels, forKey: KVSKeys.settGraphHiddenPanels) }
+        didSet { ud.set(graphHiddenPanels, forKey: SettingsKeys.settGraphHiddenPanels) }
     }
 
     // MARK: - グラフ設定（記録入力共通）
@@ -65,7 +64,7 @@ final class AppSettings {
         GraphKind.bodyFat.rawValue,  // 6
         GraphKind.skMuscle.rawValue, // 7
     ] {
-        didSet { kvs.set(graphPanelOrder, forKey: KVSKeys.settGraphs) }
+        didSet { ud.set(graphPanelOrder, forKey: SettingsKeys.settGraphs) }
     }
     /// 非表示フィールドの GraphKind.rawValue 集合（グラフ・記録入力の両方に適用）
     var hiddenFields: [Int] = [
@@ -73,31 +72,31 @@ final class AppSettings {
         GraphKind.bodyFat.rawValue,  // 6
         GraphKind.skMuscle.rawValue, // 7
     ] {
-        didSet { kvs.set(hiddenFields, forKey: KVSKeys.settFieldHidden) }
+        didSet { ud.set(hiddenFields, forKey: SettingsKeys.settFieldHidden) }
     }
     var graphOneWidth: Int = 45 {
-        didSet { kvs.set(graphOneWidth, forKey: KVSKeys.settGraphOneWid) }
+        didSet { ud.set(graphOneWidth, forKey: SettingsKeys.settGraphOneWid) }
     }
     var graphBpMean: Bool = true {
-        didSet { kvs.set(graphBpMean, forKey: KVSKeys.settGraphBpMean) }
+        didSet { ud.set(graphBpMean, forKey: SettingsKeys.settGraphBpMean) }
     }
     var graphBpPress: Bool = true {
-        didSet { kvs.set(graphBpPress, forKey: KVSKeys.settGraphBpPress) }
+        didSet { ud.set(graphBpPress, forKey: SettingsKeys.settGraphBpPress) }
     }
     var graphBMITall: Int = 160 {
-        didSet { kvs.set(graphBMITall, forKey: KVSKeys.settGraphBMITall) }
+        didSet { ud.set(graphBMITall, forKey: SettingsKeys.settGraphBMITall) }
     }
     var graphBMI: Bool = true {
-        didSet { kvs.set(graphBMI, forKey: KVSKeys.settGraphBMI) }
+        didSet { ud.set(graphBMI, forKey: SettingsKeys.settGraphBMI) }
     }
     var graphWeightMA: Bool = true {
-        didSet { kvs.set(graphWeightMA, forKey: KVSKeys.settGraphWeightMA) }
+        didSet { ud.set(graphWeightMA, forKey: SettingsKeys.settGraphWeightMA) }
     }
     var graphWeightChange: Bool = true {
-        didSet { kvs.set(graphWeightChange, forKey: KVSKeys.settGraphWeightChange) }
+        didSet { ud.set(graphWeightChange, forKey: SettingsKeys.settGraphWeightChange) }
     }
     var dialStyle: String = DialStyle.shape.id {
-        didSet { kvs.set(dialStyle, forKey: KVSKeys.settDialStyle) }
+        didSet { ud.set(dialStyle, forKey: SettingsKeys.settDialStyle) }
     }
     var dialTuning: AZDialInteractionTuning = .default {
         didSet { saveDialTuning() }
@@ -110,48 +109,48 @@ final class AppSettings {
 
     // MARK: - 統計設定
     var statType: Int = 0 {
-        didSet { kvs.set(statType, forKey: KVSKeys.settStatType) }
+        didSet { ud.set(statType, forKey: SettingsKeys.settStatType) }
     }
     var statDays: Int = 7 {
-        didSet { kvs.set(statDays, forKey: KVSKeys.settStatDays) }
+        didSet { ud.set(statDays, forKey: SettingsKeys.settStatDays) }
     }
     var statShowAvg: Bool = true {
-        didSet { kvs.set(statShowAvg, forKey: KVSKeys.settStatAvgShow) }
+        didSet { ud.set(statShowAvg, forKey: SettingsKeys.settStatAvgShow) }
     }
     var statShowTimeLine: Bool = true {
-        didSet { kvs.set(statShowTimeLine, forKey: KVSKeys.settStatTimeLine) }
+        didSet { ud.set(statShowTimeLine, forKey: SettingsKeys.settStatTimeLine) }
     }
     var statShow24HLine: Bool = false {
-        didSet { kvs.set(statShow24HLine, forKey: KVSKeys.settStat24HLine) }
+        didSet { ud.set(statShow24HLine, forKey: SettingsKeys.settStat24HLine) }
     }
     var statSectionOrder: [Int] = StatSection.allCases.map(\.rawValue) {
-        didSet { kvs.set(statSectionOrder, forKey: KVSKeys.settStatSections) }
+        didSet { ud.set(statSectionOrder, forKey: SettingsKeys.settStatSections) }
     }
     var statHiddenSections: [Int] = [] {
-        didSet { kvs.set(statHiddenSections, forKey: KVSKeys.settStatHiddenSections) }
+        didSet { ud.set(statHiddenSections, forKey: SettingsKeys.settStatHiddenSections) }
     }
 
     // MARK: - 機能切替
     var goalEnabled: Bool = true {
-        didSet { kvs.set(goalEnabled, forKey: KVSKeys.bGoal) }
+        didSet { ud.set(goalEnabled, forKey: SettingsKeys.bGoal) }
     }
-// MARK: - DateOpt 自動判定時刻（旧設定、マイグレーション用に保持）
+    // MARK: - DateOpt 自動判定時刻（旧設定、マイグレーション用に保持）
     var wakeHour: Int = 6 {
-        didSet { kvs.set(wakeHour, forKey: KVSKeys.dateOptWakeHour) }
+        didSet { ud.set(wakeHour, forKey: SettingsKeys.dateOptWakeHour) }
     }
     var restHour: Int = 12 {
-        didSet { kvs.set(restHour, forKey: KVSKeys.dateOptRestHour) }
+        didSet { ud.set(restHour, forKey: SettingsKeys.dateOptRestHour) }
     }
     var downHour: Int = 21 {
-        didSet { kvs.set(downHour, forKey: KVSKeys.dateOptDownHour) }
+        didSet { ud.set(downHour, forKey: SettingsKeys.dateOptDownHour) }
     }
     var sleepHour: Int = 23 {
-        didSet { kvs.set(sleepHour, forKey: KVSKeys.dateOptSleepHour) }
+        didSet { ud.set(sleepHour, forKey: SettingsKeys.dateOptSleepHour) }
     }
 
     // MARK: - DateOpt 時刻マトリックス（24要素、-1=未割当→.restにフォールバック）
     var dateOptHourMap: [Int] = AppSettings.factoryDefaultHourMap {
-        didSet { kvs.set(dateOptHourMap, forKey: KVSKeys.settDateOptHourMap) }
+        didSet { ud.set(dateOptHourMap, forKey: SettingsKeys.settDateOptHourMap) }
     }
 
     /// 出荷時初期値（画像定義）
@@ -184,34 +183,34 @@ final class AppSettings {
 
     // MARK: - 目標値
     var goalBpHi: Int = 0 {
-        didSet { kvs.set(goalBpHi, forKey: KVSKeys.goalBpHi) }
+        didSet { ud.set(goalBpHi, forKey: SettingsKeys.goalBpHi) }
     }
     var goalBpLo: Int = 0 {
-        didSet { kvs.set(goalBpLo, forKey: KVSKeys.goalBpLo) }
+        didSet { ud.set(goalBpLo, forKey: SettingsKeys.goalBpLo) }
     }
     var goalPulse: Int = 0 {
-        didSet { kvs.set(goalPulse, forKey: KVSKeys.goalPulse) }
+        didSet { ud.set(goalPulse, forKey: SettingsKeys.goalPulse) }
     }
     var goalWeight: Int = 0 {
-        didSet { kvs.set(goalWeight, forKey: KVSKeys.goalWeight) }
+        didSet { ud.set(goalWeight, forKey: SettingsKeys.goalWeight) }
     }
     var goalTemp: Int = 0 {
-        didSet { kvs.set(goalTemp, forKey: KVSKeys.goalTemp) }
+        didSet { ud.set(goalTemp, forKey: SettingsKeys.goalTemp) }
     }
     var goalBodyFat: Int = 0 {
-        didSet { kvs.set(goalBodyFat, forKey: KVSKeys.goalBodyFat) }
+        didSet { ud.set(goalBodyFat, forKey: SettingsKeys.goalBodyFat) }
     }
     var goalSkMuscle: Int = 0 {
-        didSet { kvs.set(goalSkMuscle, forKey: KVSKeys.goalSkMuscle) }
+        didSet { ud.set(goalSkMuscle, forKey: SettingsKeys.goalSkMuscle) }
     }
     var goalBpPp: Int = 0 {
-        didSet { kvs.set(goalBpPp, forKey: KVSKeys.goalBpPp) }
+        didSet { ud.set(goalBpPp, forKey: SettingsKeys.goalBpPp) }
     }
     var goalBMI: Int = 0 {
-        didSet { kvs.set(goalBMI, forKey: KVSKeys.goalBMI) }
+        didSet { ud.set(goalBMI, forKey: SettingsKeys.goalBMI) }
     }
 
-// MARK: - HealthKit（UserDefaults: デバイス個別・@Observable 追跡対象にするため stored property）
+    // MARK: - HealthKit（UserDefaults: デバイス個別・@Observable 追跡対象にするため stored property）
     var hkEnabled: Bool = false {
         didSet { ud.set(hkEnabled, forKey: UDefKeys.hkEnabled) }
     }
@@ -231,74 +230,81 @@ final class AppSettings {
     // MARK: - 初期化
 
     private init() {
-        loadFromKVS()
         // UserDefaults デフォルト値登録（キー未登録時は 0 が返るため明示的に設定）
         ud.register(defaults: [
             UDefKeys.hkDirection: HKSyncDirection.both.rawValue,
             UDefKeys.hkTiming:    HKSyncTiming.automatic.rawValue,
             UDefKeys.appearanceMode: AppAppearanceMode.automatic.rawValue,
         ])
+        migrateFromKVSIfNeeded()
+        loadFromUserDefaults()
         // UserDefaults（デバイス個別）読み込み
         hkDisabledByDemo = ud.bool(forKey: UDefKeys.hkDisabledByDemo)
         hkEnabled   = hkDisabledByDemo ? false : ud.bool(forKey: UDefKeys.hkEnabled)
         hkDirection = ud.integer(forKey: UDefKeys.hkDirection)
         hkTiming    = ud.integer(forKey: UDefKeys.hkTiming)
         appearanceMode = AppAppearanceMode(rawValue: ud.integer(forKey: UDefKeys.appearanceMode)) ?? .automatic
-        // iCloud KVS 外部変更通知
-        NotificationCenter.default.addObserver(
-            self,
-            selector: #selector(kvsDidChangeExternally),
-            name: NSUbiquitousKeyValueStore.didChangeExternallyNotification,
-            object: kvs
-        )
-        kvs.synchronize()
     }
 
-    // MARK: - KVS ロード
+    // MARK: - 旧KVS設定の移行
 
-    func loadFromKVS() {
-        if let arr = kvs.array(forKey: KVSKeys.settGraphDisplayOrder) as? [Int], !arr.isEmpty {
+    private func migrateFromKVSIfNeeded() {
+        guard ud.bool(forKey: UDefKeys.settingsMigratedFromKVS) == false else { return }
+
+        let kvs = NSUbiquitousKeyValueStore.default
+        kvs.synchronize()
+
+        for key in SettingsKeys.migratableKeys where ud.object(forKey: key) == nil {
+            guard let value = kvs.object(forKey: key) else { continue }
+            ud.set(value, forKey: key)
+        }
+        ud.set(true, forKey: UDefKeys.settingsMigratedFromKVS)
+    }
+
+    // MARK: - UserDefaults ロード
+
+    func loadFromUserDefaults() {
+        if let arr = ud.array(forKey: SettingsKeys.settGraphDisplayOrder) as? [Int], !arr.isEmpty {
             graphDisplayOrder = arr
         }
-        if let arr = kvs.array(forKey: KVSKeys.settGraphHiddenPanels) as? [Int] {
+        if let arr = ud.array(forKey: SettingsKeys.settGraphHiddenPanels) as? [Int] {
             graphHiddenPanels = arr
         }
         // 新しい GraphKind が追加された場合、既存ユーザーの順序末尾に補完
         for raw in GraphKind.allCases.map(\.rawValue) where !graphDisplayOrder.contains(raw) {
             graphDisplayOrder.append(raw)
         }
-        if let arr = kvs.array(forKey: KVSKeys.settGraphs) as? [Int], !arr.isEmpty {
+        if let arr = ud.array(forKey: SettingsKeys.settGraphs) as? [Int], !arr.isEmpty {
             graphPanelOrder = arr
         }
         // 記録入力フィールドが graphPanelOrder に不足している場合は末尾に補完
         for kind in GraphKind.allCases where kind.isRecordField && !graphPanelOrder.contains(kind.rawValue) {
             graphPanelOrder.append(kind.rawValue)
         }
-        if let arr = kvs.array(forKey: KVSKeys.settFieldHidden) as? [Int] {
+        if let arr = ud.array(forKey: SettingsKeys.settFieldHidden) as? [Int] {
             hiddenFields = arr
         }
-        let ow = kvs.longLong(forKey: KVSKeys.settGraphOneWid)
-        if ow > 0 { graphOneWidth = Int(ow) }
+        let ow = ud.integer(forKey: SettingsKeys.settGraphOneWid)
+        if 0 < ow { graphOneWidth = ow }
 
-        if kvs.object(forKey: KVSKeys.settGraphBpMean)    != nil { graphBpMean    = kvs.bool(forKey: KVSKeys.settGraphBpMean) }
-        if kvs.object(forKey: KVSKeys.settGraphBpPress)   != nil { graphBpPress   = kvs.bool(forKey: KVSKeys.settGraphBpPress) }
-        if kvs.object(forKey: KVSKeys.settGraphBMI)       != nil { graphBMI       = kvs.bool(forKey: KVSKeys.settGraphBMI) }
-        let tall = kvs.longLong(forKey: KVSKeys.settGraphBMITall)
-        if tall > 0 { graphBMITall = Int(tall) }
-        if kvs.object(forKey: KVSKeys.settGraphWeightMA)     != nil { graphWeightMA     = kvs.bool(forKey: KVSKeys.settGraphWeightMA) }
-        if kvs.object(forKey: KVSKeys.settGraphWeightChange) != nil { graphWeightChange = kvs.bool(forKey: KVSKeys.settGraphWeightChange) }
+        if ud.object(forKey: SettingsKeys.settGraphBpMean)    != nil { graphBpMean    = ud.bool(forKey: SettingsKeys.settGraphBpMean) }
+        if ud.object(forKey: SettingsKeys.settGraphBpPress)   != nil { graphBpPress   = ud.bool(forKey: SettingsKeys.settGraphBpPress) }
+        if ud.object(forKey: SettingsKeys.settGraphBMI)       != nil { graphBMI       = ud.bool(forKey: SettingsKeys.settGraphBMI) }
+        let tall = ud.integer(forKey: SettingsKeys.settGraphBMITall)
+        if 0 < tall { graphBMITall = tall }
+        if ud.object(forKey: SettingsKeys.settGraphWeightMA)     != nil { graphWeightMA     = ud.bool(forKey: SettingsKeys.settGraphWeightMA) }
+        if ud.object(forKey: SettingsKeys.settGraphWeightChange) != nil { graphWeightChange = ud.bool(forKey: SettingsKeys.settGraphWeightChange) }
         // dialStyle: 強制デフォルト移行バージョン
         let dialStyleForceVersion = 1  // Shape をデフォルトにした版
-        let dialStyleForcedKey = "KVS_DialStyleForcedVersion"
-        let forcedVersion = Int(kvs.longLong(forKey: dialStyleForcedKey))
+        let forcedVersion = ud.integer(forKey: SettingsKeys.settDialStyleForcedVersion)
 
-        if kvs.object(forKey: KVSKeys.settDialStyle) != nil {
-            if let str = kvs.string(forKey: KVSKeys.settDialStyle), DialStyle.builtin(id: str) != nil {
+        if ud.object(forKey: SettingsKeys.settDialStyle) != nil {
+            if let str = ud.string(forKey: SettingsKeys.settDialStyle), DialStyle.builtin(id: str) != nil {
                 // 新形式（String）
                 dialStyle = str
             } else {
                 // 旧形式（Int）→ 新形式へ移行
-                let oldInt = Int(kvs.longLong(forKey: KVSKeys.settDialStyle))
+                let oldInt = ud.integer(forKey: SettingsKeys.settDialStyle)
                 let migrated: String
                 switch oldInt {
                 case 2:  migrated = DialStyle.chrome.id
@@ -307,73 +313,73 @@ final class AppSettings {
                 default: migrated = DialStyle.varnia.id
                 }
                 dialStyle = migrated
-                kvs.set(migrated, forKey: KVSKeys.settDialStyle)
+                ud.set(migrated, forKey: SettingsKeys.settDialStyle)
             }
         }
         // アップデートで強制的にデフォルトへ上書き
         if forcedVersion < dialStyleForceVersion {
             dialStyle = DialStyle.shape.id
-            kvs.set(dialStyle, forKey: KVSKeys.settDialStyle)
-            kvs.set(dialStyleForceVersion, forKey: dialStyleForcedKey)
+            ud.set(dialStyle, forKey: SettingsKeys.settDialStyle)
+            ud.set(dialStyleForceVersion, forKey: SettingsKeys.settDialStyleForcedVersion)
         }
         loadDialTuning()
 
-        let sd = kvs.longLong(forKey: KVSKeys.settStatDays)
-        if sd > 0 { statDays = Int(sd) }
-        if kvs.object(forKey: KVSKeys.settStatType)     != nil { statType         = Int(kvs.longLong(forKey: KVSKeys.settStatType)) }
-        if kvs.object(forKey: KVSKeys.settStatAvgShow)  != nil { statShowAvg      = kvs.bool(forKey: KVSKeys.settStatAvgShow) }
-        if kvs.object(forKey: KVSKeys.settStatTimeLine) != nil { statShowTimeLine = kvs.bool(forKey: KVSKeys.settStatTimeLine) }
-        if kvs.object(forKey: KVSKeys.settStat24HLine)  != nil { statShow24HLine  = kvs.bool(forKey: KVSKeys.settStat24HLine) }
-        if let arr = kvs.array(forKey: KVSKeys.settStatSections) as? [Int], !arr.isEmpty {
+        let sd = ud.integer(forKey: SettingsKeys.settStatDays)
+        if 0 < sd { statDays = sd }
+        if ud.object(forKey: SettingsKeys.settStatType)     != nil { statType         = ud.integer(forKey: SettingsKeys.settStatType) }
+        if ud.object(forKey: SettingsKeys.settStatAvgShow)  != nil { statShowAvg      = ud.bool(forKey: SettingsKeys.settStatAvgShow) }
+        if ud.object(forKey: SettingsKeys.settStatTimeLine) != nil { statShowTimeLine = ud.bool(forKey: SettingsKeys.settStatTimeLine) }
+        if ud.object(forKey: SettingsKeys.settStat24HLine)  != nil { statShow24HLine  = ud.bool(forKey: SettingsKeys.settStat24HLine) }
+        if let arr = ud.array(forKey: SettingsKeys.settStatSections) as? [Int], !arr.isEmpty {
             statSectionOrder = arr
         }
-        if let arr = kvs.array(forKey: KVSKeys.settStatHiddenSections) as? [Int] {
+        if let arr = ud.array(forKey: SettingsKeys.settStatHiddenSections) as? [Int] {
             statHiddenSections = arr
         }
 
-        if kvs.object(forKey: KVSKeys.bGoal) != nil { goalEnabled = kvs.bool(forKey: KVSKeys.bGoal) }
+        if ud.object(forKey: SettingsKeys.bGoal) != nil { goalEnabled = ud.bool(forKey: SettingsKeys.bGoal) }
 
-        let wh = kvs.longLong(forKey: KVSKeys.dateOptWakeHour)
-        if wh > 0 { wakeHour = Int(wh) }
-        let rh = kvs.longLong(forKey: KVSKeys.dateOptRestHour)
-        if rh > 0 { restHour = Int(rh) }
-        let dh = kvs.longLong(forKey: KVSKeys.dateOptDownHour)
-        if dh > 0 { downHour = Int(dh) }
-        let sh = kvs.longLong(forKey: KVSKeys.dateOptSleepHour)
-        if sh > 0 { sleepHour = Int(sh) }
+        let wh = ud.integer(forKey: SettingsKeys.dateOptWakeHour)
+        if 0 < wh { wakeHour = wh }
+        let rh = ud.integer(forKey: SettingsKeys.dateOptRestHour)
+        if 0 < rh { restHour = rh }
+        let dh = ud.integer(forKey: SettingsKeys.dateOptDownHour)
+        if 0 < dh { downHour = dh }
+        let sh = ud.integer(forKey: SettingsKeys.dateOptSleepHour)
+        if 0 < sh { sleepHour = sh }
         // 時刻マトリックス（保存済みを優先、旧設定があればマイグレーション、なければ出荷時初期値）
-        if let arr = kvs.array(forKey: KVSKeys.settDateOptHourMap) as? [Int], arr.count == 24 {
+        if let arr = ud.array(forKey: SettingsKeys.settDateOptHourMap) as? [Int], arr.count == 24 {
             dateOptHourMap = arr
-        } else if wh > 0 || dh > 0 || sh > 0 {
+        } else if 0 < wh || 0 < dh || 0 < sh {
             dateOptHourMap = AppSettings.makeDefaultHourMap(wake: wakeHour, down: downHour, sleep: sleepHour)
         } else {
             dateOptHourMap = AppSettings.factoryDefaultHourMap
         }
 
-        let gbh = kvs.longLong(forKey: KVSKeys.goalBpHi)
-        if gbh > 0 { goalBpHi = Int(gbh) }
-        let gbl = kvs.longLong(forKey: KVSKeys.goalBpLo)
-        if gbl > 0 { goalBpLo = Int(gbl) }
-        let gp = kvs.longLong(forKey: KVSKeys.goalPulse)
-        if gp > 0 { goalPulse = Int(gp) }
-        let gw = kvs.longLong(forKey: KVSKeys.goalWeight)
-        if gw > 0 { goalWeight = Int(gw) }
-        let gt = kvs.longLong(forKey: KVSKeys.goalTemp)
-        if gt > 0 { goalTemp = Int(gt) }
-        let gbf = kvs.longLong(forKey: KVSKeys.goalBodyFat)
-        if gbf > 0 { goalBodyFat = Int(gbf) }
-        let gsk = kvs.longLong(forKey: KVSKeys.goalSkMuscle)
-        if gsk > 0 { goalSkMuscle = Int(gsk) }
-        let gpp = kvs.longLong(forKey: KVSKeys.goalBpPp)
-        if gpp > 0 { goalBpPp = Int(gpp) }
-        let gbmi = kvs.longLong(forKey: KVSKeys.goalBMI)
-        if gbmi > 0 { goalBMI = Int(gbmi) }
+        let gbh = ud.integer(forKey: SettingsKeys.goalBpHi)
+        if 0 < gbh { goalBpHi = gbh }
+        let gbl = ud.integer(forKey: SettingsKeys.goalBpLo)
+        if 0 < gbl { goalBpLo = gbl }
+        let gp = ud.integer(forKey: SettingsKeys.goalPulse)
+        if 0 < gp { goalPulse = gp }
+        let gw = ud.integer(forKey: SettingsKeys.goalWeight)
+        if 0 < gw { goalWeight = gw }
+        let gt = ud.integer(forKey: SettingsKeys.goalTemp)
+        if 0 < gt { goalTemp = gt }
+        let gbf = ud.integer(forKey: SettingsKeys.goalBodyFat)
+        if 0 < gbf { goalBodyFat = gbf }
+        let gsk = ud.integer(forKey: SettingsKeys.goalSkMuscle)
+        if 0 < gsk { goalSkMuscle = gsk }
+        let gpp = ud.integer(forKey: SettingsKeys.goalBpPp)
+        if 0 < gpp { goalBpPp = gpp }
+        let gbmi = ud.integer(forKey: SettingsKeys.goalBMI)
+        if 0 < gbmi { goalBMI = gbmi }
 
     }
 
     private func loadDialTuning() {
         // 保存済みの操作感度がなければ標準値を使う
-        guard let data = kvs.data(forKey: KVSKeys.settDialTuning),
+        guard let data = ud.data(forKey: SettingsKeys.settDialTuning),
               let tuning = try? JSONDecoder().decode(AZDialInteractionTuning.self, from: data) else {
             dialTuning = .default
             return
@@ -382,15 +388,9 @@ final class AppSettings {
     }
 
     private func saveDialTuning() {
-        // KVSに入れられるようJSONデータへ変換する
+        // UserDefaultsに入れられるようJSONデータへ変換する
         guard let data = try? JSONEncoder().encode(dialTuning) else { return }
-        kvs.set(data, forKey: KVSKeys.settDialTuning)
-    }
-
-    @objc nonisolated private func kvsDidChangeExternally(_ notification: Notification) {
-        Task { @MainActor [self] in
-            self.loadFromKVS()
-        }
+        ud.set(data, forKey: SettingsKeys.settDialTuning)
     }
 
     // MARK: - DateOpt 自動判定

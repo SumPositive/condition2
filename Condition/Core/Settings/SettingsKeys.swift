@@ -1,10 +1,10 @@
-// KVSKeys.swift
-// iCloud Key-Value Store キー定数（旧 Global.h の KVS_* 定数群）
+// SettingsKeys.swift
+// UserDefaults キー定数（旧 Global.h の KVS_* 定数群）
 // 既存ユーザーの設定を引き継ぐためキー名は旧コードと完全一致させること
 
 import Foundation
 
-enum KVSKeys {
+enum SettingsKeys {
     // MARK: - グラフ設定
     static let settGraphs       = "KVS_SettGraphs"      // グラフパネル順序 (Data: [Int])
     static let settFieldHidden  = "KVS_SettFieldHidden" // 非表示フィールド rawValue 配列 ([Int])
@@ -16,6 +16,7 @@ enum KVSKeys {
     static let settGraphWeightMA     = "KVS_SettGraphWeightMA"       // 体重移動平均
     static let settGraphWeightChange = "KVS_SettGraphWeightChange"   // 体重変化量
     static let settDialStyle         = "KVS_SettDialStyle"           // ダイアルスタイル (DialStyle.rawValue)
+    static let settDialStyleForcedVersion = "KVS_DialStyleForcedVersion" // ダイアルスタイル強制移行版
     static let settDialTuning        = "KVS_SettDialTuning"          // ダイアル操作感度 (JSONデータ)
 
     // MARK: - 統計設定
@@ -31,7 +32,7 @@ enum KVSKeys {
 
     // MARK: - 機能切替
     static let bGoal            = "KVS_bGoal"           // 目標値機能
-// MARK: - 日付オプション時刻（前後2時間で自動判定）
+    // MARK: - 日付オプション時刻（前後2時間で自動判定）
     static let dateOptWakeHour  = "KVS_DateOptWake_HOUR"
     static let dateOptRestHour  = "KVS_DateOptRest_HOUR"
     static let dateOptDownHour  = "KVS_DateOptDown_HOUR"
@@ -39,7 +40,7 @@ enum KVSKeys {
     /// 時刻→区分マトリックス ([Int] 24要素, -1=未割当=.restにフォールバック)
     static let settDateOptHourMap = "KVS_SettDateOptHourMap"
 
-    // MARK: - 目標値（iCloud KVS 全デバイス共通）
+    // MARK: - 目標値
     static let goalBpHi      = "Goal_nBpHi_mmHg"
     static let goalBpLo      = "Goal_nBpLo_mmHg"
     static let goalPulse     = "Goal_nPulse_bpm"
@@ -50,13 +51,53 @@ enum KVSKeys {
     static let goalBpPp      = "Goal_nBpPp_mmHg"
     static let goalBMI       = "Goal_nBMI_10"
 
-    // MARK: - 購入状態（KVSにも保存）
+    // MARK: - 購入状態
     static let unlockProductID = "com.azukid.AzBodyNote.Unlock"
+
+    static let migratableKeys: [String] = [
+        settGraphs,
+        settFieldHidden,
+        settGraphOneWid,
+        settGraphBpMean,
+        settGraphBpPress,
+        settGraphBMITall,
+        settGraphBMI,
+        settGraphWeightMA,
+        settGraphWeightChange,
+        settDialStyle,
+        settDialStyleForcedVersion,
+        settDialTuning,
+        settStatType,
+        settStatDays,
+        settStatAvgShow,
+        settStatTimeLine,
+        settStat24HLine,
+        settStatSections,
+        settStatHiddenSections,
+        settGraphDisplayOrder,
+        settGraphHiddenPanels,
+        bGoal,
+        dateOptWakeHour,
+        dateOptRestHour,
+        dateOptDownHour,
+        dateOptSleepHour,
+        settDateOptHourMap,
+        goalBpHi,
+        goalBpLo,
+        goalPulse,
+        goalWeight,
+        goalTemp,
+        goalBodyFat,
+        goalSkMuscle,
+        goalBpPp,
+        goalBMI,
+        unlockProductID,
+    ]
 }
 
 enum UDefKeys {
     // MARK: - UserDefaults（デバイス個別設定）
-static let migrationDone = "MigrationV2Done"    // CoreData→SwiftData移行完了フラグ
+    static let migrationDone = "MigrationV2Done"    // CoreData→SwiftData移行完了フラグ
 
     // MARK: - HealthKit（デバイス個別設定）
     static let hkEnabled        = "UDEF_HKEnabled"
@@ -64,4 +105,5 @@ static let migrationDone = "MigrationV2Done"    // CoreData→SwiftData移行完
     static let hkTiming         = "UDEF_HKTiming"          // HKSyncTiming.rawValue
     static let hkDisabledByDemo = "UDEF_HKDisabledByDemo"  // Demo生成後は再有効化不可
     static let appearanceMode   = "UDEF_AppearanceMode"    // 外観モード rawValue
+    static let settingsMigratedFromKVS = "UDEF_SettingsMigratedFromKVS" // 旧KVS設定の移行済みフラグ
 }

@@ -12,7 +12,7 @@
 		20F1765DAAFD7152D5629C7C /* NumpadValueText.swift in Sources */ = {isa = PBXBuildFile; fileRef = E674CD6C1A3BCD2A7D5D8EC3 /* NumpadValueText.swift */; };
 		22D5E84A1E28C0A1784D9244 /* HealthKitService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C7CBA484995B66668A9235C /* HealthKitService.swift */; };
 		26B161A5280A5687C622C649 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB4C0FF51DDBC65C235DF2ED /* SettingsView.swift */; };
-		2CCB75F6B884B4807D49F2DD /* KVSKeys.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5D0A6B773C8E379750D8D5B /* KVSKeys.swift */; };
+		2CCB75F6B884B4807D49F2DD /* SettingsKeys.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5D0A6B773C8E379750D8D5B /* SettingsKeys.swift */; };
 		307BEA02A0CE7F10B77FFC4A /* AppSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = E0E6E18224DAB54321E46951 /* AppSettings.swift */; };
 		35CFF3F641C21C1669ADC898 /* BodyRecord.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB9225443B8D3A26F9D99025 /* BodyRecord.swift */; };
 		3ED314445BE3B57864296DA3 /* InfoPlist.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = 3BEC1D090470BE0FB0C3E7C2 /* InfoPlist.xcstrings */; };
@@ -73,7 +73,7 @@
 		D11FAFC4E99DE815E66D2AEB /* MigrationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MigrationService.swift; sourceTree = "<group>"; };
 		DB9225443B8D3A26F9D99025 /* BodyRecord.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BodyRecord.swift; sourceTree = "<group>"; };
 		E0E6E18224DAB54321E46951 /* AppSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSettings.swift; sourceTree = "<group>"; };
-		E5D0A6B773C8E379750D8D5B /* KVSKeys.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KVSKeys.swift; sourceTree = "<group>"; };
+		E5D0A6B773C8E379750D8D5B /* SettingsKeys.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsKeys.swift; sourceTree = "<group>"; };
 		E674CD6C1A3BCD2A7D5D8EC3 /* NumpadValueText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NumpadValueText.swift; sourceTree = "<group>"; };
 		EB4C0FF51DDBC65C235DF2ED /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		EFEF1236779D72BC224C618E /* StatisticsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatisticsView.swift; sourceTree = "<group>"; };
@@ -211,7 +211,7 @@
 			isa = PBXGroup;
 			children = (
 				E0E6E18224DAB54321E46951 /* AppSettings.swift */,
-				E5D0A6B773C8E379750D8D5B /* KVSKeys.swift */,
+				E5D0A6B773C8E379750D8D5B /* SettingsKeys.swift */,
 				132A076B61B2C635E9A5FADA /* TipStore.swift */,
 			);
 			path = Settings;
@@ -373,7 +373,7 @@
 				F15A862490DED9463FCB6F26 /* DateOpt.swift in Sources */,
 				D6C3A1A72F3E9B12734FC1FB /* GraphView.swift in Sources */,
 				22D5E84A1E28C0A1784D9244 /* HealthKitService.swift in Sources */,
-				2CCB75F6B884B4807D49F2DD /* KVSKeys.swift in Sources */,
+				2CCB75F6B884B4807D49F2DD /* SettingsKeys.swift in Sources */,
 				CC257634A8AF415F5F40872E /* MigrationService.swift in Sources */,
 				E88A92888F6AFD1FB7DFFC9F /* ModelContainer+Setup.swift in Sources */,
 				20F1765DAAFD7152D5629C7C /* NumpadValueText.swift in Sources */,
