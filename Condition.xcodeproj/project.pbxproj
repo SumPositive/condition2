@@ -324,12 +324,12 @@
 				};
 			};
 			buildConfigurationList = F3EE15DBC3F06B0F84E316B5 /* Build configuration list for PBXProject "Condition" */;
-			developmentRegion = ja;
+			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
-				Base,
 				en,
 				ja,
+				Base,
 			);
 			mainGroup = BD45214EEC2E1959D4D1B997;
 			minimizedProjectReferenceProxies = 1;
