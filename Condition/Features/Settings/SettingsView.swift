@@ -117,6 +117,7 @@ struct SettingsView: View {
                     .listRowBackground(Color.clear)
                     .listRowSeparator(.hidden)
             }
+            .scrollIndicators(.hidden)
             .navigationTitle("tab.settings")
         }
         .sheet(isPresented: $showSafari) {
@@ -416,6 +417,7 @@ struct DateOptMatrixView: View {
             .padding(.horizontal, 12)
             .padding(.vertical, 4)
         }
+        .scrollIndicators(.hidden)
         .background(Color(.systemGroupedBackground))
         .navigationTitle("settings.dateCategoryDefaults")
         .navigationBarTitleDisplayMode(.inline)
@@ -478,6 +480,7 @@ struct GraphSettingsView: View {
             }
             .environment(\.editMode, .constant(.active))
         }
+        .scrollIndicators(.hidden)
         .navigationTitle("graph.settings")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
@@ -590,6 +593,7 @@ struct FieldOrderSettingsView: View {
                 Text("settings.orderIsReflectedInRecordInput")
             }
         }
+        .scrollIndicators(.hidden)
         .environment(\.editMode, .constant(.active))
         .navigationTitle("settings.fieldOrder")
         .navigationBarTitleDisplayMode(.inline)
@@ -633,6 +637,7 @@ struct StatSettingsView: View {
                 Text("stat.orderIsReflectedInStatisticsView")
             }
         }
+        .scrollIndicators(.hidden)
         .environment(\.editMode, .constant(.active))
         .navigationTitle("statistics.settings")
         .navigationBarTitleDisplayMode(.inline)
@@ -699,6 +704,7 @@ struct GoalSettingsView: View {
                     goalDialRow(title: "metric.skeletalMuscle",         value: $settings.goalSkMuscle,  spec: MeasureRange.skMuscle,  recordVal: latestSkMuscle,unit: "%",   stepperStep: 5,  decimals: 1, color: .teal)
                 }
             }
+            .scrollIndicators(.hidden)
             .navigationTitle("goal.settings")
             .navigationBarTitleDisplayMode(.inline)
         }
@@ -833,6 +839,7 @@ struct HealthKitSettingsView: View {
                     .foregroundStyle(.secondary)
             }
         }
+        .scrollIndicators(.hidden)
         .navigationTitle("health.integration")
         .navigationBarTitleDisplayMode(.inline)
         .onAppear { hkService.checkAuthorization() }
@@ -896,6 +903,7 @@ struct AboutView: View {
                 )
             }
         }
+        .scrollIndicators(.hidden)
         .navigationTitle("app.about")
         .navigationBarTitleDisplayMode(.inline)
     }
