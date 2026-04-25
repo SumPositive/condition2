@@ -106,4 +106,5 @@ enum UDefKeys {
     static let hkDisabledByDemo = "UDEF_HKDisabledByDemo"  // Demo生成後は再有効化不可
     static let appearanceMode   = "UDEF_AppearanceMode"    // 外観モード rawValue
     static let settingsMigratedFromKVS = "UDEF_SettingsMigratedFromKVS" // 旧KVS設定の移行済みフラグ
+    static let openNewRecordOnForeground = "UDEF_OpenNewRecordOnForeground" // フォアグランド復帰時に新しい記録を開く
 }

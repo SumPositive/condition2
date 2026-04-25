@@ -3615,7 +3615,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "新規記録"
+            "value" : "新しい記録"
           }
         }
       }
@@ -3837,6 +3837,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "機能"
+          }
+        }
+      }
+    },
+    "settings.openNewRecordOnForeground" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open New Record on Launch"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "起動時に新しい記録を開く"
           }
         }
       }

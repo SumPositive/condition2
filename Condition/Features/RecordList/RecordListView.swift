@@ -107,6 +107,9 @@ struct RecordListView: View {
             .onChange(of: scenePhase) { _, phase in
                 if phase == .active {
                     Task { await autoImportFromHealthKitIfNeeded() }
+                    if settings.openNewRecordOnForeground && !showAddSheet && editTarget == nil {
+                        showAddSheet = true
+                    }
                 }
             }
             .onAppear {

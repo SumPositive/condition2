@@ -224,6 +224,11 @@ final class AppSettings {
         didSet { ud.set(hkTiming, forKey: UDefKeys.hkTiming) }
     }
 
+    // MARK: - 起動・フォアグラウンド時の動作
+    var openNewRecordOnForeground: Bool = false {
+        didSet { ud.set(openNewRecordOnForeground, forKey: UDefKeys.openNewRecordOnForeground) }
+    }
+
     // MARK: - 購入状態（制限解除済み）
     let isUnlocked: Bool = true
 
@@ -244,6 +249,9 @@ final class AppSettings {
         hkDirection = ud.integer(forKey: UDefKeys.hkDirection)
         hkTiming    = ud.integer(forKey: UDefKeys.hkTiming)
         appearanceMode = AppAppearanceMode(rawValue: ud.integer(forKey: UDefKeys.appearanceMode)) ?? .automatic
+        if ud.object(forKey: UDefKeys.openNewRecordOnForeground) != nil {
+            openNewRecordOnForeground = ud.bool(forKey: UDefKeys.openNewRecordOnForeground)
+        }
     }
 
     // MARK: - 旧KVS設定の移行

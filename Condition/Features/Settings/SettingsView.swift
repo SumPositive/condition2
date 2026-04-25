@@ -28,6 +28,7 @@ struct SettingsView: View {
             Form {
                 // MARK: - 記録
                 Section("tab.records") {
+                    Toggle("settings.openNewRecordOnForeground", isOn: $settings.openNewRecordOnForeground)
                     NavigationLink("settings.fieldOrder") {
                         FieldOrderSettingsView()
                     }
