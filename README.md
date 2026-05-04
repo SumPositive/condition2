@@ -70,3 +70,116 @@ Condition/
 本リポジトリのソースコードは参照目的で公開しています。
 著作権は SumPositive に帰属します。
 無断での複製、改変、再配布、商用利用を禁止します。
+
+---
+
+## 開発者メモ
+
+### DataStore 設計
+
+#### SwiftData ストアファイルの命名
+
+SwiftData は `ModelConfiguration(name:)` に渡した名前で `<name>.store` というファイルを Application Support に作成する（`.sqlite` ではない）。
+
+| 世代 | ストア名 | ファイル |
+|---|---|---|
+| v2.0（初代 SwiftData） | `"AzBodyNote"` | `AzBodyNote.store` |
+| v2.1以降（現行） | `"Condition"` | `Condition.store` |
+
+v2.0 で `ModelConfiguration("AzBodyNote")` を使っていたため、CoreData 時代の `AzBodyNote.sqlite` とは別に `AzBodyNote.store` が作成されていた。v2.1 でストア名を `"Condition"` に変更したことで、`AzBodyNote.store` → `Condition.store` へのリネームが必要になった。
+
+#### ストア名決定ロジック（`ModelContainer+Setup.swift`）
+
+起動時に Application Support の状態を見てストア名を決定する。`ModelContainer.shared` の初期化より前に `renameSwiftDataStoreIfNeeded()` を呼び、リネームできる場合は済ませておく。
+
+```
+(conditionExists, azBodyNoteExists, migrationDone) の組み合わせ
+
+(true,  false, *)    → "Condition"（通常）
+(false, false, *)    → "Condition"（新規インストール）
+(false, true,  true) → AzBodyNote.store → Condition.store へリネーム試行
+(true,  true,  true) → resolveConflict()：レコード有無で判定
+default              → "Condition"（CoreData 移行前ユーザー等）
+```
+
+`resolveConflict()` では SQLite3 API で直接 `sqlite_master` を参照し、ユーザーデータテーブルにレコードがあるかを確認する。Condition が空で AzBodyNote にデータがある場合は Condition を `.empty` にアーカイブして AzBodyNote をリネームする。
+
+---
+
+### CoreData → SwiftData マイグレーション設計
+
+#### 対象ユーザー
+
+旧版（CoreData 時代、2012〜）から移行してきたユーザー。`AzBodyNote.sqlite` が Application Support または Documents に存在する。
+
+#### フラグ
+
+`UserDefaults` キー `"MigrationV2Done"`（`UDefKeys.migrationDone`）
+
+- `false`（未設定）: 移行未実施または失敗
+- `true`: 移行完了（`findOldStoreURL()` は検索をスキップする）
+
+`migrationDone=true` のユーザーが持つ `AzBodyNote.sqlite` は SwiftData ストアではなくアーカイブ済みの CoreData ファイル（`.done` 拡張子）なので触らない。
+
+#### 移行フロー（`MigrationService.swift`）
+
+```
+1. findOldStoreURL()
+   └─ migrationDone=true → nil（スキップ）
+   └─ migrationDone=false → AzBodyNote.sqlite を検索
+
+2. repairWALIfNeeded()
+   └─ -wal / -shm が存在しなければ空ファイルで補完（iCloud 復元対策）
+
+3. fetchViaCoreData()  ← まず CoreData API で試みる
+   └─ 失敗した場合 fetchViaSQLite() へフォールバック
+
+4. insertRows()
+   └─ 既存 SwiftData レコードの dateTime を Set で収集
+   └─ 重複する dateTime はスキップ（再試行時・スキップ後入力分を保護）
+
+5. 成功: archiveOldStore() → .sqlite を .done にリネーム
+         migrationDone = true
+
+6. 失敗: .sqlite はそのまま残す → 次回アップデートで自動再試行
+```
+
+#### SQLite 直接読み取りの列名規則
+
+CoreData の SQLite 列名は `"Z" + attributeName.uppercased()`。
+
+| CoreData 属性 | SQLite 列名 |
+|---|---|
+| `dateTime` | `ZDATETIME` |
+| `nDateOpt` | `ZNDATEOPT` |
+| `nBpHi_mmHg` | `ZNBPHI_MMHG` |
+| `nSkMuscle_10p` | `ZNSKMUSCLE_10P` |
+
+テーブル名: `ZE2RECORD`（entity 名 `E2record` → `"Z" + "E2RECORD"`）
+
+#### ファイル変遷（CoreData 移行済みユーザーの典型例）
+
+```
+旧アプリ（CoreData）
+  AzBodyNote.sqlite        ← CoreData 本体
+  AzBodyNote.sqlite-shm
+  AzBodyNote.sqlite-wal
+
+v2.0（SwiftData 移行完了後）
+  AzBodyNote.sqlite.done   ← CoreData アーカイブ（以後不変）
+  AzBodyNote.store         ← SwiftData（ModelConfiguration("AzBodyNote")）
+  AzBodyNote.store-shm
+  AzBodyNote.store-wal
+  migrationDone = true
+
+v2.1（ストア名変更後、修正適用済み）
+  AzBodyNote.sqlite.done   ← そのまま
+  Condition.store          ← AzBodyNote.store をリネーム
+  Condition.store-shm
+  Condition.store-wal
+  Condition.store.empty    ← 旧バージョンが作成した空ファイルのアーカイブ（あれば）
+```
+
+#### 「スキップして続行」の挙動
+
+移行失敗時に「スキップして続行」を選択すると `phase = .done` になるが `migrationDone` は立てない。次回アップデートで `AzBodyNote.sqlite` が再検出され、自動的に移行が再試行される。スキップ後に入力したデータは `insertRows()` の重複チェックにより保護される。
