@@ -3243,6 +3243,23 @@
         }
       }
     },
+    "migration.errorDetail" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Technical details"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "技術的な詳細"
+          }
+        }
+      }
+    },
     "migration.failed" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -3256,6 +3273,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "データ移行に失敗しました"
+          }
+        }
+      }
+    },
+    "migration.failedDescription" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Could not import data from the previous version.\n\nTapping \"Retry\" may resolve the issue. If it continues, tap \"Skip and Continue\" to start using the app — migration will be retried automatically after the next update."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "旧バージョンのデータを引き継げませんでした。\n\n「再試行」で解決する場合があります。解決しない場合は「スキップして続行」でアプリを使い始めてください。次のアップデート後に自動で再試行されます。"
           }
         }
       }
@@ -3290,6 +3324,40 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "元のデータは保護されています"
+          }
+        }
+      }
+    },
+    "migration.skipAndContinue" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skip and Continue"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "スキップして続行"
+          }
+        }
+      }
+    },
+    "migration.skipNote" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Previous data will not be imported now, but will be retried automatically after the next update."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "旧データは今回は引き継がれません。次のアップデート後に自動で再試行されます。"
           }
         }
       }

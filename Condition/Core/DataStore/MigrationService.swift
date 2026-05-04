@@ -5,6 +5,7 @@
 import Foundation
 import CoreData
 import SwiftData
+import SQLite3
 import OSLog
 
 private let logger = Logger(subsystem: "com.azukid.AzBodyNote", category: "Migration")
@@ -25,7 +26,7 @@ final class MigrationService {
             switch (lhs, rhs) {
             case (.idle, .idle), (.checking, .checking), (.done, .done): return true
             case (.migrating(let a), .migrating(let b)): return a == b
-            case (.failed(let a), .failed(let b)): return a == b
+            case (.failed(let a), .failed(let b)):       return a == b
             default: return false
             }
         }
@@ -39,7 +40,7 @@ final class MigrationService {
         phase = .checking
 
         // 旧 SQLite ファイル検索（フラグより先に確認）
-        // iCloud バックアップから migrationDone フラグが復元される場合があるため、
+        // iCloud バックアップから migrationDone フラグが復元される場合があるため
         // ファイルの有無を正とする
         guard let oldStoreURL = findOldStoreURL() else {
             if !UserDefaults.standard.bool(forKey: UDefKeys.migrationDone) {
@@ -50,9 +51,14 @@ final class MigrationService {
             return
         }
 
-        // 旧ファイルが存在する場合はフラグに関わらず移行実行
         logger.info("旧データ発見: \(oldStoreURL.path)")
         await performMigration(from: oldStoreURL, context: context)
+    }
+
+    /// 移行をスキップして続行（migrationDone は立てない → 次回アップデートで自動再試行）
+    func skipMigration() {
+        logger.info("移行スキップ → 次回アップデートで自動再試行")
+        phase = .done
     }
 
     // MARK: - 旧ファイル検索
@@ -75,65 +81,52 @@ final class MigrationService {
 
     private func performMigration(from oldStoreURL: URL, context: ModelContext) async {
         do {
-            // 旧 Core Data コンテナ初期化
-            let oldContainer = try makeOldContainer(storeURL: oldStoreURL)
-            let oldContext = oldContainer.viewContext
+            // 改善案3: WAL 欠損補修（iCloud 復元後にファイルだけ残るケース対策）
+            repairWALIfNeeded(at: oldStoreURL)
 
-            // 全件取得
-            let fetchRequest = NSFetchRequest<NSManagedObject>(entityName: "E2record")
-            fetchRequest.sortDescriptors = [NSSortDescriptor(key: "dateTime", ascending: true)]
-            let allRecords = try oldContext.fetch(fetchRequest)
-
-            logger.info("旧レコード数: \(allRecords.count)")
-
-            let batchSize = 100
-            var processed = 0
-
-            for record in allRecords {
-                guard let dateTime = record.value(forKey: "dateTime") as? Date else { continue }
-
-                // 目標値レコードを検出し AppSettings へ書き出す
-                if dateTime >= BodyRecord.goalDate {
-                    migrateGoalRecord(record)
-                    processed += 1
-                    continue
-                }
-
-                // 通常レコードを変換
-                let body = convertToBodyRecord(record, dateTime: dateTime)
-                context.insert(body)
-                processed += 1
-
-                // バッチ保存
-                if processed % batchSize == 0 {
-                    try context.save()
-                    let progress = Double(processed) / Double(allRecords.count)
-                    phase = .migrating(progress: progress)
-                    logger.info("移行中: \(processed)/\(allRecords.count)")
-                }
+            // 改善案4: CoreData で取得を試み、失敗したら SQLite 直接読み取りへフォールバック
+            let rows: [[String: Any]]
+            do {
+                let oldContainer = try await makeOldContainer(storeURL: oldStoreURL)
+                rows = try fetchViaCoreData(container: oldContainer)
+                logger.info("CoreData 経由で取得: \(rows.count) 件")
+            } catch {
+                logger.warning("CoreData open 失敗、SQLite 直接読み取りへフォールバック: \(error)")
+                rows = try fetchViaSQLite(from: oldStoreURL)
+                logger.info("SQLite 直接読み取りで取得: \(rows.count) 件")
             }
 
-            // 最終保存
-            try context.save()
-            logger.info("移行完了: \(processed) 件")
+            // SwiftData へ挿入
+            try insertRows(rows, context: context)
 
-            // 旧ファイルを .bak にリネーム（削除しない）
+            // 成功：旧ファイルを .done にリネーム（失敗時はリネームしない → 次回自動再試行）
             archiveOldStore(at: oldStoreURL)
-
-            // 完了フラグ
             UserDefaults.standard.set(true, forKey: UDefKeys.migrationDone)
             phase = .done
 
         } catch {
             logger.error("移行失敗: \(error.localizedDescription)")
+            // 旧ファイルはそのまま残す → 次回アップデートで自動再試行
             phase = .failed(error.localizedDescription)
         }
     }
 
-    // MARK: - 旧 Core Data コンテナ生成
+    // MARK: - 改善案3: WAL 欠損補修
 
-    private func makeOldContainer(storeURL: URL) throws -> NSPersistentContainer {
-        // 旧モデルを動的に生成
+    private func repairWALIfNeeded(at storeURL: URL) {
+        let fm = FileManager.default
+        for ext in ["-wal", "-shm"] {
+            let auxURL = URL(fileURLWithPath: storeURL.path + ext)
+            if !fm.fileExists(atPath: auxURL.path) {
+                fm.createFile(atPath: auxURL.path, contents: Data())
+                logger.info("WAL 補修: \(auxURL.lastPathComponent) を空ファイルで作成")
+            }
+        }
+    }
+
+    // MARK: - 改善案5: CoreData コンテナ生成（async / withCheckedThrowingContinuation）
+
+    private func makeOldContainer(storeURL: URL) async throws -> NSPersistentContainer {
         let entity = NSEntityDescription()
         entity.name = "E2record"
         entity.managedObjectClassName = NSStringFromClass(NSManagedObject.self)
@@ -171,75 +164,239 @@ final class MigrationService {
         let container = NSPersistentContainer(name: "AzBodyNote", managedObjectModel: model)
         let desc = NSPersistentStoreDescription(url: storeURL)
         desc.isReadOnly = true
-        // モデルバージョンハッシュの不一致を無視して強制ロード
         desc.setOption(true as NSNumber, forKey: NSIgnorePersistentStoreVersioningOption)
         desc.setOption(true as NSNumber, forKey: NSMigratePersistentStoresAutomaticallyOption)
         desc.setOption(true as NSNumber, forKey: NSInferMappingModelAutomaticallyOption)
         container.persistentStoreDescriptions = [desc]
 
-        var loadError: Error?
-        container.loadPersistentStores { _, error in loadError = error }
-        if let error = loadError { throw error }
-
-        return container
+        // 改善案5: コールバックを async/await でラップ
+        return try await withCheckedThrowingContinuation { continuation in
+            container.loadPersistentStores { _, error in
+                if let error {
+                    continuation.resume(throwing: error)
+                } else {
+                    continuation.resume(returning: container)
+                }
+            }
+        }
     }
 
-    // MARK: - レコード変換
+    // MARK: - CoreData 経由フェッチ
 
-    private func convertToBodyRecord(_ obj: NSManagedObject, dateTime: Date) -> BodyRecord {
+    private func fetchViaCoreData(container: NSPersistentContainer) throws -> [[String: Any]] {
+        let oldContext = container.viewContext
+        let fetchRequest = NSFetchRequest<NSManagedObject>(entityName: "E2record")
+        fetchRequest.sortDescriptors = [NSSortDescriptor(key: "dateTime", ascending: true)]
+        let allRecords = try oldContext.fetch(fetchRequest)
+
+        let keys = ["nDateOpt", "bCaution", "sNote1", "sNote2", "sEquipment",
+                    "nBpHi_mmHg", "nBpLo_mmHg", "nPulse_bpm", "nTemp_10c",
+                    "nWeight_10Kg", "nBodyFat_10p", "nSkMuscle_10p"]
+
+        return allRecords.compactMap { obj -> [String: Any]? in
+            guard let dateTime = obj.value(forKey: "dateTime") as? Date else { return nil }
+            var row: [String: Any] = ["dateTime": dateTime]
+            for key in keys {
+                if let v = obj.value(forKey: key) { row[key] = v }
+            }
+            return row
+        }
+    }
+
+    // MARK: - 改善案4: SQLite 直接読み取り（CoreData open 失敗時のフォールバック）
+    //
+    // CoreData の SQLite 列名規則: "Z" + attributeName.uppercased()
+    //   dateTime      → ZDATETIME
+    //   nDateOpt      → ZNDATEOPT
+    //   bCaution      → ZBCAUTION  (TEXT "YES"/"NO")
+    //   nBpHi_mmHg    → ZNBPHI_MMHG
+    //   nSkMuscle_10p → ZNSKMUSCLE_10P
+    // テーブル名: "Z" + entityName.uppercased() = ZE2RECORD
+    // 日付: 2001-01-01 UTC (NSDate reference date) からの秒数 (REAL)
+
+    private func fetchViaSQLite(from storeURL: URL) throws -> [[String: Any]] {
+        var db: OpaquePointer?
+        guard sqlite3_open_v2(storeURL.path, &db, SQLITE_OPEN_READONLY, nil) == SQLITE_OK,
+              let db else {
+            throw MigrationError.sqliteOpenFailed(storeURL.path)
+        }
+        defer { sqlite3_close(db) }
+
+        let sql = """
+            SELECT
+                ZDATETIME,
+                ZNDATEOPT,
+                ZBCAUTION,
+                ZSNOTE1,
+                ZSNOTE2,
+                ZSEQUIPMENT,
+                ZNBPHI_MMHG,
+                ZNBPLO_MMHG,
+                ZNPULSE_BPM,
+                ZNTEMP_10C,
+                ZNWEIGHT_10KG,
+                ZNBODYFAT_10P,
+                ZNSKMUSCLE_10P
+            FROM ZE2RECORD
+            ORDER BY ZDATETIME ASC
+            """
+
+        var stmt: OpaquePointer?
+        guard sqlite3_prepare_v2(db, sql, -1, &stmt, nil) == SQLITE_OK, let stmt else {
+            throw MigrationError.sqliteQueryFailed
+        }
+        defer { sqlite3_finalize(stmt) }
+
+        // CoreData の日付基準: 2001-01-01 00:00:00 UTC
+        let coreDataEpoch: TimeInterval = 978_307_200
+
+        var rows: [[String: Any]] = []
+
+        while sqlite3_step(stmt) == SQLITE_ROW {
+            // ZDATETIME: 2001-01-01 からの秒数 (REAL)
+            guard sqlite3_column_type(stmt, 0) != SQLITE_NULL else { continue }
+            let rawDate = sqlite3_column_double(stmt, 0)
+            let dateTime = Date(timeIntervalSince1970: rawDate + coreDataEpoch)
+
+            var row: [String: Any] = ["dateTime": dateTime]
+
+            if sqlite3_column_type(stmt, 1) != SQLITE_NULL {
+                row["nDateOpt"] = Int(sqlite3_column_int(stmt, 1))
+            }
+            // bCaution: TEXT "YES"/"NO" または INTEGER 0/1 の両方を許容
+            if sqlite3_column_type(stmt, 2) != SQLITE_NULL {
+                switch sqlite3_column_type(stmt, 2) {
+                case SQLITE_TEXT:
+                    if let ptr = sqlite3_column_text(stmt, 2) { row["bCaution"] = String(cString: ptr) }
+                case SQLITE_INTEGER:
+                    row["bCaution"] = sqlite3_column_int(stmt, 2) != 0 ? "YES" : "NO"
+                default: break
+                }
+            }
+            if let ptr = sqlite3_column_text(stmt, 3) { row["sNote1"]     = String(cString: ptr) }
+            if let ptr = sqlite3_column_text(stmt, 4) { row["sNote2"]     = String(cString: ptr) }
+            if let ptr = sqlite3_column_text(stmt, 5) { row["sEquipment"] = String(cString: ptr) }
+
+            let intCols: [(Int32, String)] = [
+                (6,  "nBpHi_mmHg"),
+                (7,  "nBpLo_mmHg"),
+                (8,  "nPulse_bpm"),
+                (9,  "nTemp_10c"),
+                (10, "nWeight_10Kg"),
+                (11, "nBodyFat_10p"),
+                (12, "nSkMuscle_10p"),
+            ]
+            for (idx, key) in intCols where sqlite3_column_type(stmt, idx) != SQLITE_NULL {
+                row[key] = Int(sqlite3_column_int(stmt, idx))
+            }
+
+            rows.append(row)
+        }
+
+        return rows
+    }
+
+    // MARK: - SwiftData への挿入（CoreData / SQLite 両パス共通）
+
+    private func insertRows(_ rows: [[String: Any]], context: ModelContext) throws {
+        let batchSize = 100
+        var processed = 0
+
+        for row in rows {
+            guard let dateTime = row["dateTime"] as? Date else { continue }
+
+            if dateTime >= BodyRecord.goalDate {
+                migrateGoalRecord(row)
+                processed += 1
+                continue
+            }
+
+            let body = convertToBodyRecord(row, dateTime: dateTime)
+            context.insert(body)
+            processed += 1
+
+            if processed % batchSize == 0 {
+                try context.save()
+                let progress = Double(processed) / Double(rows.count)
+                phase = .migrating(progress: progress)
+                logger.info("移行中: \(processed)/\(rows.count)")
+            }
+        }
+
+        try context.save()
+        logger.info("移行完了: \(processed) 件")
+    }
+
+    // MARK: - レコード変換（[String: Any] → BodyRecord）
+
+    private func convertToBodyRecord(_ row: [String: Any], dateTime: Date) -> BodyRecord {
         let record = BodyRecord(dateTime: dateTime)
 
-        // DateOpt
-        if let v = obj.value(forKey: "nDateOpt") as? Int {
-            record.nDateOpt = v
-        }
+        if let v = row["nDateOpt"] as? Int { record.nDateOpt = v }
 
-        // bCaution（旧: NSString "YES"/"NO"）
-        if let v = obj.value(forKey: "bCaution") as? String {
+        if let v = row["bCaution"] as? String {
             record.bCaution = (v == "YES")
+        } else if let v = row["bCaution"] as? Bool {
+            record.bCaution = v
         }
 
-        record.sNote1     = (obj.value(forKey: "sNote1")     as? String) ?? ""
-        record.sNote2     = (obj.value(forKey: "sNote2")     as? String) ?? ""
-        record.sEquipment = (obj.value(forKey: "sEquipment") as? String) ?? ""
+        record.sNote1     = (row["sNote1"]     as? String) ?? ""
+        record.sNote2     = (row["sNote2"]     as? String) ?? ""
+        record.sEquipment = (row["sEquipment"] as? String) ?? ""
 
-        record.nBpHi_mmHg   = (obj.value(forKey: "nBpHi_mmHg")   as? Int) ?? 0
-        record.nBpLo_mmHg   = (obj.value(forKey: "nBpLo_mmHg")   as? Int) ?? 0
-        record.nPulse_bpm   = (obj.value(forKey: "nPulse_bpm")   as? Int) ?? 0
-        record.nTemp_10c    = (obj.value(forKey: "nTemp_10c")    as? Int) ?? 0
-        record.nWeight_10Kg = (obj.value(forKey: "nWeight_10Kg") as? Int) ?? 0
-        record.nBodyFat_10p  = (obj.value(forKey: "nBodyFat_10p")  as? Int) ?? 0
-        record.nSkMuscle_10p = (obj.value(forKey: "nSkMuscle_10p") as? Int) ?? 0
+        record.nBpHi_mmHg    = (row["nBpHi_mmHg"]    as? Int) ?? 0
+        record.nBpLo_mmHg    = (row["nBpLo_mmHg"]    as? Int) ?? 0
+        record.nPulse_bpm    = (row["nPulse_bpm"]    as? Int) ?? 0
+        record.nTemp_10c     = (row["nTemp_10c"]     as? Int) ?? 0
+        record.nWeight_10Kg  = (row["nWeight_10Kg"]  as? Int) ?? 0
+        record.nBodyFat_10p  = (row["nBodyFat_10p"]  as? Int) ?? 0
+        record.nSkMuscle_10p = (row["nSkMuscle_10p"] as? Int) ?? 0
 
         return record
     }
 
     // MARK: - 目標値レコード → AppSettings へ書き出し
 
-    private func migrateGoalRecord(_ obj: NSManagedObject) {
+    private func migrateGoalRecord(_ row: [String: Any]) {
         let settings = AppSettings.shared
-        if let v = obj.value(forKey: "nBpHi_mmHg") as? Int,   v > 0 { settings.goalBpHi      = v }
-        if let v = obj.value(forKey: "nBpLo_mmHg") as? Int,   v > 0 { settings.goalBpLo      = v }
-        if let v = obj.value(forKey: "nPulse_bpm") as? Int,   v > 0 { settings.goalPulse     = v }
-        if let v = obj.value(forKey: "nWeight_10Kg") as? Int, v > 0 { settings.goalWeight    = v }
-        if let v = obj.value(forKey: "nTemp_10c") as? Int,    v > 0 { settings.goalTemp      = v }
-        if let v = obj.value(forKey: "nBodyFat_10p") as? Int, v > 0 { settings.goalBodyFat   = v }
-        if let v = obj.value(forKey: "nSkMuscle_10p") as? Int, v > 0 { settings.goalSkMuscle = v }
+        if let v = row["nBpHi_mmHg"]    as? Int, v > 0 { settings.goalBpHi      = v }
+        if let v = row["nBpLo_mmHg"]    as? Int, v > 0 { settings.goalBpLo      = v }
+        if let v = row["nPulse_bpm"]    as? Int, v > 0 { settings.goalPulse     = v }
+        if let v = row["nWeight_10Kg"]  as? Int, v > 0 { settings.goalWeight    = v }
+        if let v = row["nTemp_10c"]     as? Int, v > 0 { settings.goalTemp      = v }
+        if let v = row["nBodyFat_10p"]  as? Int, v > 0 { settings.goalBodyFat   = v }
+        if let v = row["nSkMuscle_10p"] as? Int, v > 0 { settings.goalSkMuscle  = v }
         logger.info("目標値レコードを AppSettings へ書き出し完了")
     }
 
-    // MARK: - 旧ファイルアーカイブ
+    // MARK: - 旧ファイルアーカイブ（成功時のみ呼ぶ）
+    //
+    // 成功 → .done にリネーム（findOldStoreURL は .sqlite のみ検索するので再検出されない）
+    // 失敗 → リネームしない（.sqlite のまま残る → 次回アップデートで自動再試行）
 
     private func archiveOldStore(at url: URL) {
         let fm = FileManager.default
-        let extensions = ["", "-shm", "-wal"]
-        for ext in extensions {
+        for ext in ["", "-shm", "-wal"] {
             let src = URL(fileURLWithPath: url.path + ext)
-            let dst = URL(fileURLWithPath: url.path + ext + ".bak")
+            let dst = URL(fileURLWithPath: url.path + ext + ".done")
             if fm.fileExists(atPath: src.path) {
                 try? fm.moveItem(at: src, to: dst)
             }
         }
-        logger.info("旧ファイルを .bak にリネーム完了")
+        logger.info("旧ファイルを .done にリネーム完了")
+    }
+}
+
+// MARK: - エラー型
+
+private enum MigrationError: LocalizedError {
+    case sqliteOpenFailed(String)
+    case sqliteQueryFailed
+
+    var errorDescription: String? {
+        switch self {
+        case .sqliteOpenFailed(let path): return "SQLite ファイルを開けませんでした: \(path)"
+        case .sqliteQueryFailed:          return "SQLite クエリに失敗しました"
+        }
     }
 }

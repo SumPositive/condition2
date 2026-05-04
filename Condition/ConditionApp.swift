@@ -12,6 +12,11 @@ struct ConditionApp: App {
     @State private var settings = AppSettings.shared
 
     init() {
+        // 改善案2: ModelContainer.shared を初期化する前に
+        // SwiftData ストアファイルを "AzBodyNote" → "Condition" へリネーム
+        // （CoreData 移行完了済みユーザーのみ対象。未移行ユーザーの旧ファイルは触らない）
+        ModelContainer.renameSwiftDataStoreIfNeeded()
+
         let font = UIFont.systemFont(ofSize: 13, weight: .semibold)
         let attrs: [NSAttributedString.Key: Any] = [.font: font]
         UITabBarItem.appearance().setTitleTextAttributes(attrs, for: .normal)
@@ -39,6 +44,10 @@ struct ConditionApp: App {
                             let context = ModelContainer.shared.mainContext
                             await migrationService.migrateIfNeeded(context: context)
                         }
+                    } onSkip: {
+                        // スキップして続行
+                        // migrationDone フラグは立てない → 次回アップデートで自動再試行
+                        migrationService.skipMigration()
                     }
                 }
             }
@@ -97,29 +106,65 @@ private struct MigrationProgressView: View {
 private struct MigrationErrorView: View {
     let message: String
     let onRetry: () -> Void
+    let onSkip: () -> Void
+
+    @State private var showDetail = false
 
     var body: some View {
-        VStack(spacing: 20) {
-            Image(systemName: "exclamationmark.triangle")
-                .font(.system(size: 54))
-                .foregroundStyle(.orange)
+        ScrollView {
+            VStack(spacing: 24) {
+                Image(systemName: "exclamationmark.triangle")
+                    .font(.system(size: 54))
+                    .foregroundStyle(.orange)
 
-            Text("migration.failed")
-                .font(.title3)
+                Text("migration.failed")
+                    .font(.title3.weight(.semibold))
 
-            Text(message)
-                .font(.footnote)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
+                Text("migration.failedDescription")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal)
+
+                VStack(spacing: 12) {
+                    Button("action.retry", action: onRetry)
+                        .buttonStyle(.borderedProminent)
+                        .controlSize(.large)
+
+                    Button("migration.skipAndContinue", role: .destructive, action: onSkip)
+                        .buttonStyle(.bordered)
+                        .controlSize(.large)
+                }
+
+                VStack(spacing: 6) {
+                    Text("migration.skipNote")
+                        .font(.caption)
+                        .foregroundStyle(.tertiary)
+                        .multilineTextAlignment(.center)
+
+                    Text("migration.originalProtected")
+                        .font(.caption)
+                        .foregroundStyle(.tertiary)
+                        .multilineTextAlignment(.center)
+                }
                 .padding(.horizontal)
 
-            Button("action.retry", action: onRetry)
-                .buttonStyle(.borderedProminent)
-
-            Text("migration.originalProtected")
-                .font(.caption)
-                .foregroundStyle(.tertiary)
+                // 技術的な詳細は折りたたみで表示
+                DisclosureGroup(isExpanded: $showDetail) {
+                    Text(message)
+                        .font(.caption.monospaced())
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.leading)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.top, 4)
+                } label: {
+                    Text("migration.errorDetail")
+                        .font(.caption)
+                        .foregroundStyle(.tertiary)
+                }
+                .padding(.horizontal)
+            }
+            .padding(40)
         }
-        .padding(40)
     }
 }
