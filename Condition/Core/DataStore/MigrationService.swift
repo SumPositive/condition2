@@ -303,8 +303,17 @@ final class MigrationService {
     // MARK: - SwiftData への挿入（CoreData / SQLite 両パス共通）
 
     private func insertRows(_ rows: [[String: Any]], context: ModelContext) throws {
+        // 再試行時の重複防止：既存レコードの dateTime を収集
+        // スキップ後に新規入力したデータは別の dateTime を持つため消えない
+        let existing = try context.fetch(FetchDescriptor<BodyRecord>())
+        let existingDates = Set(existing.map { $0.dateTime })
+        if !existingDates.isEmpty {
+            logger.info("既存レコード \(existingDates.count) 件を重複チェック対象に追加")
+        }
+
         let batchSize = 100
         var processed = 0
+        var skipped   = 0
 
         for row in rows {
             guard let dateTime = row["dateTime"] as? Date else { continue }
@@ -312,6 +321,12 @@ final class MigrationService {
             if dateTime >= BodyRecord.goalDate {
                 migrateGoalRecord(row)
                 processed += 1
+                continue
+            }
+
+            // 同じ dateTime が既にあればスキップ（重複挿入防止）
+            guard !existingDates.contains(dateTime) else {
+                skipped += 1
                 continue
             }
 
@@ -328,7 +343,7 @@ final class MigrationService {
         }
 
         try context.save()
-        logger.info("移行完了: \(processed) 件")
+        logger.info("移行完了: \(processed) 件挿入, \(skipped) 件スキップ（重複）")
     }
 
     // MARK: - レコード変換（[String: Any] → BodyRecord）
