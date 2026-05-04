@@ -64,6 +64,10 @@ final class MigrationService {
     // MARK: - 旧ファイル検索
 
     private func findOldStoreURL() -> URL? {
+        // migrationDone=true の場合 AzBodyNote.sqlite は SwiftData のストア
+        // CoreData 移行元と混同しないよう検索しない
+        guard !UserDefaults.standard.bool(forKey: UDefKeys.migrationDone) else { return nil }
+
         let fm = FileManager.default
         let appSupport = fm.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
         let documents  = fm.urls(for: .documentDirectory,           in: .userDomainMask).first!
