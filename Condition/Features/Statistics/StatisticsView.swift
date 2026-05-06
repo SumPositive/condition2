@@ -17,10 +17,25 @@ extension EnvironmentValues {
     }
 }
 
-/// 利用可能幅に応じてチャート高さを拡大する（幅が広いほど高さも増やす）
-func adaptiveChartHeight(base: CGFloat, width: CGFloat) -> CGFloat {
-    guard width > 390 else { return base }
-    return base * (width / 390)
+/// 利用可能幅とフォントサイズに応じてチャート高さを拡大する
+/// dynamicTypeSize を渡すと文字サイズに比例してわずかに高くなる（最大1.33倍）
+func adaptiveChartHeight(base: CGFloat, width: CGFloat, dynamicTypeSize: DynamicTypeSize = .large) -> CGFloat {
+    let fontFactor: CGFloat
+    switch dynamicTypeSize {
+    case .xSmall, .small, .medium, .large: fontFactor = 1.00
+    case .xLarge:         fontFactor = 1.04
+    case .xxLarge:        fontFactor = 1.08
+    case .xxxLarge:       fontFactor = 1.13
+    case .accessibility1: fontFactor = 1.17
+    case .accessibility2: fontFactor = 1.21
+    case .accessibility3: fontFactor = 1.25
+    case .accessibility4: fontFactor = 1.29
+    case .accessibility5: fontFactor = 1.33
+    @unknown default:     fontFactor = 1.00
+    }
+    let h = base * fontFactor
+    guard width > 390 else { return h }
+    return h * (width / 390)
 }
 
 struct StatisticsView: View {
@@ -256,7 +271,9 @@ struct BpJshView: View {
     let records: [BodyRecord]
 
     @Environment(\.chartAvailableWidth) private var chartWidth
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @State private var showJSHInfo = false
+    @ScaledMetric(relativeTo: .caption) private var zoneLabelSize: CGFloat = 10
 
     private var isJapanese: Bool {
         Locale.preferredLanguages.first?.hasPrefix("ja") ?? true
@@ -278,7 +295,7 @@ struct BpJshView: View {
                     } label: {
                         HStack(spacing: 4) {
                             Image(systemName: "info.circle")
-                                .font(.title3)
+                                .font(.footnote)
                             Text(isJapanese ? String(localized: "text.jshStandard") : "ESC/ESH 2018")
                                 .font(.footnote)
                         }
@@ -371,7 +388,7 @@ struct BpJshView: View {
                         }
                     }
                 }
-                .frame(height: adaptiveChartHeight(base: 330, width: chartWidth))
+                .frame(height: adaptiveChartHeight(base: 330, width: chartWidth, dynamicTypeSize: dynamicTypeSize))
                 .padding(.horizontal, 4)
                 .overlay {
                     if validRecords.isEmpty {
@@ -382,16 +399,13 @@ struct BpJshView: View {
                 }
 
                 // 区分（DateOpt）凡例
-                let cols = [GridItem(.fixed(90)), GridItem(.fixed(90)), GridItem(.fixed(90))]
+                let cols = [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())]
                 LazyVGrid(columns: cols, alignment: .center, spacing: 4) {
                     ForEach(DateOpt.allCases, id: \.self) { opt in
                         HStack(spacing: 4) {
                             Circle()
                                 .fill(opt.color)
                                 .frame(width: 8, height: 8)
-                            Image(systemName: opt.icon)
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
                             Text(LocalizedStringKey(opt.label))
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
@@ -454,7 +468,7 @@ struct BpJshView: View {
                 .symbolSize(0)
                 .annotation(position: .trailing, alignment: .leading, spacing: 3) {
                     Text(LocalizedStringKey(label.name))
-                        .font(.system(size: 10))
+                        .font(.system(size: zoneLabelSize))
                         .foregroundStyle(label.color.opacity(0.85))
                 }
         }
@@ -581,6 +595,8 @@ private struct ESHStandardsPopover: View {
 
 struct BpJshRatioView: View {
     let records: [BodyRecord]
+    /// 列minimum幅をフォントサイズと連動させる（大文字時に3→2→1列へ自動縮小）
+    @ScaledMetric(relativeTo: .caption) private var legendMinW: CGFloat = 110
 
     private var isJapanese: Bool {
         Locale.preferredLanguages.first?.hasPrefix("ja") ?? true
@@ -647,7 +663,7 @@ struct BpJshRatioView: View {
                 .padding(.horizontal)
 
                 LazyVGrid(
-                    columns: [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())],
+                    columns: [GridItem(.adaptive(minimum: legendMinW))],
                     spacing: 4
                 ) {
                     ForEach(Array(categoryNames.enumerated()), id: \.offset) { i, cat in
@@ -680,6 +696,8 @@ struct BpDateOptCorrView: View {
     let records: [BodyRecord]
 
     @Environment(\.chartAvailableWidth) private var chartWidth
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @ScaledMetric(relativeTo: .caption) private var xLabelSize: CGFloat = 10
 
     private struct BpPoint: Identifiable {
         let id: Int
@@ -737,33 +755,51 @@ struct BpDateOptCorrView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                Text("metric.bpByCategory")
-                    .font(.title3)
-                Button {
-                    showInfo = true
-                } label: {
-                    Image(systemName: "info.circle")
-                        .font(.title3)
-                        .foregroundStyle(.secondary)
-                        .padding(.vertical, 6)
-                        .padding(.horizontal, 4)
-                        .contentShape(Rectangle())
+            let bpCorrLegend = HStack(spacing: 10) {
+                HStack(spacing: 4) {
+                    Circle().fill(Color.red.opacity(0.8)).frame(width: 8, height: 8)
+                    Text("metric.systolic.short").font(.caption).foregroundStyle(.secondary)
                 }
-                .buttonStyle(.plain)
-                .popover(isPresented: $showInfo, arrowEdge: .bottom) {
-                    BpDateOptCorrInfoPopover()
+                HStack(spacing: 4) {
+                    Circle().fill(Color.blue.opacity(0.8)).frame(width: 8, height: 8)
+                    Text("metric.diastolic.short").font(.caption).foregroundStyle(.secondary)
                 }
-                Spacer()
-                HStack(spacing: 10) {
-                    HStack(spacing: 4) {
-                        Circle().fill(Color.red.opacity(0.8)).frame(width: 8, height: 8)
-                        Text("metric.systolic.short").font(.caption).foregroundStyle(.secondary)
+            }
+            ViewThatFits(in: .horizontal) {
+                HStack {
+                    Text("metric.bpByCategory").font(.title3)
+                    Button {
+                        showInfo = true
+                    } label: {
+                        Image(systemName: "info.circle")
+                            .font(.title3).foregroundStyle(.secondary)
+                            .padding(.vertical, 6).padding(.horizontal, 4)
+                            .contentShape(Rectangle())
                     }
-                    HStack(spacing: 4) {
-                        Circle().fill(Color.blue.opacity(0.8)).frame(width: 8, height: 8)
-                        Text("metric.diastolic.short").font(.caption).foregroundStyle(.secondary)
+                    .buttonStyle(.plain)
+                    .popover(isPresented: $showInfo, arrowEdge: .bottom) {
+                        BpDateOptCorrInfoPopover()
                     }
+                    Spacer()
+                    bpCorrLegend
+                }
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack {
+                        Text("metric.bpByCategory").font(.title3)
+                        Button {
+                            showInfo = true
+                        } label: {
+                            Image(systemName: "info.circle")
+                                .font(.title3).foregroundStyle(.secondary)
+                                .padding(.vertical, 6).padding(.horizontal, 4)
+                                .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        .popover(isPresented: $showInfo, arrowEdge: .bottom) {
+                            BpDateOptCorrInfoPopover()
+                        }
+                    }
+                    bpCorrLegend
                 }
             }
             .padding(.horizontal)
@@ -825,13 +861,20 @@ struct BpDateOptCorrView: View {
         .chartXAxis {
             AxisMarks { value in
                 AxisValueLabel {
-                    if let s = value.as(String.self) {
-                        Text(LocalizedStringKey(s)).font(.system(size: 10))
+                    if let s = value.as(String.self),
+                       let opt = DateOpt.allCases.first(where: { $0.label == s }) {
+                        VStack(spacing: 2) {
+                            Image(systemName: opt.icon)
+                                .font(.system(size: xLabelSize))
+                            Text(LocalizedStringKey(s))
+                                .font(.system(size: 10))
+                                .multilineTextAlignment(.center)
+                        }
                     }
                 }
             }
         }
-        .frame(height: adaptiveChartHeight(base: 240, width: chartWidth))
+        .frame(height: adaptiveChartHeight(base: 240, width: chartWidth, dynamicTypeSize: dynamicTypeSize))
         .padding(.horizontal)
     }
 }
@@ -915,6 +958,7 @@ struct Bp24HChartView: View {
 
     @Environment(\.chartAvailableWidth) private var chartWidth
     private var settings: AppSettings { AppSettings.shared }
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     private var validRecords: [(hour: Int, hi: Int, lo: Int)] {
         let cal = Calendar(identifier: .gregorian)
@@ -972,7 +1016,7 @@ struct Bp24HChartView: View {
             .chartYScale(domain: yDomain)
             .chartXAxisLabel("text.time")
             .chartYAxisLabel("unit.mmHg")
-            .frame(height: adaptiveChartHeight(base: 220, width: chartWidth))
+            .frame(height: adaptiveChartHeight(base: 220, width: chartWidth, dynamicTypeSize: dynamicTypeSize))
             .padding(.horizontal)
         }
         .padding(.vertical, 8)
@@ -985,20 +1029,31 @@ struct Bp24HChartView: View {
 
 struct WeightSummaryView: View {
     let records: [BodyRecord]
+    @ScaledMetric(relativeTo: .footnote) private var unitColW: CGFloat = 24
 
     private var weightRecords: [BodyRecord] {
         records.filter { $0.nWeight_10Kg > 0 }.sorted { $0.dateTime < $1.dateTime }
     }
 
-    var body: some View {
-        let recs = weightRecords
-        let values = recs.map { Double($0.nWeight_10Kg) / 10.0 }
-        let avg = values.isEmpty ? 0.0 : values.reduce(0, +) / Double(values.count)
-        let minVal = values.min() ?? 0.0
-        let maxVal = values.max() ?? 0.0
-        let change = values.count >= 2 ? values.last! - values.first! : 0.0
+    private var values: [Double] { weightRecords.map { Double($0.nWeight_10Kg) / 10.0 } }
+    private var avg: Double { values.isEmpty ? 0.0 : values.reduce(0, +) / Double(values.count) }
+    private var minVal: Double { values.min() ?? 0.0 }
+    private var maxVal: Double { values.max() ?? 0.0 }
+    private var change: Double { values.count >= 2 ? values.last! - values.first! : 0.0 }
 
-        return VStack(spacing: 8) {
+    @ViewBuilder private var changeCell: some View {
+        HStack(spacing: 2) {
+            Image(systemName: change > 0.05 ? "arrow.up" : change < -0.05 ? "arrow.down" : "minus")
+                .foregroundStyle(change > 0.05 ? .red : change < -0.05 ? .blue : .secondary)
+                .font(.footnote)
+            Text(String(format: "%.1f", abs(change)))
+                .font(.title2.monospacedDigit())
+                .foregroundStyle(change > 0.05 ? .red : change < -0.05 ? .blue : .secondary)
+        }
+    }
+
+    var body: some View {
+        VStack(spacing: 8) {
             Text("metric.weightSummary")
                 .font(.title3)
 
@@ -1007,31 +1062,48 @@ struct WeightSummaryView: View {
                     .font(.callout)
                     .foregroundStyle(.secondary)
             } else {
-                Grid(horizontalSpacing: 12, verticalSpacing: 4) {
-                    GridRow {
-                        Text("stat.avg")
-                            .font(.footnote).foregroundStyle(.secondary)
-                        Text("stat.min")
-                            .font(.footnote).foregroundStyle(.secondary)
-                        Text("stat.max")
-                            .font(.footnote).foregroundStyle(.secondary)
-                        Text("text.change")
-                            .font(.footnote).foregroundStyle(.secondary)
-                        Text("").frame(width: 24)
-                    }
-                    GridRow {
-                        Text(String(format: "%.1f", avg)).font(.title2.monospacedDigit())
-                        Text(String(format: "%.1f", minVal)).font(.title2.monospacedDigit())
-                        Text(String(format: "%.1f", maxVal)).font(.title2.monospacedDigit())
-                        HStack(spacing: 2) {
-                            Image(systemName: change > 0.05 ? "arrow.up" : change < -0.05 ? "arrow.down" : "minus")
-                                .foregroundStyle(change > 0.05 ? .red : change < -0.05 ? .blue : .secondary)
-                                .font(.footnote)
-                            Text(String(format: "%.1f", abs(change)))
-                                .font(.title2.monospacedDigit())
-                                .foregroundStyle(change > 0.05 ? .red : change < -0.05 ? .blue : .secondary)
+                ViewThatFits(in: .horizontal) {
+                    // 4列レイアウト（プライマリ）
+                    Grid(horizontalSpacing: 12, verticalSpacing: 4) {
+                        GridRow {
+                            Text("stat.avg").font(.footnote).foregroundStyle(.secondary)
+                            Text("stat.min").font(.footnote).foregroundStyle(.secondary)
+                            Text("stat.max").font(.footnote).foregroundStyle(.secondary)
+                            Text("text.change").font(.footnote).foregroundStyle(.secondary)
+                            Text("").frame(width: unitColW)
                         }
-                        Text("unit.kg").font(.footnote).foregroundStyle(.secondary)
+                        GridRow {
+                            Text(String(format: "%.1f", avg)).font(.title2.monospacedDigit())
+                            Text(String(format: "%.1f", minVal)).font(.title2.monospacedDigit())
+                            Text(String(format: "%.1f", maxVal)).font(.title2.monospacedDigit())
+                            changeCell
+                            Text("unit.kg").font(.footnote).foregroundStyle(.secondary)
+                        }
+                    }
+                    // 2行レイアウト（フォールバック）
+                    VStack(spacing: 8) {
+                        Grid(horizontalSpacing: 12, verticalSpacing: 4) {
+                            GridRow {
+                                Text("stat.avg").font(.footnote).foregroundStyle(.secondary)
+                                Text("stat.min").font(.footnote).foregroundStyle(.secondary)
+                            }
+                            GridRow {
+                                Text(String(format: "%.1f", avg)).font(.title2.monospacedDigit())
+                                Text(String(format: "%.1f", minVal)).font(.title2.monospacedDigit())
+                            }
+                        }
+                        Grid(horizontalSpacing: 12, verticalSpacing: 4) {
+                            GridRow {
+                                Text("stat.max").font(.footnote).foregroundStyle(.secondary)
+                                Text("text.change").font(.footnote).foregroundStyle(.secondary)
+                                Text("").frame(width: unitColW)
+                            }
+                            GridRow {
+                                Text(String(format: "%.1f", maxVal)).font(.title2.monospacedDigit())
+                                changeCell
+                                Text("unit.kg").font(.footnote).foregroundStyle(.secondary)
+                            }
+                        }
                     }
                 }
             }
@@ -1046,6 +1118,7 @@ struct WeightSummaryView: View {
 
 struct TempSummaryView: View {
     let records: [BodyRecord]
+    @ScaledMetric(relativeTo: .footnote) private var unitColW: CGFloat = 24
 
     private var settings: AppSettings { AppSettings.shared }
 
@@ -1056,43 +1129,74 @@ struct TempSummaryView: View {
         return sqrt(variance)
     }
 
-    var body: some View {
-        let values = records.filter { $0.nTemp_10c > 0 }.map { Double($0.nTemp_10c) / 10.0 }
-        let avg = values.isEmpty ? 0.0 : values.reduce(0, +) / Double(values.count)
-        let sd = standardDeviation(values)
-        let minVal = values.min() ?? 0.0
-        let maxVal = values.max() ?? 0.0
+    private var tempValues: [Double] {
+        records.filter { $0.nTemp_10c > 0 }.map { Double($0.nTemp_10c) / 10.0 }
+    }
+    private var avg: Double { tempValues.isEmpty ? 0.0 : tempValues.reduce(0, +) / Double(tempValues.count) }
+    private var sd: Double { standardDeviation(tempValues) }
+    private var minVal: Double { tempValues.min() ?? 0.0 }
+    private var maxVal: Double { tempValues.max() ?? 0.0 }
 
-        return VStack(spacing: 8) {
+    var body: some View {
+        VStack(spacing: 8) {
             Text("metric.bodyTempSummary")
                 .font(.title3)
 
-            if values.isEmpty {
+            if tempValues.isEmpty {
                 Text("empty.noDataInPeriod")
                     .font(.callout)
                     .foregroundStyle(.secondary)
             } else {
-                Grid(horizontalSpacing: 12, verticalSpacing: 4) {
-                    GridRow {
-                        Text("stat.avg")
-                            .font(.footnote).foregroundStyle(.secondary)
-                        if settings.statShowAvg {
-                            Text("stat.standardDeviation.short").font(.footnote).foregroundStyle(.secondary)
+                ViewThatFits(in: .horizontal) {
+                    // プライマリ（1行）
+                    Grid(horizontalSpacing: 12, verticalSpacing: 4) {
+                        GridRow {
+                            Text("stat.avg").font(.footnote).foregroundStyle(.secondary)
+                            if settings.statShowAvg {
+                                Text("stat.standardDeviation.short").font(.footnote).foregroundStyle(.secondary)
+                            }
+                            Text("stat.min").font(.footnote).foregroundStyle(.secondary)
+                            Text("stat.max").font(.footnote).foregroundStyle(.secondary)
+                            Text("").frame(width: unitColW)
                         }
-                        Text("stat.min")
-                            .font(.footnote).foregroundStyle(.secondary)
-                        Text("stat.max")
-                            .font(.footnote).foregroundStyle(.secondary)
-                        Text("").frame(width: 24)
+                        GridRow {
+                            Text(String(format: "%.1f", avg)).font(.title2.monospacedDigit())
+                            if settings.statShowAvg {
+                                Text(String(format: "%.2f", sd)).font(.footnote).foregroundStyle(.secondary)
+                            }
+                            Text(String(format: "%.1f", minVal)).font(.title2.monospacedDigit())
+                            Text(String(format: "%.1f", maxVal)).font(.title2.monospacedDigit())
+                            Text("unit.celsiusSymbol").font(.footnote).foregroundStyle(.secondary)
+                        }
                     }
-                    GridRow {
-                        Text(String(format: "%.1f", avg)).font(.title2.monospacedDigit())
-                        if settings.statShowAvg {
-                            Text(String(format: "%.2f", sd)).font(.footnote).foregroundStyle(.secondary)
+                    // フォールバック（2行）
+                    VStack(spacing: 8) {
+                        Grid(horizontalSpacing: 12, verticalSpacing: 4) {
+                            GridRow {
+                                Text("stat.avg").font(.footnote).foregroundStyle(.secondary)
+                                if settings.statShowAvg {
+                                    Text("stat.standardDeviation.short").font(.footnote).foregroundStyle(.secondary)
+                                }
+                                Text("stat.min").font(.footnote).foregroundStyle(.secondary)
+                            }
+                            GridRow {
+                                Text(String(format: "%.1f", avg)).font(.title2.monospacedDigit())
+                                if settings.statShowAvg {
+                                    Text(String(format: "%.2f", sd)).font(.footnote).foregroundStyle(.secondary)
+                                }
+                                Text(String(format: "%.1f", minVal)).font(.title2.monospacedDigit())
+                            }
                         }
-                        Text(String(format: "%.1f", minVal)).font(.title2.monospacedDigit())
-                        Text(String(format: "%.1f", maxVal)).font(.title2.monospacedDigit())
-                        Text("unit.celsiusSymbol").font(.footnote).foregroundStyle(.secondary)
+                        Grid(horizontalSpacing: 12, verticalSpacing: 4) {
+                            GridRow {
+                                Text("stat.max").font(.footnote).foregroundStyle(.secondary)
+                                Text("").frame(width: unitColW)
+                            }
+                            GridRow {
+                                Text(String(format: "%.1f", maxVal)).font(.title2.monospacedDigit())
+                                Text("unit.celsiusSymbol").font(.footnote).foregroundStyle(.secondary)
+                            }
+                        }
                     }
                 }
             }
@@ -1109,6 +1213,7 @@ struct Temp24HChartView: View {
     let records: [BodyRecord]
 
     @Environment(\.chartAvailableWidth) private var chartWidth
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     private var validRecords: [(hour: Int, temp: Double)] {
         let cal = Calendar(identifier: .gregorian)
@@ -1151,7 +1256,7 @@ struct Temp24HChartView: View {
             .chartYScale(domain: yDomain)
             .chartXAxisLabel("text.time")
             .chartYAxisLabel("unit.celsiusSymbol")
-            .frame(height: adaptiveChartHeight(base: 220, width: chartWidth))
+            .frame(height: adaptiveChartHeight(base: 220, width: chartWidth, dynamicTypeSize: dynamicTypeSize))
             .padding(.horizontal)
             .overlay {
                 if validRecords.isEmpty {
@@ -1173,6 +1278,8 @@ struct TempHistogramView: View {
     let records: [BodyRecord]
 
     @Environment(\.chartAvailableWidth) private var chartWidth
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @ScaledMetric(relativeTo: .caption) private var legendMinW: CGFloat = 130
 
     private struct Bin: Identifiable {
         let lower: Double
@@ -1249,10 +1356,10 @@ struct TempHistogramView: View {
             }
             .chartXAxisLabel("unit.celsiusSymbol")
             .chartYAxisLabel("text.count")
-            .frame(height: adaptiveChartHeight(base: 180, width: chartWidth))
+            .frame(height: adaptiveChartHeight(base: 180, width: chartWidth, dynamicTypeSize: dynamicTypeSize))
             .padding(.horizontal)
 
-            LazyVGrid(columns: [GridItem(.fixed(130)), GridItem(.fixed(130))], alignment: .center) {
+            LazyVGrid(columns: [GridItem(.adaptive(minimum: legendMinW))], alignment: .center) {
                 legendItem(color: .blue,
                            label: "metric.hypothermia36C")
                 legendItem(color: .green,
