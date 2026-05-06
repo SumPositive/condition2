@@ -25,7 +25,7 @@ struct ConditionApp: App {
 
     var body: some Scene {
         WindowGroup {
-            Group {
+            let rootView = Group {
                 switch migrationService.phase {
                 case .idle, .checking:
                     ProgressView("app.loading")
@@ -59,6 +59,13 @@ struct ConditionApp: App {
                 await MobileAds.shared.start()
             }
             .preferredColorScheme(settings.appearanceMode.colorScheme)
+
+            if settings.fontScale.followsSystem {
+                rootView
+            } else {
+                rootView
+                    .dynamicTypeSize(settings.fontScale.dynamicTypeSize)
+            }
         }
         .modelContainer(ModelContainer.shared)
     }

@@ -75,15 +75,52 @@ struct SettingsView: View {
                 // MARK: - 表示
                 Section("settings.display") {
                     VStack(alignment: .leading, spacing: 8) {
+                        HStack(spacing: 8) {
+                            Text("settings.userLevel")
+                                .font(.subheadline)
+                            Picker("settings.userLevel", selection: $settings.userLevel) {
+                                ForEach(AppUserLevel.allCases) { level in
+                                    Text(LocalizedStringKey(level.titleKey)).tag(level)
+                                }
+                            }
+                            .pickerStyle(.segmented)
+                        }
+                        if settings.userLevel == .beginner {
+                            Text("settings.help.userLevel")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                    }
+
+                    HStack(spacing: 8) {
                         Text("appearance.mode")
-                            .font(.callout)
-                        Picker("", selection: $settings.appearanceMode) {
+                            .font(.subheadline)
+                        Picker("appearance.mode", selection: $settings.appearanceMode) {
                             ForEach(AppAppearanceMode.allCases) { mode in
                                 Text(LocalizedStringKey(mode.titleKey)).tag(mode)
                             }
                         }
                         .pickerStyle(.segmented)
-                        .labelsHidden()
+                    }
+
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack(spacing: 8) {
+                            Text("settings.fontScale")
+                                .font(.subheadline)
+                            Picker("settings.fontScale", selection: $settings.fontScale) {
+                                ForEach(AppFontScale.allCases) { scale in
+                                    Text(LocalizedStringKey(scale.titleKey)).tag(scale)
+                                }
+                            }
+                            .pickerStyle(.segmented)
+                        }
+                        if settings.userLevel == .beginner {
+                            Text("settings.help.fontScale")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
                     }
 
                     Button {

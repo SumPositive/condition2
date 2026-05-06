@@ -3,8 +3,55 @@
 // UserDefaults の読み書きを集約
 
 import Foundation
+import SwiftUI
 import Observation
 import AZDial
+
+// ユーザレベル（初心者：ヘルプテキスト表示 / 上級者：非表示）
+enum AppUserLevel: Int, CaseIterable, Identifiable {
+    case beginner = 0
+    case expert   = 1
+
+    var id: Int { rawValue }
+
+    var titleKey: String {
+        switch self {
+        case .beginner: return "settings.userLevel.beginner"
+        case .expert:   return "settings.userLevel.expert"
+        }
+    }
+}
+
+// 文字サイズ倍率
+enum AppFontScale: Int, CaseIterable, Identifiable {
+    case system   = 0   // 自動（システム設定に従う）
+    case standard = 1   // 標準（Large 固定）
+    case large    = 2   // 大（xxxLarge 相当）
+    case xLarge   = 3   // 特大（accessibility2 相当）
+
+    var id: Int { rawValue }
+
+    var titleKey: String {
+        switch self {
+        case .system:   return "settings.fontScale.system"
+        case .standard: return "settings.fontScale.standard"
+        case .large:    return "settings.fontScale.large"
+        case .xLarge:   return "settings.fontScale.xLarge"
+        }
+    }
+
+    /// true のときはシステム設定に委ねる（.dynamicTypeSize を上書きしない）
+    var followsSystem: Bool { self == .system }
+
+    var dynamicTypeSize: DynamicTypeSize {
+        switch self {
+        case .system:   return .large           // followsSystem=true なので実際には使われない
+        case .standard: return .large
+        case .large:    return .xxxLarge
+        case .xLarge:   return .accessibility2
+        }
+    }
+}
 
 // アプリ全体の外観モード
 enum AppAppearanceMode: Int, CaseIterable, Identifiable {
@@ -103,8 +150,14 @@ final class AppSettings {
     }
 
     // MARK: - 表示設定（端末別）
+    var userLevel: AppUserLevel = .beginner {
+        didSet { ud.set(userLevel.rawValue, forKey: UDefKeys.userLevel) }
+    }
     var appearanceMode: AppAppearanceMode = .automatic {
         didSet { ud.set(appearanceMode.rawValue, forKey: UDefKeys.appearanceMode) }
+    }
+    var fontScale: AppFontScale = .system {
+        didSet { ud.set(fontScale.rawValue, forKey: UDefKeys.fontScale) }
     }
 
     // MARK: - 統計設定
@@ -237,9 +290,11 @@ final class AppSettings {
     private init() {
         // UserDefaults デフォルト値登録（キー未登録時は 0 が返るため明示的に設定）
         ud.register(defaults: [
-            UDefKeys.hkDirection: HKSyncDirection.both.rawValue,
-            UDefKeys.hkTiming:    HKSyncTiming.automatic.rawValue,
+            UDefKeys.hkDirection:   HKSyncDirection.both.rawValue,
+            UDefKeys.hkTiming:      HKSyncTiming.automatic.rawValue,
             UDefKeys.appearanceMode: AppAppearanceMode.automatic.rawValue,
+            UDefKeys.userLevel:     AppUserLevel.beginner.rawValue,
+            UDefKeys.fontScale:     AppFontScale.system.rawValue,
         ])
         migrateFromKVSIfNeeded()
         loadFromUserDefaults()
@@ -249,6 +304,8 @@ final class AppSettings {
         hkDirection = ud.integer(forKey: UDefKeys.hkDirection)
         hkTiming    = ud.integer(forKey: UDefKeys.hkTiming)
         appearanceMode = AppAppearanceMode(rawValue: ud.integer(forKey: UDefKeys.appearanceMode)) ?? .automatic
+        userLevel  = AppUserLevel(rawValue:  ud.integer(forKey: UDefKeys.userLevel))  ?? .beginner
+        fontScale  = AppFontScale(rawValue:  ud.integer(forKey: UDefKeys.fontScale))  ?? .system
         if ud.object(forKey: UDefKeys.openNewRecordOnForeground) != nil {
             openNewRecordOnForeground = ud.bool(forKey: UDefKeys.openNewRecordOnForeground)
         }
