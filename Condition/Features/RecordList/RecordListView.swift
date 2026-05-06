@@ -409,63 +409,50 @@ private struct DemoDataGenerator {
 }
 #endif
 
-// MARK: - 列幅定義
-
-/// 日付列の固定幅（ヘッダーと明細で共通。title2.bold "31" + spacing + icon 44pt + trailing 4pt）
-private let dateColumnWidth: CGFloat = 110
-
-private func subColumnWidths(for kind: GraphKind) -> [CGFloat] {
-    switch kind {
-    case .bp:       return [42, 42]
-    case .pulse:    return [42]
-    case .weight:   return [60]
-    case .temp:     return [52]
-    case .bodyFat:  return [52]
-    case .skMuscle: return [52]
-    default:        return []
-    }
-}
-
-private func computeColumnSpacing(availableWidth: CGFloat, kinds: [GraphKind]) -> CGFloat {
-    return 4
-}
+// MARK: - 列幅定義（@ScaledMetric で各 View 内に定義）
+// 基準値: dateColW=110, bpW=42, pulseW=42, weightW=60, otherW=52, catW=40
+// いずれも .title3 基準でスケールし、値セルと同倍率で広がる
 
 // MARK: - カラムヘッダー
 
 struct RecordColumnHeader: View {
     let visibleKinds: [GraphKind]
 
+    // 値セルと同じ基準(.title3)でスケール → 列幅が常に揃う
+    @ScaledMetric(relativeTo: .title3) private var dateColW:  CGFloat = 110
+    @ScaledMetric(relativeTo: .title3) private var bpW:       CGFloat = 42
+    @ScaledMetric(relativeTo: .title3) private var pulseW:    CGFloat = 42
+    @ScaledMetric(relativeTo: .title3) private var weightW:   CGFloat = 60
+    @ScaledMetric(relativeTo: .title3) private var otherW:    CGFloat = 52
+    @ScaledMetric(relativeTo: .title3) private var catW:      CGFloat = 40
+    // 見出し行の高さ・セパレータ高さを footnote 基準でスケール
+    @ScaledMetric(relativeTo: .footnote) private var sepH:   CGFloat = 16
+
     var body: some View {
-        GeometryReader { geo in
-            let measureWidth = geo.size.width - dateColumnWidth - 5
-            let spacing = computeColumnSpacing(availableWidth: measureWidth, kinds: visibleKinds)
+        HStack(spacing: 0) {
             HStack(spacing: 0) {
-                HStack(spacing: 0) {
-                    Text("record.datetime")
-                        .font(.caption)
-                    Spacer()
-                    Text("record.category")
-                        .minimumScaleFactor(0.6)
-                        .lineLimit(1)
-                        .frame(width: 40, alignment: .center)
-                }
-                .frame(width: dateColumnWidth, alignment: .leading)
-                .padding(.trailing, 4)
-                Rectangle()
-                    .frame(width: 1, height: 16)
-                    .foregroundStyle(.separator)
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: spacing) {
-                        ForEach(Array(visibleKinds.enumerated()), id: \.element.id) { idx, kind in
-                            kindHeaderItems(kind, isFirst: idx == 0)
-                        }
+                Text("record.datetime")
+                    .font(.caption)
+                Spacer()
+                Text("record.category")
+                    .minimumScaleFactor(0.5)
+                    .lineLimit(1)
+                    .frame(width: catW, alignment: .center)
+            }
+            .frame(width: dateColW, alignment: .leading)
+            .padding(.trailing, 4)
+            Rectangle()
+                .frame(width: 1, height: sepH)
+                .foregroundStyle(.separator)
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 4) {
+                    ForEach(Array(visibleKinds.enumerated()), id: \.element.id) { idx, kind in
+                        kindHeaderItems(kind, isFirst: idx == 0)
                     }
-                    .padding(.leading, 4)
                 }
-                .frame(height: 16)
+                .padding(.leading, 4)
             }
         }
-        .frame(height: 16)
         .font(.footnote)
         .foregroundStyle(.secondary)
     }
@@ -473,7 +460,7 @@ struct RecordColumnHeader: View {
     @ViewBuilder
     private func kindHeaderItems(_ kind: GraphKind, isFirst: Bool) -> some View {
         if !isFirst {
-            Rectangle().frame(width: 1, height: 16).foregroundStyle(.separator)
+            Rectangle().frame(width: 1, height: sepH).foregroundStyle(.separator)
         }
         kindHeaderCells(kind)
     }
@@ -482,18 +469,18 @@ struct RecordColumnHeader: View {
     private func kindHeaderCells(_ kind: GraphKind) -> some View {
         switch kind {
         case .bp:
-            Text("metric.systolic.short").minimumScaleFactor(0.6).lineLimit(1).frame(width: 42)
-            Text("metric.diastolic.short").minimumScaleFactor(0.6).lineLimit(1).frame(width: 42)
+            Text("metric.systolic.short").minimumScaleFactor(0.5).lineLimit(1).frame(width: bpW)
+            Text("metric.diastolic.short").minimumScaleFactor(0.5).lineLimit(1).frame(width: bpW)
         case .pulse:
-            Text("metric.heartRate").minimumScaleFactor(0.6).lineLimit(1).frame(width: 42)
+            Text("metric.heartRate").minimumScaleFactor(0.5).lineLimit(1).frame(width: pulseW)
         case .weight:
-            Text("metric.weight").minimumScaleFactor(0.6).lineLimit(1).frame(width: 60)
+            Text("metric.weight").minimumScaleFactor(0.5).lineLimit(1).frame(width: weightW)
         case .temp:
-            Text("metric.bodyTemp").minimumScaleFactor(0.6).lineLimit(1).frame(width: 52)
+            Text("metric.bodyTemp").minimumScaleFactor(0.5).lineLimit(1).frame(width: otherW)
         case .bodyFat:
-            Text("metric.bodyFat.short").minimumScaleFactor(0.6).lineLimit(1).frame(width: 52)
+            Text("metric.bodyFat.short").minimumScaleFactor(0.5).lineLimit(1).frame(width: otherW)
         case .skMuscle:
-            Text("metric.skeletalMuscle.short").minimumScaleFactor(0.6).lineLimit(1).frame(width: 52)
+            Text("metric.skeletalMuscle.short").minimumScaleFactor(0.5).lineLimit(1).frame(width: otherW)
         default:
             EmptyView()
         }
@@ -506,6 +493,15 @@ struct RecordRowView: View {
     let record: BodyRecord
     let visibleKinds: [GraphKind]
     var hkEnabled: Bool = false
+
+    // ヘッダーと同じ基準・同じ初期値 → 列幅が常に揃う
+    @ScaledMetric(relativeTo: .title3) private var dateColW:  CGFloat = 110
+    @ScaledMetric(relativeTo: .title3) private var bpW:       CGFloat = 42
+    @ScaledMetric(relativeTo: .title3) private var pulseW:    CGFloat = 42
+    @ScaledMetric(relativeTo: .title3) private var weightW:   CGFloat = 60
+    @ScaledMetric(relativeTo: .title3) private var otherW:    CGFloat = 52
+    @ScaledMetric(relativeTo: .title3) private var catW:      CGFloat = 40
+    @ScaledMetric(relativeTo: .title3) private var catIconSz: CGFloat = 19
 
     private static let dateFormatter: DateFormatter = {
         let f = DateFormatter()
@@ -571,11 +567,11 @@ struct RecordRowView: View {
                     .padding(.leading, 2)
                     // 右：区分アイコン
                     Image(systemName: record.dateOpt.icon)
-                        .font(.system(size: 19))
+                        .font(.system(size: catIconSz))
                         .foregroundStyle(.secondary)
-                        .frame(width: 40, alignment: .center)
+                        .frame(width: catW, alignment: .center)
                 }
-                .frame(width: dateColumnWidth, alignment: .leading)
+                .frame(width: dateColW, alignment: .leading)
                 .padding(.trailing, 4)
 
                 // 最初の縦線の幅を確保（実線は overlay で描画）
@@ -585,11 +581,10 @@ struct RecordRowView: View {
                 GeometryReader { proxy in
                     let memoSpace: CGFloat = 6
                     let h = proxy.size.height
-                    let spacing = computeColumnSpacing(availableWidth: proxy.size.width, kinds: visibleKinds)
                     let cellH = h - memoSpace
                     ScrollView(.horizontal, showsIndicators: false) {
                         VStack(alignment: .leading, spacing: 0) {
-                            HStack(spacing: spacing) {
+                            HStack(spacing: 4) {
                                 ForEach(Array(visibleKinds.enumerated()), id: \.element.id) { idx, kind in
                                     kindValueItems(kind, isFirst: idx == 0, cellH: cellH)
                                 }
@@ -612,7 +607,7 @@ struct RecordRowView: View {
         // 最初の縦線のみ VStack 全高（メモ行含む）に渡って描画
         .overlay(alignment: .leading) {
             HStack(spacing: 0) {
-                Color.clear.frame(width: dateColumnWidth + 4)
+                Color.clear.frame(width: dateColW + 4)
                 Divider()
                     .padding(.vertical, 8)
                 Spacer()
@@ -634,18 +629,18 @@ struct RecordRowView: View {
     private func kindValueCells(_ kind: GraphKind, cellH: CGFloat) -> some View {
         switch kind {
         case .bp:
-            valueCell(record.displayBpHi, width: 42, height: cellH)
-            valueCell(record.displayBpLo, width: 42, height: cellH)
+            valueCell(record.displayBpHi, width: bpW,    height: cellH)
+            valueCell(record.displayBpLo, width: bpW,    height: cellH)
         case .pulse:
-            valueCell(record.displayPulse, width: 42, height: cellH)
+            valueCell(record.displayPulse,    width: pulseW,  height: cellH)
         case .weight:
-            valueCell(record.displayWeight, width: 60, height: cellH)
+            valueCell(record.displayWeight,   width: weightW, height: cellH)
         case .temp:
-            valueCell(record.displayTemp, width: 52, height: cellH)
+            valueCell(record.displayTemp,     width: otherW,  height: cellH)
         case .bodyFat:
-            valueCell(record.displayBodyFat, width: 52, height: cellH)
+            valueCell(record.displayBodyFat,  width: otherW,  height: cellH)
         case .skMuscle:
-            valueCell(record.displaySkMuscle, width: 52, height: cellH)
+            valueCell(record.displaySkMuscle, width: otherW,  height: cellH)
         default:
             EmptyView()
         }
