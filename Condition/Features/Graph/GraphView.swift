@@ -335,23 +335,37 @@ private struct SelectionDetailRow: View {
     let detail: String      // 値＋単位の文字列
     let color: Color
 
+    private var dateText: String {
+        let c = Calendar.current
+        let m  = c.component(.month,  from: record.dateTime)
+        let d  = c.component(.day,    from: record.dateTime)
+        let h  = c.component(.hour,   from: record.dateTime)
+        let mn = c.component(.minute, from: record.dateTime)
+        let y  = c.component(.year,   from: record.dateTime)
+        return String(format: "%d/%d/%d %d:%02d", y, m, d, h, mn)
+    }
+
     var body: some View {
-        HStack(spacing: 6) {
-            Image(systemName: record.dateOpt.icon)
-            Text(LocalizedStringKey(record.dateOpt.label))
-            Text({
-                let c = Calendar.current
-                let m  = c.component(.month,  from: record.dateTime)
-                let d  = c.component(.day,    from: record.dateTime)
-                let h  = c.component(.hour,   from: record.dateTime)
-                let mn = c.component(.minute, from: record.dateTime)
-                let y  = c.component(.year,   from: record.dateTime)
-                return String(format: "%d/%d/%d %d:%02d", y, m, d, h, mn)
-            }())
-            .foregroundStyle(color.opacity(0.7))
-            Spacer()
-            Text(detail)
-                .bold()
+        ViewThatFits(in: .horizontal) {
+            // 通常サイズ: 1行
+            HStack(spacing: 6) {
+                Image(systemName: record.dateOpt.icon)
+                Text(LocalizedStringKey(record.dateOpt.label))
+                Text(dateText).foregroundStyle(color.opacity(0.7))
+                Spacer()
+                Text(detail).bold()
+            }
+            // 大文字サイズ: 2行（区分+日時 左寄せ / 値+単位 右寄せ）
+            VStack(alignment: .leading, spacing: 1) {
+                HStack(spacing: 6) {
+                    Image(systemName: record.dateOpt.icon)
+                    Text(LocalizedStringKey(record.dateOpt.label))
+                    Text(dateText).foregroundStyle(color.opacity(0.7))
+                }
+                Text(detail)
+                    .bold()
+                    .frame(maxWidth: .infinity, alignment: .trailing)
+            }
         }
         .foregroundStyle(color)
         .font(.footnote)
@@ -602,6 +616,7 @@ struct BpChartView: View {
     @State private var selectedDate: Date?
     @State private var scrollPosition: Date = Date()
     @Environment(\.chartAvailableWidth) private var chartWidth
+    @ScaledMetric(relativeTo: .body) private var scaledBase: CGFloat = 150
 
     private var validRecords: [BodyRecord] {
         records.filter { $0.nBpHi_mmHg > 0 && $0.nBpLo_mmHg > 0 }
@@ -658,17 +673,28 @@ struct BpChartView: View {
     var body: some View {
         PanelContainer {
             // ヘッダー
-            HStack(alignment: .firstTextBaseline) {
-                Text(LocalizedStringKey(GraphKind.bp.title))
-                    .font(.callout.weight(.semibold))
-                Spacer()
-                if let mnHi = periodRecords.map(\.nBpHi_mmHg).min(),
-                   let mxHi = periodRecords.map(\.nBpHi_mmHg).max(),
-                   let mnLo = periodRecords.map(\.nBpLo_mmHg).min(),
-                   let mxLo = periodRecords.map(\.nBpLo_mmHg).max() {
-                    StatCell(label: "text.range", value: "\(mnHi)–\(mxHi)／\(mnLo)–\(mxLo)")
+            let bpRange: String? = {
+                guard let mnHi = periodRecords.map(\.nBpHi_mmHg).min(),
+                      let mxHi = periodRecords.map(\.nBpHi_mmHg).max(),
+                      let mnLo = periodRecords.map(\.nBpLo_mmHg).min(),
+                      let mxLo = periodRecords.map(\.nBpLo_mmHg).max() else { return nil }
+                return "\(mnHi)–\(mxHi)／\(mnLo)–\(mxLo)"
+            }()
+            ViewThatFits(in: .horizontal) {
+                HStack(alignment: .firstTextBaseline) {
+                    Text(LocalizedStringKey(GraphKind.bp.title)).font(.callout.weight(.semibold))
+                    Spacer()
+                    if let txt = bpRange { StatCell(label: "text.range", value: txt) }
+                    Text("unit.mmHg").font(.callout.weight(.semibold)).foregroundStyle(.red)
                 }
-                Text("unit.mmHg").font(.callout.weight(.semibold)).foregroundStyle(.red)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(LocalizedStringKey(GraphKind.bp.title)).font(.callout.weight(.semibold))
+                    HStack {
+                        if let txt = bpRange { StatCell(label: "text.range", value: txt) }
+                        Spacer()
+                        Text("unit.mmHg").font(.callout.weight(.semibold)).foregroundStyle(.red)
+                    }
+                }
             }
             .padding(.horizontal, 16)
             .padding(.top, 14)
@@ -761,7 +787,7 @@ struct BpChartView: View {
             }
             .tapToSelectDay($selectedDate, validDays: Set(validRecords.map { dayStart($0.dateTime) }))
             .standardXAxis(period: period, scrollPosition: $scrollPosition, kind: .bp, oldestDate: validRecords.first?.dateTime, newestDate: validRecords.last?.dateTime)
-            .frame(height: adaptiveChartHeight(base: 150, width: chartWidth))
+            .frame(height: adaptiveChartHeight(base: scaledBase, width: chartWidth))
             .padding(.horizontal, 8)
             .padding(.bottom, 4)
 
@@ -794,6 +820,7 @@ struct BpPpChartView: View {
     @State private var selectedDate: Date?
     @State private var scrollPosition: Date = Date()
     @Environment(\.chartAvailableWidth) private var chartWidth
+    @ScaledMetric(relativeTo: .body) private var scaledBase: CGFloat = 120
 
     private func dayStart(_ date: Date) -> Date { cal.startOfDay(for: date) }
 
@@ -836,17 +863,23 @@ struct BpPpChartView: View {
     var body: some View {
         PanelContainer {
             // ヘッダー（血圧セクションと同スタイル）
-            HStack(alignment: .firstTextBaseline) {
-                Text("metric.pulsePressure")
-                    .font(.callout.weight(.semibold))
-                Spacer()
-                if let avg = avgPP {
-                    StatCell(label: "stat.avg", value: "\(avg)")
+            ViewThatFits(in: .horizontal) {
+                HStack(alignment: .firstTextBaseline) {
+                    Text("metric.pulsePressure").font(.callout.weight(.semibold))
+                    Spacer()
+                    if let avg = avgPP { StatCell(label: "stat.avg", value: "\(avg)") }
+                    if let mn = minPP, let mx = maxPP { StatCell(label: "text.range", value: "\(mn)–\(mx)") }
+                    Text("unit.mmHg").font(.callout.weight(.semibold)).foregroundStyle(.orange)
                 }
-                if let mn = minPP, let mx = maxPP {
-                    StatCell(label: "text.range", value: "\(mn)–\(mx)")
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("metric.pulsePressure").font(.callout.weight(.semibold))
+                    HStack {
+                        if let avg = avgPP { StatCell(label: "stat.avg", value: "\(avg)") }
+                        if let mn = minPP, let mx = maxPP { StatCell(label: "text.range", value: "\(mn)–\(mx)") }
+                        Spacer()
+                        Text("unit.mmHg").font(.callout.weight(.semibold)).foregroundStyle(.orange)
+                    }
                 }
-                Text("unit.mmHg").font(.callout.weight(.semibold)).foregroundStyle(.orange)
             }
             .padding(.horizontal, 16)
             .padding(.top, 14)
@@ -901,7 +934,7 @@ struct BpPpChartView: View {
             }
             .tapToSelectDay($selectedDate, validDays: Set(validRecords.map { dayStart($0.dateTime) }))
             .standardXAxis(period: period, scrollPosition: $scrollPosition, kind: .bpAvg, oldestDate: validRecords.first?.dateTime, newestDate: validRecords.last?.dateTime)
-            .frame(height: adaptiveChartHeight(base: 120, width: chartWidth))
+            .frame(height: adaptiveChartHeight(base: scaledBase, width: chartWidth))
             .padding(.horizontal, 8)
             .padding(.bottom, 4)
 
@@ -965,6 +998,7 @@ struct LineChartView: View {
     @State private var selectedDate: Date?
     @State private var scrollPosition: Date = Date()
     @Environment(\.chartAvailableWidth) private var chartWidth
+    @ScaledMetric(relativeTo: .body) private var scaledBase: CGFloat = 120
 
     private func dayStart(_ date: Date) -> Date { cal.startOfDay(for: date) }
 
@@ -1024,16 +1058,23 @@ struct LineChartView: View {
     var body: some View {
         PanelContainer {
             // ヘッダー
-            HStack(alignment: .firstTextBaseline) {
-                Text(LocalizedStringKey(title)).font(.callout.weight(.semibold))
-                Spacer()
-                if let avg = avgValue {
-                    StatCell(label: "stat.avg", value: "\(fmt(avg))")
+            ViewThatFits(in: .horizontal) {
+                HStack(alignment: .firstTextBaseline) {
+                    Text(LocalizedStringKey(title)).font(.callout.weight(.semibold))
+                    Spacer()
+                    if let avg = avgValue { StatCell(label: "stat.avg", value: "\(fmt(avg))") }
+                    if let mn = minValue, let mx = maxValue { StatCell(label: "text.range", value: "\(fmt(mn))–\(fmt(mx))") }
+                    Text(LocalizedStringKey(unit)).font(.callout.weight(.semibold)).foregroundStyle(color)
                 }
-                if let mn = minValue, let mx = maxValue {
-                    StatCell(label: "text.range", value: "\(fmt(mn))–\(fmt(mx))")
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(LocalizedStringKey(title)).font(.callout.weight(.semibold))
+                    HStack {
+                        if let avg = avgValue { StatCell(label: "stat.avg", value: "\(fmt(avg))") }
+                        if let mn = minValue, let mx = maxValue { StatCell(label: "text.range", value: "\(fmt(mn))–\(fmt(mx))") }
+                        Spacer()
+                        Text(LocalizedStringKey(unit)).font(.callout.weight(.semibold)).foregroundStyle(color)
+                    }
                 }
-                Text(LocalizedStringKey(unit)).font(.callout.weight(.semibold)).foregroundStyle(color)
             }
             .padding(.horizontal, 16)
             .padding(.top, 14)
@@ -1121,7 +1162,7 @@ struct LineChartView: View {
             }
             .tapToSelectDay($selectedDate, validDays: Set(validRecords.map { dayStart($0.dateTime) }))
             .standardXAxis(period: period, scrollPosition: $scrollPosition, kind: kind, oldestDate: validRecords.first?.dateTime, newestDate: validRecords.last?.dateTime)
-            .frame(height: adaptiveChartHeight(base: 120, width: chartWidth))
+            .frame(height: adaptiveChartHeight(base: scaledBase, width: chartWidth))
             .padding(.horizontal, 8)
             .padding(.bottom, 4)
 
@@ -1131,7 +1172,7 @@ struct LineChartView: View {
                 ForEach(selectedDayRecords) { r in
                     SelectionDetailRow(
                         record: r,
-                        detail: "\(fmt(r[keyPath: keyPath])) \(unit)",
+                        detail: "\(fmt(r[keyPath: keyPath])) \(NSLocalizedString(unit, comment: ""))",
                         color: r.dateOpt.color
                     )
                 }
@@ -1155,6 +1196,7 @@ private struct BMIChartView: View {
     private var isJapanese: Bool { Locale.preferredLanguages.first?.hasPrefix("ja") ?? true }
     @Environment(\.chartAvailableWidth) private var chartWidth
     @Environment(\.colorScheme) private var colorScheme
+    @ScaledMetric(relativeTo: .body) private var scaledBase: CGFloat = 120
 
     private func dayStart(_ date: Date) -> Date { cal.startOfDay(for: date) }
 
@@ -1210,33 +1252,35 @@ private struct BMIChartView: View {
 
     var body: some View {
         PanelContainer {
-            // ヘッダー
-            HStack(alignment: .firstTextBaseline) {
-                Text("metric.bmi").font(.callout.weight(.semibold))
-                Button {
-                    showBMIInfo = true
-                } label: {
-                    HStack(spacing: 4) {
-                        Image(systemName: "info.circle")
-                            .font(.title3)
-                        Text(isJapanese ? String(localized: "text.jassoStandard") : "WHO BMI")
-                            .font(.footnote)
+            // ヘッダー（タイトル行 + 統計行の2段構成）
+            VStack(alignment: .leading, spacing: 2) {
+                HStack {
+                    Text("metric.bmi").font(.callout.weight(.semibold))
+                    Button {
+                        showBMIInfo = true
+                    } label: {
+                        HStack(spacing: 4) {
+                            Image(systemName: "info.circle").font(.title3)
+                            Text(isJapanese ? String(localized: "text.jassoStandard") : "WHO BMI")
+                                .font(.footnote)
+                        }
+                        .foregroundStyle(.secondary)
+                        .padding(.vertical, 6)
+                        .padding(.horizontal, 4)
+                        .contentShape(Rectangle())
                     }
-                    .foregroundStyle(.secondary)
-                    .padding(.vertical, 6)
-                    .padding(.horizontal, 4)
-                    .contentShape(Rectangle())
+                    .buttonStyle(.plain)
+                    .popover(isPresented: $showBMIInfo, arrowEdge: .bottom) {
+                        BMIStandardsPopover(isJapanese: isJapanese)
+                    }
+                    Spacer()
                 }
-                .buttonStyle(.plain)
-                .popover(isPresented: $showBMIInfo, arrowEdge: .bottom) {
-                    BMIStandardsPopover(isJapanese: isJapanese)
-                }
-                Spacer()
-                if let avg = avgValue {
-                    StatCell(label: "stat.avg", value: fmt(avg))
-                }
-                if let mn = minValue, let mx = maxValue {
-                    StatCell(label: "text.range", value: "\(fmt(mn))–\(fmt(mx))")
+                if avgValue != nil || (minValue != nil && maxValue != nil) {
+                    HStack {
+                        if let avg = avgValue { StatCell(label: "stat.avg", value: fmt(avg)) }
+                        if let mn = minValue, let mx = maxValue { StatCell(label: "text.range", value: "\(fmt(mn))–\(fmt(mx))") }
+                        Spacer()
+                    }
                 }
             }
             .padding(.horizontal, 16)
@@ -1324,7 +1368,7 @@ private struct BMIChartView: View {
             }
             .tapToSelectDay($selectedDate, validDays: Set(validRecords.map { dayStart($0.dateTime) }))
             .standardXAxis(period: period, scrollPosition: $scrollPosition, kind: .bmi, oldestDate: validRecords.first?.dateTime, newestDate: validRecords.last?.dateTime)
-            .frame(height: adaptiveChartHeight(base: 120, width: chartWidth))
+            .frame(height: adaptiveChartHeight(base: scaledBase, width: chartWidth))
             .padding(.horizontal, 8)
             .padding(.bottom, 4)
 
@@ -1361,6 +1405,7 @@ struct WeightChangeChartView: View {
     @State private var selectedDate: Date?
     @State private var scrollPosition: Date = Date()
     @Environment(\.chartAvailableWidth) private var chartWidth
+    @ScaledMetric(relativeTo: .body) private var scaledBase: CGFloat = 100
 
     private func dayStart(_ date: Date) -> Date { cal.startOfDay(for: date) }
 
@@ -1439,7 +1484,7 @@ struct WeightChangeChartView: View {
             }
             .tapToSelectDay($selectedDate, validDays: validDays)
             .standardXAxis(period: period, scrollPosition: $scrollPosition, kind: .weightChange, oldestDate: changeValues.first?.date, newestDate: changeValues.last?.date)
-            .frame(height: adaptiveChartHeight(base: 100, width: chartWidth))
+            .frame(height: adaptiveChartHeight(base: scaledBase, width: chartWidth))
             .padding(.horizontal, 8)
             .padding(.bottom, 4)
 
