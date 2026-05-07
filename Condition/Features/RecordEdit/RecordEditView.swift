@@ -168,18 +168,18 @@ struct RecordEditView: View {
     private func fieldRow(for kind: GraphKind) -> some View {
         switch kind {
         case .bp:
-            dialRow(title: "metric.systolic.long", value: $vm.nBpHi_mmHg, enabled: $vm.bpHiEnabled, spec: MeasureRange.bpHi, unit: "unit.mmHg", stepperStep: 10, color: .red)
-            dialRow(title: "metric.diastolic.long", value: $vm.nBpLo_mmHg, enabled: $vm.bpLoEnabled, spec: MeasureRange.bpLo, unit: "unit.mmHg", stepperStep: 5,  color: .blue)
+            dialRow(title: "metric.systolic.long", value: $vm.nBpHi_mmHg, enabled: $vm.bpHiEnabled, spec: MeasureRange.bpHi, unit: "unit.mmHg", stepperStep: 1, color: .red)
+            dialRow(title: "metric.diastolic.long", value: $vm.nBpLo_mmHg, enabled: $vm.bpLoEnabled, spec: MeasureRange.bpLo, unit: "unit.mmHg", stepperStep: 1, color: .blue)
         case .pulse:
-            dialRow(title: "metric.heartRate", value: $vm.nPulse_bpm, enabled: $vm.pulseEnabled, spec: MeasureRange.pulse, unit: "unit.bpm", stepperStep: 5, color: .orange)
+            dialRow(title: "metric.heartRate", value: $vm.nPulse_bpm, enabled: $vm.pulseEnabled, spec: MeasureRange.pulse, unit: "unit.bpm", stepperStep: 1, color: .orange)
         case .weight:
-            dialRow(title: "metric.weight", value: $vm.nWeight_10Kg, enabled: $vm.weightEnabled, spec: MeasureRange.weight, unit: "unit.kg", stepperStep: 10, decimals: 1, color: .indigo)
+            dialRow(title: "metric.weight", value: $vm.nWeight_10Kg, enabled: $vm.weightEnabled, spec: MeasureRange.weight, unit: "unit.kg", stepperStep: 1, decimals: 1, color: .indigo)
         case .temp:
             dialRow(title: "metric.bodyTemp", value: $vm.nTemp_10c, enabled: $vm.tempEnabled, spec: MeasureRange.temp, unit: "unit.celsius", stepperStep: 1, decimals: 1, color: .pink)
         case .bodyFat:
-            dialRow(title: "metric.bodyFat", value: $vm.nBodyFat_10p, enabled: $vm.bodyFatEnabled, spec: MeasureRange.bodyFat, unit: "%", stepperStep: 5, decimals: 1, color: .purple)
+            dialRow(title: "metric.bodyFat", value: $vm.nBodyFat_10p, enabled: $vm.bodyFatEnabled, spec: MeasureRange.bodyFat, unit: "%", stepperStep: 1, decimals: 1, color: .purple)
         case .skMuscle:
-            dialRow(title: "metric.skeletalMuscle", value: $vm.nSkMuscle_10p, enabled: $vm.skMuscleEnabled, spec: MeasureRange.skMuscle, unit: "%", stepperStep: 5, decimals: 1, color: .teal)
+            dialRow(title: "metric.skeletalMuscle", value: $vm.nSkMuscle_10p, enabled: $vm.skMuscleEnabled, spec: MeasureRange.skMuscle, unit: "%", stepperStep: 1, decimals: 1, color: .teal)
         case .bpAvg, .bmi, .weightChange:
             EmptyView()
         }
@@ -318,14 +318,32 @@ struct RecordEditView: View {
     }
 
     private var dateOptRow: some View {
-        Picker(selection: $vm.dateOpt) {
+        ViewThatFits(in: .horizontal) {
+            // 1行：ラベル＋ピッカー
+            HStack {
+                Text("record.category")
+                Spacer()
+                dateOptPicker
+            }
+            // 2行：ラベル行 ＋ ピッカー右寄せ行
+            VStack(alignment: .leading, spacing: 0) {
+                Text("record.category")
+                dateOptPicker
+                    .frame(maxWidth: .infinity, alignment: .trailing)
+            }
+        }
+        .onChange(of: vm.dateOpt) { _, _ in vm.isModified = true }
+    }
+
+    private var dateOptPicker: some View {
+        Picker("", selection: $vm.dateOpt) {
             ForEach(DateOpt.allCases, id: \.self) { opt in
                 Label(LocalizedStringKey(opt.label), systemImage: opt.icon).tag(opt)
             }
-        } label: {
-            Text("record.category")
         }
-        .onChange(of: vm.dateOpt) { _, _ in vm.isModified = true }
+        .pickerStyle(.menu)
+        .labelsHidden()
+        .lineLimit(1)
     }
 
     // MARK: - ダイアル行
@@ -342,23 +360,21 @@ struct RecordEditView: View {
         color: Color = .primary
     ) -> some View {
         VStack(alignment: .leading, spacing: 4) {
-            HStack {
-                Text(title)
-                    .font(.callout)
-                Spacer()
-                if enabled.wrappedValue {
-                    NumpadValueText(value: value, min: spec.min, max: spec.max, decimals: decimals, color: color)
-                    Text(unit)
-                        .font(.callout.weight(.semibold))
-                        .foregroundStyle(color.opacity(0.7))
-                } else {
-                    Text("placeholder.none")
-                        .font(.title)
-                        .foregroundStyle(.tertiary)
+            ViewThatFits(in: .horizontal) {
+                // 1行：見出し＋値＋単位＋スイッチ
+                HStack {
+                    Text(title).font(.callout)
+                    Spacer()
+                    rowControls(value: value, enabled: enabled, spec: spec,
+                                unit: unit, decimals: decimals, color: color)
                 }
-                Toggle("", isOn: enabled)
-                    .labelsHidden()
-                    .onChange(of: enabled.wrappedValue) { _, _ in vm.isModified = true }
+                // 2行：見出し（左寄せ） ／ 値＋単位＋スイッチ（右寄せ）
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(title).font(.callout)
+                    rowControls(value: value, enabled: enabled, spec: spec,
+                                unit: unit, decimals: decimals, color: color)
+                        .frame(maxWidth: .infinity, alignment: .trailing)
+                }
             }
             if enabled.wrappedValue {
                 AZDialView(
@@ -374,6 +390,33 @@ struct RecordEditView: View {
             }
         }
         .padding(.vertical, 4)
+    }
+
+    /// 値・単位・トグルをまとめた横並びコントロール
+    private func rowControls(
+        value: Binding<Int>,
+        enabled: Binding<Bool>,
+        spec: MeasureSpec,
+        unit: LocalizedStringKey,
+        decimals: Int,
+        color: Color
+    ) -> some View {
+        HStack(spacing: 4) {
+            if enabled.wrappedValue {
+                NumpadValueText(value: value, min: spec.min, max: spec.max,
+                                decimals: decimals, color: color)
+                Text(unit)
+                    .font(.callout.weight(.semibold))
+                    .foregroundStyle(color.opacity(0.7))
+            } else {
+                Text("placeholder.none")
+                    .font(.title)
+                    .foregroundStyle(.tertiary)
+            }
+            Toggle("", isOn: enabled)
+                .labelsHidden()
+                .onChange(of: enabled.wrappedValue) { _, _ in vm.isModified = true }
+        }
     }
 
     // MARK: - メモ行
