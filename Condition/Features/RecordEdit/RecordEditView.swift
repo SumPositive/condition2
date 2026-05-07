@@ -52,7 +52,7 @@ struct RecordEditView: View {
     }
 
     var body: some View {
-        NavigationStack {
+        let navContent = NavigationStack {
             Form {
                 hkImportSection
                 dateSection
@@ -151,6 +151,13 @@ struct RecordEditView: View {
             .onChange(of: vm.nTemp_10c)     { _, _ in vm.isModified = true }
             .onChange(of: vm.nBodyFat_10p)  { _, _ in vm.isModified = true }
             .onChange(of: vm.nSkMuscle_10p) { _, _ in vm.isModified = true }
+        }
+        // .sheet で提示されるため、AppのdynamicTypeSize環境値が引き継がれないことがある。
+        // AppSettings から直接フォントスケールを適用して確実に連動させる。
+        if settings.fontScale.followsSystem {
+            navContent
+        } else {
+            navContent.dynamicTypeSize(settings.fontScale.dynamicTypeSize)
         }
     }
 
@@ -336,14 +343,25 @@ struct RecordEditView: View {
     }
 
     private var dateOptPicker: some View {
-        Picker("", selection: $vm.dateOpt) {
+        Menu {
             ForEach(DateOpt.allCases, id: \.self) { opt in
-                Label(LocalizedStringKey(opt.label), systemImage: opt.icon).tag(opt)
+                Button {
+                    vm.dateOpt = opt
+                } label: {
+                    Label(LocalizedStringKey(opt.label), systemImage: opt.icon)
+                }
             }
+        } label: {
+            HStack(spacing: 4) {
+                Image(systemName: vm.dateOpt.icon)
+                Text(LocalizedStringKey(vm.dateOpt.label))
+                    .lineLimit(1)
+                Image(systemName: "chevron.up.chevron.down")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            .foregroundStyle(.tint)
         }
-        .pickerStyle(.menu)
-        .labelsHidden()
-        .lineLimit(1)
     }
 
     // MARK: - ダイアル行
@@ -403,11 +421,9 @@ struct RecordEditView: View {
     ) -> some View {
         HStack(spacing: 4) {
             if enabled.wrappedValue {
+                // 数値と単位を同じボタン内に入れてタップ領域を拡大
                 NumpadValueText(value: value, min: spec.min, max: spec.max,
-                                decimals: decimals, color: color)
-                Text(unit)
-                    .font(.callout.weight(.semibold))
-                    .foregroundStyle(color.opacity(0.7))
+                                decimals: decimals, color: color, unit: unit)
             } else {
                 Text("placeholder.none")
                     .font(.title)
