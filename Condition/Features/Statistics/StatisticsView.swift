@@ -153,6 +153,7 @@ struct StatisticsView: View {
         case .bpRatio:        BpJshRatioView(records: targetRecords)
         case .bpDateOptCorr:  BpDateOptCorrView(records: targetRecords)
         case .bp24h:          Bp24HChartView(records: targetRecords)
+        case .bpSummary:      BpSummaryView(records: targetRecords)
         case .weightSummary:  WeightSummaryView(records: targetRecords)
         case .tempSummary:    TempSummaryView(records: targetRecords)
         case .temp24h:        Temp24HChartView(records: targetRecords)
@@ -214,58 +215,6 @@ struct StatisticsView: View {
         topVC.present(activityVC, animated: true)
     }
 
-    private var statSummaryView: some View {
-        let validBpRecords = targetRecords.filter { $0.nBpHi_mmHg > 0 && $0.nBpLo_mmHg > 0 }
-        guard !validBpRecords.isEmpty else { return AnyView(EmptyView()) }
-
-        let hiValues = validBpRecords.map { Double($0.nBpHi_mmHg) }
-        let loValues = validBpRecords.map { Double($0.nBpLo_mmHg) }
-        let hiAvg = hiValues.reduce(0, +) / Double(hiValues.count)
-        let loAvg = loValues.reduce(0, +) / Double(loValues.count)
-        let hiStd = standardDeviation(hiValues)
-        let loStd = standardDeviation(loValues)
-
-        return AnyView(
-            VStack(spacing: 8) {
-                Text("metric.bloodPressureSummary")
-                    .font(.title3)
-
-                Grid(horizontalSpacing: 16, verticalSpacing: 4) {
-                    GridRow {
-                        Text("").frame(width: 40)
-                        Text("stat.avg").font(.footnote).foregroundStyle(.secondary)
-                        if settings.statShowAvg {
-                            Text("stat.standardDeviation.short").font(.footnote).foregroundStyle(.secondary)
-                        }
-                    }
-                    GridRow {
-                        Text("metric.systolic.short").foregroundStyle(.red)
-                        Text(String(format: "%.1f", hiAvg)).font(.title2.monospacedDigit())
-                        if settings.statShowAvg {
-                            Text(String(format: "%.1f", hiStd)).font(.footnote).foregroundStyle(.secondary)
-                        }
-                    }
-                    GridRow {
-                        Text("metric.diastolic.short").foregroundStyle(.blue)
-                        Text(String(format: "%.1f", loAvg)).font(.title2.monospacedDigit())
-                        if settings.statShowAvg {
-                            Text(String(format: "%.1f", loStd)).font(.footnote).foregroundStyle(.secondary)
-                        }
-                    }
-                }
-            }
-            .padding()
-            .background(.background.secondary)
-            .clipShape(RoundedRectangle(cornerRadius: 12))
-        )
-    }
-
-    private func standardDeviation(_ values: [Double]) -> Double {
-        guard values.count > 1 else { return 0 }
-        let avg = values.reduce(0, +) / Double(values.count)
-        let variance = values.map { pow($0 - avg, 2) }.reduce(0, +) / Double(values.count - 1)
-        return sqrt(variance)
-    }
 }
 
 // MARK: - JSH 血圧分布バー＋散布図
@@ -1023,6 +972,72 @@ struct Bp24HChartView: View {
             .padding(.horizontal)
         }
         .padding(.vertical, 8)
+        .background(.background.secondary)
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+    }
+}
+
+// MARK: - 血圧 上下平均サマリー
+
+struct BpSummaryView: View {
+    let records: [BodyRecord]
+
+    private var settings: AppSettings { AppSettings.shared }
+
+    private var validRecords: [BodyRecord] {
+        records.filter { $0.nBpHi_mmHg > 0 && $0.nBpLo_mmHg > 0 }
+    }
+
+    private func standardDeviation(_ values: [Double]) -> Double {
+        guard values.count > 1 else { return 0 }
+        let avg = values.reduce(0, +) / Double(values.count)
+        let variance = values.map { pow($0 - avg, 2) }.reduce(0, +) / Double(values.count - 1)
+        return sqrt(variance)
+    }
+
+    var body: some View {
+        let hiValues = validRecords.map { Double($0.nBpHi_mmHg) }
+        let loValues = validRecords.map { Double($0.nBpLo_mmHg) }
+        let hiAvg = hiValues.isEmpty ? 0.0 : hiValues.reduce(0, +) / Double(hiValues.count)
+        let loAvg = loValues.isEmpty ? 0.0 : loValues.reduce(0, +) / Double(loValues.count)
+        let hiStd = standardDeviation(hiValues)
+        let loStd = standardDeviation(loValues)
+
+        VStack(spacing: 8) {
+            Text("metric.bloodPressureSummary")
+                .font(.title3)
+
+            if validRecords.isEmpty {
+                Text("empty.noDataInPeriod")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+            } else {
+                Grid(horizontalSpacing: 16, verticalSpacing: 4) {
+                    GridRow {
+                        Text("").frame(width: 40)
+                        Text("stat.avg").font(.footnote).foregroundStyle(.secondary)
+                        if settings.statShowAvg {
+                            Text("stat.standardDeviation.short").font(.footnote).foregroundStyle(.secondary)
+                        }
+                    }
+                    GridRow {
+                        Text("metric.systolic.short").foregroundStyle(.red)
+                        Text(String(format: "%.1f", hiAvg)).font(.title2.monospacedDigit())
+                        if settings.statShowAvg {
+                            Text(String(format: "%.1f", hiStd)).font(.footnote.monospacedDigit()).foregroundStyle(.secondary)
+                        }
+                    }
+                    GridRow {
+                        Text("metric.diastolic.short").foregroundStyle(.blue)
+                        Text(String(format: "%.1f", loAvg)).font(.title2.monospacedDigit())
+                        if settings.statShowAvg {
+                            Text(String(format: "%.1f", loStd)).font(.footnote.monospacedDigit()).foregroundStyle(.secondary)
+                        }
+                    }
+                }
+            }
+        }
+        .padding()
         .background(.background.secondary)
         .clipShape(RoundedRectangle(cornerRadius: 12))
     }
