@@ -45,10 +45,15 @@ struct RecordEditView: View {
     }
 
     private let onHKImported: ((Int) -> Void)?
+    /// 変更状態が変わるたびに呼ばれるコールバック（true=変更あり / false=変更なし or シート消滅）
+    private let onModifiedChanged: ((Bool) -> Void)?
 
-    init(mode: EditMode, onHKImported: ((Int) -> Void)? = nil) {
+    init(mode: EditMode,
+         onHKImported: ((Int) -> Void)? = nil,
+         onModifiedChanged: ((Bool) -> Void)? = nil) {
         _vm = State(initialValue: RecordEditViewModel(mode: mode))
         self.onHKImported = onHKImported
+        self.onModifiedChanged = onModifiedChanged
     }
 
     var body: some View {
@@ -126,6 +131,7 @@ struct RecordEditView: View {
                     }
                     .disabled(!vm.isModified && !isNewRecord)
                     .bold()
+                    .tint(vm.isModified ? .accentColor : Color(.secondaryLabel))
                 }
                 ToolbarItem(placement: .cancellationAction) {
                     Button("action.cancel") {
@@ -143,14 +149,8 @@ struct RecordEditView: View {
                     vm.loadPreviousValues(context: context)
                 }
             }
-            .onChange(of: vm.bCaution)      { _, _ in vm.isModified = true }
-            .onChange(of: vm.nBpHi_mmHg)   { _, _ in vm.isModified = true }
-            .onChange(of: vm.nBpLo_mmHg)   { _, _ in vm.isModified = true }
-            .onChange(of: vm.nPulse_bpm)    { _, _ in vm.isModified = true }
-            .onChange(of: vm.nWeight_10Kg)  { _, _ in vm.isModified = true }
-            .onChange(of: vm.nTemp_10c)     { _, _ in vm.isModified = true }
-            .onChange(of: vm.nBodyFat_10p)  { _, _ in vm.isModified = true }
-            .onChange(of: vm.nSkMuscle_10p) { _, _ in vm.isModified = true }
+            // isModified は ViewModel の didSet で管理（View 側 onChange 不要）
+            .onChange(of: vm.isModified) { _, newValue in onModifiedChanged?(newValue) }
         }
         // .sheet で提示されるため、AppのdynamicTypeSize環境値が引き継がれないことがある。
         // AppSettings から直接フォントスケールを適用して確実に連動させる。
@@ -339,7 +339,6 @@ struct RecordEditView: View {
                     .frame(maxWidth: .infinity, alignment: .trailing)
             }
         }
-        .onChange(of: vm.dateOpt) { _, _ in vm.isModified = true }
     }
 
     private var dateOptPicker: some View {
@@ -431,7 +430,6 @@ struct RecordEditView: View {
             }
             Toggle("", isOn: enabled)
                 .labelsHidden()
-                .onChange(of: enabled.wrappedValue) { _, _ in vm.isModified = true }
         }
     }
 
@@ -443,7 +441,6 @@ struct RecordEditView: View {
                 .font(.callout)
             TextField("", text: text)
                 .multilineTextAlignment(.trailing)
-                .onChange(of: text.wrappedValue) { _, _ in vm.isModified = true }
         }
     }
 

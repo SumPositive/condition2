@@ -19,6 +19,8 @@ struct RecordListView: View {
     @State private var editTarget: BodyRecord? = nil
     @State private var showAddSheet = false
     @State private var showExportSheet = false
+    /// 開いている編集シートに未保存の変更がある場合 true
+    @State private var editHasUnsavedChanges = false
 
     @State private var toastMessage: String? = nil
     @State private var showHKTimeoutAlert = false
@@ -99,15 +101,18 @@ struct RecordListView: View {
                     }
                 }
             }
-            .sheet(isPresented: $showAddSheet) {
-                RecordEditView(mode: .addNew) { count in
-                    showImportToast(count: count)
-                }
+            .sheet(isPresented: $showAddSheet,
+                   onDismiss: { editHasUnsavedChanges = false }) {
+                addNewRecordSheet
             }
             .onChange(of: scenePhase) { _, phase in
                 if phase == .active {
                     Task { await autoImportFromHealthKitIfNeeded() }
-                    if settings.openNewRecordOnForeground && !showAddSheet && editTarget == nil {
+                    // 編集シートが開いている、または未保存の変更がある場合は新規記録を開かない
+                    if settings.openNewRecordOnForeground
+                        && !showAddSheet
+                        && editTarget == nil
+                        && !editHasUnsavedChanges {
                         showAddSheet = true
                     }
                 }
@@ -118,8 +123,9 @@ struct RecordListView: View {
                     Task { await autoImportFromHealthKitIfNeeded() }
                 }
             }
-            .sheet(item: $editTarget) { record in
-                RecordEditView(mode: .edit(record))
+            .sheet(item: $editTarget,
+                   onDismiss: { editHasUnsavedChanges = false }) { record in
+                editRecordSheet(record: record)
             }
             .sheet(isPresented: $showExportSheet) {
                 ExportSheetView(records: records, visibleKinds: visibleRecordKinds)
@@ -152,6 +158,25 @@ struct RecordListView: View {
                 Text("health.pleaseCheckThatHealthIsFunctioning")
             }
         }
+    }
+
+    // MARK: - シートコンテンツ（型検査の負荷分散のため body 外に切り出す）
+
+    @ViewBuilder
+    private var addNewRecordSheet: some View {
+        RecordEditView(
+            mode: .addNew,
+            onHKImported: { count in showImportToast(count: count) },
+            onModifiedChanged: { editHasUnsavedChanges = $0 }
+        )
+    }
+
+    @ViewBuilder
+    private func editRecordSheet(record: BodyRecord) -> some View {
+        RecordEditView(
+            mode: .edit(record),
+            onModifiedChanged: { editHasUnsavedChanges = $0 }
+        )
     }
 
     // MARK: - リスト

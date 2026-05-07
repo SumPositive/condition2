@@ -16,32 +16,35 @@ enum EditMode {
 final class RecordEditViewModel {
 
     // MARK: - 編集フィールド
-    var dateTime: Date
-    var dateOpt: DateOpt
-    var bCaution: Bool
-    var sNote1: String
-    var sNote2: String
-    var sEquipment: String
+    // didSet で isModified を管理（loadPreviousValues 中は suppressModified で抑制）
+    var dateTime: Date                                              // onDateChanged() で個別管理
+    var dateOpt: DateOpt          { didSet { markModified() } }
+    var bCaution: Bool            { didSet { markModified() } }
+    var sNote1: String            { didSet { markModified() } }
+    var sNote2: String            { didSet { markModified() } }
+    var sEquipment: String        { didSet { markModified() } }
 
-    var nBpHi_mmHg: Int
-    var nBpLo_mmHg: Int
-    var nPulse_bpm: Int
-    var nTemp_10c: Int
-    var nWeight_10Kg: Int
-    var nBodyFat_10p: Int
-    var nSkMuscle_10p: Int
+    var nBpHi_mmHg: Int          { didSet { markModified() } }
+    var nBpLo_mmHg: Int          { didSet { markModified() } }
+    var nPulse_bpm: Int          { didSet { markModified() } }
+    var nTemp_10c: Int           { didSet { markModified() } }
+    var nWeight_10Kg: Int        { didSet { markModified() } }
+    var nBodyFat_10p: Int        { didSet { markModified() } }
+    var nSkMuscle_10p: Int       { didSet { markModified() } }
 
     // MARK: - 入力有効フラグ
-    var bpHiEnabled:      Bool
-    var bpLoEnabled:      Bool
-    var pulseEnabled:     Bool
-    var weightEnabled:    Bool
-    var tempEnabled:      Bool
-    var bodyFatEnabled:   Bool
-    var skMuscleEnabled:  Bool
+    var bpHiEnabled:    Bool     { didSet { markModified() } }
+    var bpLoEnabled:    Bool     { didSet { markModified() } }
+    var pulseEnabled:   Bool     { didSet { markModified() } }
+    var weightEnabled:  Bool     { didSet { markModified() } }
+    var tempEnabled:    Bool     { didSet { markModified() } }
+    var bodyFatEnabled: Bool     { didSet { markModified() } }
+    var skMuscleEnabled: Bool    { didSet { markModified() } }
 
     // MARK: - 状態
     var isModified: Bool = false
+    /// true の間は didSet による isModified 更新を抑制する（初期ロード用）
+    private var suppressModified = false
     var isSaving: Bool = false
     var errorMessage: String?
     var isLoadingFromHK: Bool = false
@@ -130,10 +133,18 @@ final class RecordEditViewModel {
         }
     }
 
+    // MARK: - isModified ヘルパー
+
+    private func markModified() {
+        if !suppressModified { isModified = true }
+    }
+
     // MARK: - 前回値ロード（旧 setE2recordPrev 相当）
 
     func loadPreviousValues(context: ModelContext) {
         guard case .addNew = mode else { return }
+        suppressModified = true
+        defer { suppressModified = false }
 
         let now = dateTime
         let opt = dateOpt.rawValue
