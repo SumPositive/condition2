@@ -124,20 +124,23 @@ struct StatisticsView: View {
 
     private var scrollContent: some View {
         ScrollView {
-            VStack(spacing: 16) {
-                Picker("filter.period", selection: periodBinding) {
-                    ForEach(GraphPeriod.allCases, id: \.self) { p in
-                        Text(LocalizedStringKey(p.label)).tag(p)
+            VStack(spacing: 0) {
+                BeginnerHelpBanner("help.statistics", storageKey: "helpDismissed.statistics")
+                VStack(spacing: 16) {
+                    Picker("filter.period", selection: periodBinding) {
+                        ForEach(GraphPeriod.allCases, id: \.self) { p in
+                            Text(LocalizedStringKey(p.label)).tag(p)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+                    .padding(.horizontal)
+
+                    ForEach(visibleStatSections) { section in
+                        statSectionView(section)
                     }
                 }
-                .pickerStyle(.segmented)
-                .padding(.horizontal)
-
-                ForEach(visibleStatSections) { section in
-                    statSectionView(section)
-                }
+                .padding()
             }
-            .padding()
             .onGeometryChange(for: CGFloat.self, of: { $0.size.width }) { chartWidth = $0 }
         }
         .environment(\.chartAvailableWidth, chartWidth)

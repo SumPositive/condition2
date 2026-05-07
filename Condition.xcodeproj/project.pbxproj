@@ -10,6 +10,7 @@
 		04F485DCB1ADFC0859E7298C /* AppConstants.swift in Sources */ = {isa = PBXBuildFile; fileRef = 332C7D7242BE0FB4EF8FAFFA /* AppConstants.swift */; };
 		1051435A3366B5694C9B71EC /* RecordListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 031D6782445FA50A16B167EC /* RecordListView.swift */; };
 		20F1765DAAFD7152D5629C7C /* NumpadValueText.swift in Sources */ = {isa = PBXBuildFile; fileRef = E674CD6C1A3BCD2A7D5D8EC3 /* NumpadValueText.swift */; };
+		A3F2C8D14B9E0571CF823DEA /* BeginnerHelpBanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7C41E920D3A5F68EA271B5C /* BeginnerHelpBanner.swift */; };
 		22D5E84A1E28C0A1784D9244 /* HealthKitService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C7CBA484995B66668A9235C /* HealthKitService.swift */; };
 		26B161A5280A5687C622C649 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB4C0FF51DDBC65C235DF2ED /* SettingsView.swift */; };
 		2CCB75F6B884B4807D49F2DD /* SettingsKeys.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5D0A6B773C8E379750D8D5B /* SettingsKeys.swift */; };
@@ -74,6 +75,7 @@
 		DB9225443B8D3A26F9D99025 /* BodyRecord.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BodyRecord.swift; sourceTree = "<group>"; };
 		E0E6E18224DAB54321E46951 /* AppSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSettings.swift; sourceTree = "<group>"; };
 		E5D0A6B773C8E379750D8D5B /* SettingsKeys.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsKeys.swift; sourceTree = "<group>"; };
+		B7C41E920D3A5F68EA271B5C /* BeginnerHelpBanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BeginnerHelpBanner.swift; sourceTree = "<group>"; };
 		E674CD6C1A3BCD2A7D5D8EC3 /* NumpadValueText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NumpadValueText.swift; sourceTree = "<group>"; };
 		EB4C0FF51DDBC65C235DF2ED /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		EFEF1236779D72BC224C618E /* StatisticsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatisticsView.swift; sourceTree = "<group>"; };
@@ -104,6 +106,7 @@
 		0C542E511B57079E742EC24F /* Common */ = {
 			isa = PBXGroup;
 			children = (
+				B7C41E920D3A5F68EA271B5C /* BeginnerHelpBanner.swift */,
 				E674CD6C1A3BCD2A7D5D8EC3 /* NumpadValueText.swift */,
 				A14BB534396221BF4A8DD998 /* ValueFormatter.swift */,
 			);
@@ -376,6 +379,7 @@
 				2CCB75F6B884B4807D49F2DD /* SettingsKeys.swift in Sources */,
 				CC257634A8AF415F5F40872E /* MigrationService.swift in Sources */,
 				E88A92888F6AFD1FB7DFFC9F /* ModelContainer+Setup.swift in Sources */,
+				A3F2C8D14B9E0571CF823DEA /* BeginnerHelpBanner.swift in Sources */,
 				20F1765DAAFD7152D5629C7C /* NumpadValueText.swift in Sources */,
 				B01892399930A51751ED92F1 /* RecordEditView.swift in Sources */,
 				42832198D0789A3EEE5E6B66 /* RecordEditViewModel.swift in Sources */,

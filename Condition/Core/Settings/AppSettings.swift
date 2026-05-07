@@ -7,7 +7,7 @@ import SwiftUI
 import Observation
 import AZDial
 
-// ユーザレベル（初心者：ヘルプテキスト表示 / 上級者：非表示）
+// ユーザレベル（初心者：ヘルプテキスト表示 / 達人：非表示）
 enum AppUserLevel: Int, CaseIterable, Identifiable {
     case beginner = 0
     case expert   = 1

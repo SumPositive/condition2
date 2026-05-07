@@ -184,23 +184,26 @@ private struct GraphContentView: View {
 
     private var scrollContent: some View {
         ScrollView(.vertical) {
-            VStack(spacing: 16) {
-                Picker("filter.period", selection: $period) {
-                    ForEach(GraphPeriod.allCases, id: \.self) { p in
-                        Text(LocalizedStringKey(p.label)).tag(p)
+            VStack(spacing: 0) {
+                BeginnerHelpBanner("help.graph", storageKey: "helpDismissed.graph")
+                VStack(spacing: 16) {
+                    Picker("filter.period", selection: $period) {
+                        ForEach(GraphPeriod.allCases, id: \.self) { p in
+                            Text(LocalizedStringKey(p.label)).tag(p)
+                        }
                     }
-                }
-                .pickerStyle(.segmented)
+                    .pickerStyle(.segmented)
 
-                let hidden = Set(settings.graphHiddenPanels)
-                ForEach(settings.graphDisplayOrder.filter { !hidden.contains($0) }, id: \.self) { kindRaw in
-                    if let kind = GraphKind(rawValue: kindRaw) {
-                        graphPanel(kind: kind)
+                    let hidden = Set(settings.graphHiddenPanels)
+                    ForEach(settings.graphDisplayOrder.filter { !hidden.contains($0) }, id: \.self) { kindRaw in
+                        if let kind = GraphKind(rawValue: kindRaw) {
+                            graphPanel(kind: kind)
+                        }
                     }
                 }
+                .padding(.horizontal)
+                .padding(.vertical, 12)
             }
-            .padding(.horizontal)
-            .padding(.vertical, 12)
             .onGeometryChange(for: CGFloat.self, of: { $0.size.width }) { chartWidth = $0 }
         }
         .environment(\.chartAvailableWidth, chartWidth)

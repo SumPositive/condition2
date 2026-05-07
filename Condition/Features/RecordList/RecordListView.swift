@@ -165,6 +165,7 @@ struct RecordListView: View {
 
     private var listContent: some View {
         VStack(spacing: 0) {
+            BeginnerHelpBanner("help.record", storageKey: "helpDismissed.record")
             RecordColumnHeader(visibleKinds: visibleRecordKinds)
                 .padding(.horizontal, 16)
                 .padding(.vertical, 3)
