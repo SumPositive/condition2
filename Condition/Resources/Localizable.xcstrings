@@ -500,6 +500,108 @@
         }
       }
     },
+    "settings.help.exportRecords": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Exports all records to a JSON file for backup or moving to another device."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "すべての記録を JSON ファイルに書き出します。バックアップや他の端末への移行に使えます。"
+          }
+        }
+      }
+    },
+    "settings.exportFormat.compact": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Compact"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "コンパクト"
+          }
+        }
+      }
+    },
+    "settings.exportFormat.pretty": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Readable"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "プリティ"
+          }
+        }
+      }
+    },
+    "settings.exportFormat.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "JSON Format"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "JSON形式"
+          }
+        }
+      }
+    },
+    "settings.help.importRecords": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Imports records from a JSON backup. If the date and time match, the record is overwritten."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "JSON バックアップから記録を取り込みます。日時が同じ記録は上書きします。"
+          }
+        }
+      }
+    },
+    "settings.help.pruneOldRecords": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deletes records older than 3 years to keep the app light."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "3 年より古い記録を削除して、アプリ内の記録を整理します。"
+          }
+        }
+      }
+    },
     "appearance.automatic": {
       "extractionState": "manual",
       "localizations": {
@@ -1813,6 +1915,23 @@
         }
       }
     },
+    "health.writeOnlyHelp": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Adds new records and updates edits when the time stays the same. Deletions are not synced, so changing the time leaves the old record and adds a new one. Delete the old one in Health."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "記録の追加と編集（日時を変えない場合）を連携します。削除は連携しません。そのため日時を変えると前の記録は削除されずに新しい記録として追加されますので、ヘルスケア側での削除操作が必要になります。"
+          }
+        }
+      }
+    },
     "health.error.title": {
       "extractionState": "manual",
       "localizations": {
@@ -2074,13 +2193,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "This app only adds Health data. To delete entries, open each item in Health and use Show All Data."
+            "value": "This app cannot delete Health records. Deletion is blocked. If you delete a record here, open Show All Data in Health and delete it there."
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "このアプリからヘルスケアのデータは変更・削除できません。常に追加されるだけです。不要なデータがあればヘルスケア側で項目毎に「すべてのデータを表示」し、編集にて削除してください"
+            "value": "このアプリからヘルスケアの記録は削除できません、禁止されています。このアプリで記録を削除したときはヘルスケア側で「すべてのデータを表示」画面を開いて削除してください。"
           }
         }
       }
@@ -4088,6 +4207,329 @@
           "stringUnit": {
             "state": "translated",
             "value": "機能"
+          }
+        }
+      }
+    },
+    "settings.panel.share": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Share"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "共有"
+          }
+        }
+      }
+    },
+    "settings.share.errorTitle": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Share Error"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "共有エラー"
+          }
+        }
+      }
+    },
+    "settings.share.exportRecords": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Export All"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "全記録を書き出す"
+          }
+        }
+      }
+    },
+    "settings.share.exportPreparing": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Preparing export..."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "書き出し準備中…"
+          }
+        }
+      }
+    },
+    "settings.share.exportHint": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This may take a moment depending on the number of records."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "記録件数によっては少し時間がかかります。"
+          }
+        }
+      }
+    },
+    "settings.share.exportOpening": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Opening share sheet..."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "共有シートを開いています…"
+          }
+        }
+      }
+    },
+    "settings.share.importDoneMessage": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Added %1$d records and updated %2$d records."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$d 件追加し、%2$d 件上書きしました。"
+          }
+        }
+      }
+    },
+    "settings.share.importHint": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Matching records are overwritten when date and time are the same."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "日時が同じ記録は上書きして取り込みます。"
+          }
+        }
+      }
+    },
+    "settings.share.importPreparing": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Importing records..."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "記録を取り込み中…"
+          }
+        }
+      }
+    },
+    "settings.share.importDoneTitle": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Import Complete"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "インポート完了"
+          }
+        }
+      }
+    },
+    "settings.share.importRecords": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Import Records"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "記録を取り込む"
+          }
+        }
+      }
+    },
+    "settings.share.presenterUnavailable": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Could not open the share sheet."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "共有シートを開けませんでした。"
+          }
+        }
+      }
+    },
+    "settings.share.pruneConfirmMessage": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Records older than 3 years will be deleted."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "3 年より古い記録を削除します。"
+          }
+        }
+      }
+    },
+    "settings.share.pruneConfirmTitle": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete Old Records?"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "古い記録を整理しますか？"
+          }
+        }
+      }
+    },
+    "settings.share.pruneHint": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This may take a moment when many old records exist."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "古い記録が多い場合は少し時間がかかります。"
+          }
+        }
+      }
+    },
+    "settings.share.pruneDoneMessage": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deleted %d old records."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%d 件の古い記録を削除しました。"
+          }
+        }
+      }
+    },
+    "settings.share.pruneDoneTitle": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cleanup Complete"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "整理完了"
+          }
+        }
+      }
+    },
+    "settings.share.prunePreparing": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cleaning old records..."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "古い記録を整理中…"
+          }
+        }
+      }
+    },
+    "settings.share.pruneOldRecords": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Clean Old Records (3 Years)"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "古い記録を整理（3年）"
           }
         }
       }

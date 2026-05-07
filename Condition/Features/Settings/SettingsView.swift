@@ -5,15 +5,47 @@ import SwiftUI
 import SwiftData
 import AZDial
 import StoreKit
+import UniformTypeIdentifiers
 import WebKit
+
+private enum RecordJSONExportStyle: Int, CaseIterable, Identifiable {
+    case compact = 0
+    case pretty = 1
+
+    var id: Int { rawValue }
+
+    var titleKey: String {
+        switch self {
+        case .compact: return "settings.exportFormat.compact"
+        case .pretty:  return "settings.exportFormat.pretty"
+        }
+    }
+
+    var jsonOptions: JSONSerialization.WritingOptions {
+        switch self {
+        case .compact:
+            return [.sortedKeys]
+        case .pretty:
+            return [.prettyPrinted, .sortedKeys]
+        }
+    }
+}
 
 struct SettingsView: View {
 
+    @Environment(\.modelContext) private var context
+    @AppStorage("settings.shareExportFormat") private var exportFormatRaw = RecordJSONExportStyle.compact.rawValue
     @State private var settings = AppSettings.shared
     @State private var healthKit = HealthKitService.shared
     @State private var showHKSettings = false
     @State private var showSafari = false
     @State private var showDialSettings = false
+    @State private var showImportPicker = false
+    @State private var showPruneOldRecordsConfirmSheet = false
+    @State private var alertItem: SettingsAlertItem?
+    @State private var isWorking = false
+    @State private var progressMessage = ""
+    @State private var progressHint = ""
 
     private var aboutURL: URL {
         let isJapanese = Locale.preferredLanguages.first?.hasPrefix("ja") ?? false
@@ -21,6 +53,10 @@ struct SettingsView: View {
             ? "https://docs.azukid.com/jp/sumpo/Condition/condition.html"
             : "https://docs.azukid.com/en/sumpo/Condition/condition.html"
         return URL(string: urlString)!
+    }
+
+    private var exportFormat: RecordJSONExportStyle {
+        RecordJSONExportStyle(rawValue: exportFormatRaw) ?? .compact
     }
 
     var body: some View {
@@ -141,6 +177,68 @@ struct SettingsView: View {
                     }
                 }
 
+                // MARK: - 共有
+                Section("settings.panel.share") {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Button {
+                            exportRecordsJSON()
+                        } label: {
+                            Label("settings.share.exportRecords", systemImage: "square.and.arrow.up")
+                        }
+
+                        if settings.userLevel != .beginner {
+                            HStack(spacing: 8) {
+                                Spacer(minLength: 40)
+                                Text("settings.exportFormat.title")
+                                    .font(.subheadline)
+                                Picker("settings.exportFormat.title", selection: $exportFormatRaw) {
+                                    ForEach(RecordJSONExportStyle.allCases) { style in
+                                        Text(LocalizedStringKey(style.titleKey)).tag(style.rawValue)
+                                    }
+                                }
+                                .pickerStyle(.segmented)
+                            }
+                        }
+
+                        if settings.userLevel == .beginner {
+                            Text("settings.help.exportRecords")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                    }
+
+                    VStack(alignment: .leading, spacing: 8) {
+                        Button {
+                            showImportPicker = true
+                        } label: {
+                            Label("settings.share.importRecords", systemImage: "square.and.arrow.down")
+                        }
+
+                        if settings.userLevel == .beginner {
+                            Text("settings.help.importRecords")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                    }
+
+                    VStack(alignment: .leading, spacing: 8) {
+                        Button {
+                            showPruneOldRecordsConfirmSheet = true
+                        } label: {
+                            Label("settings.share.pruneOldRecords", systemImage: "trash")
+                        }
+
+                        if settings.userLevel == .beginner {
+                            Text("settings.help.pruneOldRecords")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                    }
+                }
+
                 // MARK: - アプリ情報
                 Section {
                     Button("app.about") {
@@ -185,6 +283,36 @@ struct SettingsView: View {
                 }
             }
         }
+        .sheet(isPresented: $showPruneOldRecordsConfirmSheet) {
+            PruneOldRecordsConfirmSheet {
+                pruneOldRecords()
+            }
+        }
+        .fileImporter(
+            isPresented: $showImportPicker,
+            allowedContentTypes: [.json],
+            allowsMultipleSelection: false
+        ) { result in
+            switch result {
+            case .success(let urls):
+                guard let url = urls.first else { return }
+                importRecordsJSON(from: url)
+            case .failure(let error):
+                alertItem = .raw(title: String(localized: "settings.share.errorTitle"), message: error.localizedDescription)
+            }
+        }
+        .alert(item: $alertItem) { item in
+            Alert(
+                title: Text(item.title),
+                message: Text(item.message),
+                dismissButton: .cancel(Text("action.ok"))
+            )
+        }
+        .overlay {
+            if isWorking {
+                progressOverlay
+            }
+        }
     }
 
     private var dialStyleBinding: Binding<DialStyle> {
@@ -201,7 +329,332 @@ struct SettingsView: View {
         )
     }
 
+    private func exportRecordsJSON() {
+        Task { @MainActor in
+            isWorking = true
+            progressMessage = String(localized: "settings.share.exportPreparing")
+            progressHint = String(localized: "settings.share.exportHint")
+            await Task.yield()
+            defer { isWorking = false }
+
+            let descriptor = FetchDescriptor<BodyRecord>(
+                predicate: #Predicate { $0.dateTime < bodyRecordGoalDate },
+                sortBy: [SortDescriptor(\BodyRecord.dateTime)]
+            )
+            let records = (try? context.fetch(descriptor)) ?? []
+        let data = makeExportJSON(records: records, style: exportFormat)
+            let formatter = DateFormatter()
+            formatter.dateFormat = "yyyyMMdd_HHmmss"
+            let fileName = "Condition_\(formatter.string(from: Date())).json"
+            let url = FileManager.default.temporaryDirectory.appendingPathComponent(fileName)
+
+            do {
+                try data.write(to: url, options: Data.WritingOptions.atomic)
+                progressMessage = String(localized: "settings.share.exportOpening")
+                await Task.yield()
+                presentShareSheet(url: url)
+            } catch {
+                alertItem = .raw(title: String(localized: "settings.share.errorTitle"), message: error.localizedDescription)
+            }
+        }
+    }
+
+    private func importRecordsJSON(from url: URL) {
+        Task { @MainActor in
+            isWorking = true
+            progressMessage = String(localized: "settings.share.importPreparing")
+            progressHint = String(localized: "settings.share.importHint")
+            await Task.yield()
+            defer { isWorking = false }
+
+            let startedAccessing = url.startAccessingSecurityScopedResource()
+            defer {
+                if startedAccessing {
+                    url.stopAccessingSecurityScopedResource()
+                }
+            }
+
+            do {
+                let data = try Data(contentsOf: url)
+                let decoder = JSONDecoder()
+                let envelope = try decoder.decode(RecordImportEnvelope.self, from: data)
+                let result = try mergeImportedRecords(envelope.records)
+                alertItem = .raw(
+                    title: String(localized: "settings.share.importDoneTitle"),
+                    message: String(
+                        format: String(localized: "settings.share.importDoneMessage"),
+                        result.inserted,
+                        result.updated
+                    )
+                )
+            } catch {
+                alertItem = .raw(title: String(localized: "settings.share.errorTitle"), message: error.localizedDescription)
+            }
+        }
+    }
+
+    private func pruneOldRecords() {
+        Task { @MainActor in
+            isWorking = true
+            progressMessage = String(localized: "settings.share.prunePreparing")
+            progressHint = String(localized: "settings.share.pruneHint")
+            await Task.yield()
+            defer { isWorking = false }
+
+            let cutoff = Calendar.current.date(byAdding: .year, value: -3, to: Date()) ?? Date()
+            let descriptor = FetchDescriptor<BodyRecord>(
+                predicate: #Predicate { $0.dateTime < cutoff && $0.dateTime < bodyRecordGoalDate }
+            )
+            let targets = (try? context.fetch(descriptor)) ?? []
+
+            for record in targets {
+                context.delete(record)
+            }
+
+            do {
+                try context.save()
+                alertItem = .raw(
+                    title: String(localized: "settings.share.pruneDoneTitle"),
+                    message: String(format: String(localized: "settings.share.pruneDoneMessage"), targets.count)
+                )
+            } catch {
+                alertItem = .raw(title: String(localized: "settings.share.errorTitle"), message: error.localizedDescription)
+            }
+        }
+    }
+
+    private func presentShareSheet(url: URL) {
+        guard let windowScene = UIApplication.shared.connectedScenes
+                .compactMap({ $0 as? UIWindowScene })
+                .first(where: { $0.activationState == .foregroundActive }),
+              let rootVC = windowScene.windows.first(where: { $0.isKeyWindow })?.rootViewController
+        else {
+            alertItem = .raw(
+                title: String(localized: "settings.share.errorTitle"),
+                message: String(localized: "settings.share.presenterUnavailable")
+            )
+            try? FileManager.default.removeItem(at: url)
+            return
+        }
+
+        var topVC = rootVC
+        while let presented = topVC.presentedViewController {
+            topVC = presented
+        }
+
+        let activityVC = UIActivityViewController(activityItems: [url], applicationActivities: nil)
+        activityVC.completionWithItemsHandler = { _, _, _, _ in
+            try? FileManager.default.removeItem(at: url)
+        }
+        topVC.present(activityVC, animated: true)
+    }
+
+    private func makeExportJSON(records: [BodyRecord], style: RecordJSONExportStyle) -> Data {
+        let iso = ISO8601DateFormatter()
+        iso.formatOptions = [.withInternetDateTime, .withDashSeparatorInDate, .withColonSeparatorInTime, .withTimeZone]
+
+        var result: [[String: Any]] = []
+        for record in records {
+            var object: [String: Any] = [
+                "dateTime": iso.string(from: record.dateTime),
+                "condition": NSLocalizedString(record.dateOpt.label, comment: ""),
+                "conditionRaw": record.nDateOpt,
+                "dataSourceRaw": record.nDataSource,
+                "cautionFlag": record.bCaution,
+                "memo1": record.sNote1,
+                "memo2": record.sNote2,
+                "device": record.sEquipment,
+            ]
+            if 0 < record.nBpHi_mmHg { object["bpSystolic"] = record.nBpHi_mmHg }
+            if 0 < record.nBpLo_mmHg { object["bpDiastolic"] = record.nBpLo_mmHg }
+            if 0 < record.nPulse_bpm { object["heartRate"] = record.nPulse_bpm }
+            if 0 < record.nTemp_10c { object["bodyTemp"] = Double(record.nTemp_10c) / 10.0 }
+            if 0 < record.nWeight_10Kg { object["weight"] = Double(record.nWeight_10Kg) / 10.0 }
+            if 0 < record.nBodyFat_10p { object["bodyFat"] = Double(record.nBodyFat_10p) / 10.0 }
+            if 0 < record.nSkMuscle_10p { object["skeletalMuscle"] = Double(record.nSkMuscle_10p) / 10.0 }
+            result.append(object)
+        }
+
+        let envelope: [String: Any] = [
+            "exportDate": iso.string(from: Date()),
+            "records": result,
+        ]
+
+        return (try? JSONSerialization.data(withJSONObject: envelope, options: style.jsonOptions)) ?? Data()
+    }
+
+    private func mergeImportedRecords(_ importedRecords: [RecordImportRecord]) throws -> (inserted: Int, updated: Int) {
+        let descriptor = FetchDescriptor<BodyRecord>(
+            predicate: #Predicate { $0.dateTime < bodyRecordGoalDate }
+        )
+        let existingRecords = try context.fetch(descriptor)
+        var existingByDate: [Date: BodyRecord] = [:]
+        for record in existingRecords {
+            existingByDate[record.dateTime] = record
+        }
+
+        var inserted = 0
+        var updated = 0
+        for imported in importedRecords {
+            guard let date = imported.parsedDate else { continue }
+            let record: BodyRecord
+            if let existing = existingByDate[date] {
+                record = existing
+                updated += 1
+            } else {
+                record = BodyRecord(dateTime: date, dateOpt: imported.dateOpt ?? .rest)
+                context.insert(record)
+                existingByDate[date] = record
+                inserted += 1
+            }
+
+            record.dateTime = date
+            record.dateOpt = imported.dateOpt ?? .rest
+            record.dataSource = imported.dataSource ?? .appInput
+            record.bCaution = imported.cautionFlag ?? false
+            record.sNote1 = imported.memo1 ?? ""
+            record.sNote2 = imported.memo2 ?? ""
+            record.sEquipment = imported.device ?? ""
+            record.nBpHi_mmHg = imported.bpSystolic ?? 0
+            record.nBpLo_mmHg = imported.bpDiastolic ?? 0
+            record.nPulse_bpm = imported.heartRate ?? 0
+            record.nTemp_10c = imported.bodyTemp.map { Int(($0 * 10).rounded()) } ?? 0
+            record.nWeight_10Kg = imported.weight.map { Int(($0 * 10).rounded()) } ?? 0
+            record.nBodyFat_10p = imported.bodyFat.map { Int(($0 * 10).rounded()) } ?? 0
+            record.nSkMuscle_10p = imported.skeletalMuscle.map { Int(($0 * 10).rounded()) } ?? 0
+        }
+
+        try context.save()
+        return (inserted, updated)
+    }
+
+    private var progressOverlay: some View {
+        ZStack {
+            // 入出力処理中は背面操作を受け付けない
+            Color.black.opacity(0.24)
+                .ignoresSafeArea()
+            VStack(spacing: 10) {
+                ProgressView()
+                    .controlSize(.large)
+                Text(progressMessage)
+                    .font(.subheadline.weight(.semibold))
+                    .multilineTextAlignment(.center)
+                Text(progressHint)
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+            }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 18)
+            .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 14))
+            .padding(.horizontal, 24)
+        }
+    }
+
 }
+
+private extension SettingsView {
+    struct SettingsAlertItem: Identifiable {
+        let id = UUID()
+        let title: String
+        let message: String
+
+        static func raw(title: String, message: String) -> SettingsAlertItem {
+            SettingsAlertItem(title: title, message: message)
+        }
+    }
+}
+
+private struct RecordImportEnvelope: Decodable {
+    let records: [RecordImportRecord]
+}
+
+private struct RecordImportRecord: Decodable {
+    let dateTime: String
+    let condition: String?
+    let conditionRaw: Int?
+    let dataSourceRaw: Int?
+    let cautionFlag: Bool?
+    let memo1: String?
+    let memo2: String?
+    let device: String?
+    let bpSystolic: Int?
+    let bpDiastolic: Int?
+    let heartRate: Int?
+    let bodyTemp: Double?
+    let weight: Double?
+    let bodyFat: Double?
+    let skeletalMuscle: Double?
+
+    var parsedDate: Date? {
+        let iso = ISO8601DateFormatter()
+        iso.formatOptions = [.withInternetDateTime, .withDashSeparatorInDate, .withColonSeparatorInTime, .withTimeZone]
+        return iso.date(from: dateTime)
+    }
+
+    var dateOpt: DateOpt? {
+        if let conditionRaw {
+            return DateOpt(rawValue: conditionRaw)
+        }
+        guard let condition else { return nil }
+        if let exact = DateOpt.allCases.first(where: { $0.label == condition }) {
+            return exact
+        }
+        return DateOpt.allCases.first {
+            NSLocalizedString($0.label, comment: "") == condition
+        }
+    }
+
+    var dataSource: RecordDataSource? {
+        guard let dataSourceRaw else { return nil }
+        return RecordDataSource(rawValue: dataSourceRaw)
+    }
+}
+
+// MARK: - 古い記録整理の確認シート
+
+private struct PruneOldRecordsConfirmSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    let onConfirm: () -> Void
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 20) {
+                    Text("settings.share.pruneConfirmTitle")
+                        .font(.title3.weight(.bold))
+                        .fixedSize(horizontal: false, vertical: true)
+
+                    Text("settings.share.pruneConfirmMessage")
+                        .font(.body)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+
+                    VStack(spacing: 12) {
+                        Button("action.cancel") {
+                            dismiss()
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .frame(maxWidth: .infinity)
+
+                        Button(role: .destructive) {
+                            dismiss()
+                            onConfirm()
+                        } label: {
+                            Text("action.delete")
+                        }
+                        .buttonStyle(.bordered)
+                    }
+                }
+                .padding(20)
+            }
+            .navigationBarTitleDisplayMode(.inline)
+        }
+        .presentationDetents([.medium, .large])
+        .presentationDragIndicator(.visible)
+    }
+}
+
 
 // MARK: - SafariView
 
@@ -868,6 +1321,14 @@ struct HealthKitSettingsView: View {
                 }
                 .pickerStyle(.inline)
                 .labelsHidden()
+
+                if directionBinding.wrappedValue != .readOnly {
+                    // 書き込みを含む同期方向の動作を初心者向けに補足する
+                    Text("health.writeOnlyHelp")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
             }
 
             Section("health.timing") {
