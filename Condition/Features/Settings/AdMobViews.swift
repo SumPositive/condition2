@@ -26,6 +26,7 @@ let ADMOB_BANNER_UnitID = "ca-app-pub-7576639777972199/9141270336"  // 本番用
 struct AdMobAdSheetView: View {
     @Environment(\.dismiss) private var dismiss
     let onRewardEarned: () -> Void
+    private var settings: AppSettings { AppSettings.shared }
 
     private let bannerConfigs = [
         AdMobBannerConfiguration(
@@ -38,7 +39,7 @@ struct AdMobAdSheetView: View {
     @State private var rewardDescription: String?
 
     var body: some View {
-        NavigationView {
+        let content = NavigationView {
             ScrollView {
                 VStack(spacing: 0) {
                     VStack(alignment: .leading, spacing: 16) {
@@ -103,6 +104,11 @@ struct AdMobAdSheetView: View {
             loader.onAdFailedToPresent = { _ in
                 rewardDescription = adUnavailableMessage
             }
+        }
+        if settings.fontScale.followsSystem {
+            content
+        } else {
+            content.dynamicTypeSize(settings.fontScale.dynamicTypeSize)
         }
     }
 

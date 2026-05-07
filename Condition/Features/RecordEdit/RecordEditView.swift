@@ -70,18 +70,9 @@ struct RecordEditView: View {
 
                 // メモセクション
                 Section("record.memo.section") {
-                    noteRow(
-                        title: "record.memo1",
-                        text: $vm.sNote1
-                    )
-                    noteRow(
-                        title: "record.memo2",
-                        text: $vm.sNote2
-                    )
-                    noteRow(
-                        title: "record.device",
-                        text: $vm.sEquipment
-                    )
+                    noteRow(placeholder: "record.memo1",   text: $vm.sNote1)
+                    noteRow(placeholder: "record.memo2",   text: $vm.sNote2)
+                    noteRow(placeholder: "record.device",  text: $vm.sEquipment)
                 }
 
                 // オプションセクション
@@ -435,12 +426,17 @@ struct RecordEditView: View {
 
     // MARK: - メモ行
 
-    private func noteRow(title: LocalizedStringKey, text: Binding<String>) -> some View {
-        HStack {
-            Text(title)
-                .font(.callout)
-            TextField("", text: text)
-                .multilineTextAlignment(.trailing)
+    private func noteRow(placeholder: LocalizedStringKey, text: Binding<String>) -> some View {
+        ZStack(alignment: .topLeading) {
+            if text.wrappedValue.isEmpty {
+                Text(placeholder)
+                    .foregroundStyle(Color(.placeholderText))
+                    .padding(.top, 8)
+                    .padding(.leading, 5)
+                    .allowsHitTesting(false)
+            }
+            TextEditor(text: text)
+                .frame(minHeight: 60)
         }
     }
 

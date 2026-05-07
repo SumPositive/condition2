@@ -329,9 +329,10 @@ private struct TipSheetView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var store = TipStore.shared
     @State private var showThankYou = false
+    private var settings: AppSettings { AppSettings.shared }
 
     var body: some View {
-        NavigationView {
+        let content = NavigationView {
             VStack(spacing: 20) {
                 Image(systemName: "heart.fill")
                     .font(.system(size: 48))
@@ -395,6 +396,11 @@ private struct TipSheetView: View {
             } message: {
                 Text("support.thankYouForYourSupportWe")
             }
+        }
+        if settings.fontScale.followsSystem {
+            content
+        } else {
+            content.dynamicTypeSize(settings.fontScale.dynamicTypeSize)
         }
     }
 }

@@ -551,6 +551,8 @@ struct RecordRowView: View {
     @ScaledMetric(relativeTo: .title3) private var catIconSz: CGFloat = 19
     /// フラグ・HKマークを caption2 基準でスケール（標準:10pt、上限でクランプ）
     @ScaledMetric(relativeTo: .caption2) private var scaledMarkSz: CGFloat = 10
+    /// 値行とメモ行の間隔
+    private let memoGap: CGFloat = 0
     private var flagIconSz: CGFloat { min(scaledMarkSz, 16) }
     private var hkIconSz:   CGFloat { min(scaledMarkSz, 14) }
 
@@ -602,6 +604,7 @@ struct RecordRowView: View {
                             .foregroundStyle(.secondary)
                             .lineLimit(1)
                             .fixedSize(horizontal: true, vertical: false)
+                        // 行末の基本余白
                         Color.clear.frame(height: 6)
                     }
                     .frame(maxWidth: .infinity)
@@ -631,25 +634,32 @@ struct RecordRowView: View {
 
                 // 測定値＋メモ（メモは数値列と一緒にスクロール）
                 GeometryReader { proxy in
-                    let memoSpace: CGFloat = 6
                     let h = proxy.size.height
-                    let cellH = h - memoSpace
                     ScrollView(.horizontal, showsIndicators: false) {
-                        VStack(alignment: .leading, spacing: 0) {
+                        if notes.isEmpty {
+                            // メモなし：値を全高でセンター配置
                             HStack(spacing: 4) {
                                 ForEach(Array(visibleKinds.enumerated()), id: \.element.id) { idx, kind in
-                                    kindValueItems(kind, isFirst: idx == 0, cellH: cellH)
+                                    kindValueItems(kind, isFirst: idx == 0, cellH: h)
                                 }
                             }
                             .padding(.leading, 4)
-                            if !notes.isEmpty {
+                        } else {
+                            // 可変サイズの値行とメモ行を下から積み上げる
+                            VStack(alignment: .leading, spacing: memoGap) {
+                                Spacer(minLength: 0)
+                                HStack(spacing: 4) {
+                                    ForEach(Array(visibleKinds.enumerated()), id: \.element.id) { idx, kind in
+                                        kindValueItems(kind, isFirst: idx == 0, cellH: nil)
+                                    }
+                                }
                                 Text(notes)
                                     .font(.caption)
                                     .foregroundStyle(.secondary)
                                     .lineLimit(1)
-                                    .padding(.leading, 4)
-                                    .padding(.top, -8)
                             }
+                            .padding(.leading, 4)
+                            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
                         }
                     }
                 }
@@ -670,7 +680,7 @@ struct RecordRowView: View {
     }
 
     @ViewBuilder
-    private func kindValueItems(_ kind: GraphKind, isFirst: Bool, cellH: CGFloat) -> some View {
+    private func kindValueItems(_ kind: GraphKind, isFirst: Bool, cellH: CGFloat?) -> some View {
         if !isFirst {
             Divider().padding(.vertical, 8)
         }
@@ -678,7 +688,7 @@ struct RecordRowView: View {
     }
 
     @ViewBuilder
-    private func kindValueCells(_ kind: GraphKind, cellH: CGFloat) -> some View {
+    private func kindValueCells(_ kind: GraphKind, cellH: CGFloat?) -> some View {
         switch kind {
         case .bp:
             valueCell(record.displayBpHi, width: bpW,    height: cellH)
@@ -699,13 +709,18 @@ struct RecordRowView: View {
     }
 
     @ViewBuilder
-    private func valueCell(_ value: String, width: CGFloat, height: CGFloat = 32) -> some View {
-        Text(value.isEmpty ? "-" : value)
+    private func valueCell(_ value: String, width: CGFloat, height: CGFloat?) -> some View {
+        let base = Text(value.isEmpty ? "-" : value)
             .font(.title3.monospacedDigit())
             .minimumScaleFactor(0.6)
             .lineLimit(1)
             .foregroundStyle(value.isEmpty ? Color.secondary.opacity(0.4) : .primary)
-            .frame(width: width, height: height)
+            .frame(width: width)
+        if let h = height {
+            base.frame(height: h)
+        } else {
+            base
+        }
     }
 }
 
@@ -730,6 +745,7 @@ private struct ExportSheetView: View {
     let visibleKinds: [GraphKind]
     @Environment(\.dismiss) private var dismiss
     private let cal = Calendar.current
+    private var settings: AppSettings { AppSettings.shared }
 
     @State private var fromDate: Date
     @State private var toDate: Date = Date()
@@ -751,7 +767,7 @@ private struct ExportSheetView: View {
     }
 
     var body: some View {
-        NavigationStack {
+        let content = NavigationStack {
             Form {
                 Section("filter.period") {
                     DatePicker("filter.start",
@@ -803,6 +819,11 @@ private struct ExportSheetView: View {
                 }
             }
             .overlay { if isGenerating { exportingOverlay } }
+        }
+        if settings.fontScale.followsSystem {
+            content
+        } else {
+            content.dynamicTypeSize(settings.fontScale.dynamicTypeSize)
         }
     }
 
