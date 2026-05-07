@@ -466,19 +466,36 @@
         }
       }
     },
+    "settings.help.openNewRecordOnForeground": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "When on, the new record screen opens automatically when you return to the app. Does nothing if you are currently editing a record."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "オンにするとアプリを再表示したとき、自動的に新しい記録画面を開きます。ただし、記録を修正中ならば何もしません。"
+          }
+        }
+      }
+    },
     "settings.help.fontScale": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Overrides the system text size. Auto follows the system setting."
+            "value": "Set to Auto to apply the system text size, including any accessibility enlargement."
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "システムの文字サイズ設定を上書きします。自動はシステム設定に従います。"
+            "value": "自動にすれば、システム設定した文字サイズの拡大などが反映されます。"
           }
         }
       }

@@ -28,7 +28,15 @@ struct SettingsView: View {
             Form {
                 // MARK: - 記録
                 Section("tab.records") {
-                    Toggle("settings.openNewRecordOnForeground", isOn: $settings.openNewRecordOnForeground)
+                    VStack(alignment: .leading, spacing: 8) {
+                        Toggle("settings.openNewRecordOnForeground", isOn: $settings.openNewRecordOnForeground)
+                        if settings.userLevel == .beginner {
+                            Text("settings.help.openNewRecordOnForeground")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                    }
                     NavigationLink("settings.fieldOrder") {
                         FieldOrderSettingsView()
                     }
