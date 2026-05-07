@@ -410,7 +410,7 @@ private struct DemoDataGenerator {
 #endif
 
 // MARK: - 列幅定義（@ScaledMetric で各 View 内に定義）
-// 基準値: dateColW=110, bpW=42, pulseW=42, weightW=60, otherW=52, catW=40
+// 基準値: dateColW=76, bpW=42, pulseW=42, weightW=60, otherW=52, catW=28
 // いずれも .title3 基準でスケールし、値セルと同倍率で広がる
 
 // MARK: - カラムヘッダー
@@ -419,12 +419,12 @@ struct RecordColumnHeader: View {
     let visibleKinds: [GraphKind]
 
     // 値セルと同じ基準(.title3)でスケール → 列幅が常に揃う
-    @ScaledMetric(relativeTo: .title3) private var dateColW:  CGFloat = 110
+    @ScaledMetric(relativeTo: .title3) private var dateColW:  CGFloat = 76
     @ScaledMetric(relativeTo: .title3) private var bpW:       CGFloat = 42
     @ScaledMetric(relativeTo: .title3) private var pulseW:    CGFloat = 42
     @ScaledMetric(relativeTo: .title3) private var weightW:   CGFloat = 60
     @ScaledMetric(relativeTo: .title3) private var otherW:    CGFloat = 52
-    @ScaledMetric(relativeTo: .title3) private var catW:      CGFloat = 40
+    @ScaledMetric(relativeTo: .title3) private var catW:      CGFloat = 28
     // 見出し行の高さ・セパレータ高さを footnote 基準でスケール
     @ScaledMetric(relativeTo: .footnote) private var sepH:   CGFloat = 16
 
@@ -433,7 +433,7 @@ struct RecordColumnHeader: View {
             HStack(spacing: 0) {
                 Text("record.datetime")
                     .font(.caption)
-                Spacer()
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 Text("record.category")
                     .minimumScaleFactor(0.5)
                     .lineLimit(1)
@@ -495,13 +495,17 @@ struct RecordRowView: View {
     var hkEnabled: Bool = false
 
     // ヘッダーと同じ基準・同じ初期値 → 列幅が常に揃う
-    @ScaledMetric(relativeTo: .title3) private var dateColW:  CGFloat = 110
+    @ScaledMetric(relativeTo: .title3) private var dateColW:  CGFloat = 76
     @ScaledMetric(relativeTo: .title3) private var bpW:       CGFloat = 42
     @ScaledMetric(relativeTo: .title3) private var pulseW:    CGFloat = 42
     @ScaledMetric(relativeTo: .title3) private var weightW:   CGFloat = 60
     @ScaledMetric(relativeTo: .title3) private var otherW:    CGFloat = 52
-    @ScaledMetric(relativeTo: .title3) private var catW:      CGFloat = 40
+    @ScaledMetric(relativeTo: .title3) private var catW:      CGFloat = 28
     @ScaledMetric(relativeTo: .title3) private var catIconSz: CGFloat = 19
+    /// フラグ・HKマークを caption2 基準でスケール（標準:10pt、上限でクランプ）
+    @ScaledMetric(relativeTo: .caption2) private var scaledMarkSz: CGFloat = 10
+    private var flagIconSz: CGFloat { min(scaledMarkSz, 16) }
+    private var hkIconSz:   CGFloat { min(scaledMarkSz, 14) }
 
     private static let dateFormatter: DateFormatter = {
         let f = DateFormatter()
@@ -530,8 +534,10 @@ struct RecordRowView: View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 0) {
                 // 日付＋区分
-                HStack(alignment: .center, spacing: 2) {
-                    // 左：日付・時刻
+                // spacing: 0 ＋ 日付VStackに maxWidth: .infinity で
+                // dateColW を (dateColW - catW) と catW に正確に分割する
+                HStack(alignment: .center, spacing: 0) {
+                    // 左：日付・時刻（dateColW - catW を占有）
                     VStack(alignment: .leading, spacing: 0) {
                         HStack(alignment: .firstTextBaseline, spacing: 2) {
                             Text(dayString)
@@ -551,25 +557,24 @@ struct RecordRowView: View {
                             .fixedSize(horizontal: true, vertical: false)
                         Color.clear.frame(height: 6)
                     }
-                    // 中：フラグ・データソース（center揃えで自動縦中央）
-                    VStack(spacing: 1) {
+                    .frame(maxWidth: .infinity)
+                    // 右：フラグ・同期マーク（上）＋区分アイコン（下）を縦積み（catW を占有）
+                    VStack(spacing: 2) {
                         if record.bCaution {
                             Image(systemName: "flag.fill")
-                                .font(.system(size: 14))
+                                .font(.system(size: flagIconSz))
                                 .foregroundStyle(.orange)
                         }
                         if hkEnabled {
                             Image(systemName: record.dataSource.icon)
-                                .font(.system(size: 12))
+                                .font(.system(size: hkIconSz))
                                 .foregroundStyle(record.dataSource.color)
                         }
+                        Image(systemName: record.dateOpt.icon)
+                            .font(.system(size: catIconSz))
+                            .foregroundStyle(.secondary)
                     }
-                    .padding(.leading, 2)
-                    // 右：区分アイコン
-                    Image(systemName: record.dateOpt.icon)
-                        .font(.system(size: catIconSz))
-                        .foregroundStyle(.secondary)
-                        .frame(width: catW, alignment: .center)
+                    .frame(width: catW, alignment: .center)
                 }
                 .frame(width: dateColW, alignment: .leading)
                 .padding(.trailing, 4)
