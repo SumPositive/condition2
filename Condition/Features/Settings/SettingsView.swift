@@ -52,7 +52,37 @@ struct SettingsView: View {
         let urlString = isJapanese
             ? "https://docs.azukid.com/jp/sumpo/Condition/condition.html"
             : "https://docs.azukid.com/en/sumpo/Condition/condition.html"
-        return URL(string: urlString)!
+        var components = URLComponents(string: urlString)!
+        components.queryItems = [
+            URLQueryItem(name: "fontScale", value: webFontScaleValue)
+        ]
+        return components.url!
+    }
+
+    private var webFontScaleValue: String {
+        // Web側のCSSで扱いやすい3段階へ変換する。
+        switch settings.fontScale {
+        case .standard:
+            return "standard"
+        case .large:
+            return "large"
+        case .xLarge:
+            return "xLarge"
+        case .system:
+            return currentSystemWebFontScaleValue
+        }
+    }
+
+    private var currentSystemWebFontScaleValue: String {
+        // 自動設定では現在のiOS文字サイズをWeb用の3段階へ丸める。
+        switch UIApplication.shared.preferredContentSizeCategory {
+        case .extraSmall, .small, .medium, .large:
+            return "standard"
+        case .extraLarge, .extraExtraLarge, .extraExtraExtraLarge:
+            return "large"
+        default:
+            return "xLarge"
+        }
     }
 
     private var exportFormat: RecordJSONExportStyle {
