@@ -330,7 +330,8 @@ struct HKProgressView: View {
         HStack(spacing: 8) {
             ProgressView()
                 .tint(.white)
-            Text(message)
+            // HealthKitService は進捗メッセージをローカライズキーで保持する。
+            Text(LocalizedStringKey(message))
                 .font(.callout.weight(.medium))
                 .foregroundStyle(.white)
         }

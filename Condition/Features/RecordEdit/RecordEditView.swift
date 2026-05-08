@@ -191,7 +191,7 @@ struct RecordEditView: View {
                     HStack(spacing: 8) {
                         Image(systemName: vm.dataSource.icon)
                             .foregroundStyle(vm.dataSource.color)
-                        Text(vm.dataSource.label)
+                        Text(LocalizedStringKey(vm.dataSource.label))
                             .font(.callout)
                             .foregroundStyle(.secondary)
                     }

@@ -147,7 +147,6 @@ final class RecordEditViewModel {
         defer { suppressModified = false }
 
         let now = dateTime
-        let opt = dateOpt.rawValue
 
         // 各フィールドを前回値で初期化（0=未入力の場合のみ）
         let descriptor = FetchDescriptor<BodyRecord>(
@@ -157,27 +156,24 @@ final class RecordEditViewModel {
 
         guard let allPrev = try? context.fetch(descriptor) else { return }
 
-        // 血圧・心拍数は DateOpt 一致優先
+        // 値は区分に関係なく、各項目ごとの直近の有効値を引き継ぐ。
         if nBpHi_mmHg == MeasureRange.bpHi.initVal {
             nBpHi_mmHg = allPrev
-                .filter { $0.nDateOpt == opt && $0.nBpHi_mmHg > 0 }
-                .first
-                .map { $0.nBpHi_mmHg } ?? MeasureRange.bpHi.initVal
+                .first { 0 < $0.nBpHi_mmHg }
+                .map(\.nBpHi_mmHg) ?? MeasureRange.bpHi.initVal
         }
         if nBpLo_mmHg == MeasureRange.bpLo.initVal {
             nBpLo_mmHg = allPrev
-                .filter { $0.nDateOpt == opt && $0.nBpLo_mmHg > 0 }
-                .first
-                .map { $0.nBpLo_mmHg } ?? MeasureRange.bpLo.initVal
+                .first { 0 < $0.nBpLo_mmHg }
+                .map(\.nBpLo_mmHg) ?? MeasureRange.bpLo.initVal
         }
         if nPulse_bpm == MeasureRange.pulse.initVal {
             nPulse_bpm = allPrev
-                .filter { $0.nDateOpt == opt && $0.nPulse_bpm > 0 }
-                .first
-                .map { $0.nPulse_bpm } ?? MeasureRange.pulse.initVal
+                .first { 0 < $0.nPulse_bpm }
+                .map(\.nPulse_bpm) ?? MeasureRange.pulse.initVal
         }
 
-        // 体重・体温・体脂肪・骨格筋は日時順のみ
+        // 体重・体温・体脂肪・骨格筋も日時順のみ
         if nWeight_10Kg == MeasureRange.weight.initVal {
             nWeight_10Kg = allPrev.first { $0.nWeight_10Kg > 0 }.map { $0.nWeight_10Kg } ?? MeasureRange.weight.initVal
         }
@@ -191,19 +187,15 @@ final class RecordEditViewModel {
             nSkMuscle_10p = allPrev.first { $0.nSkMuscle_10p > 0 }.map { $0.nSkMuscle_10p } ?? MeasureRange.skMuscle.initVal
         }
 
-        // 直前レコードのスイッチ状態を引き継ぐ
-        let prevBp   = allPrev.filter { $0.nDateOpt == opt }.first ?? allPrev.first
-        let prevBody = allPrev.first
-        if let p = prevBp {
-            bpHiEnabled  = p.nBpHi_mmHg  > 0
-            bpLoEnabled  = p.nBpLo_mmHg  > 0
-            pulseEnabled = p.nPulse_bpm   > 0
-        }
-        if let p = prevBody {
-            weightEnabled    = p.nWeight_10Kg  > 0
-            tempEnabled      = p.nTemp_10c     > 0
-            bodyFatEnabled   = p.nBodyFat_10p  > 0
-            skMuscleEnabled  = p.nSkMuscle_10p > 0
+        // 表示スイッチだけは、値の参照元とは分けて直前1件の表示状態を引き継ぐ。
+        if let p = allPrev.first {
+            bpHiEnabled      = 0 < p.nBpHi_mmHg
+            bpLoEnabled      = 0 < p.nBpLo_mmHg
+            pulseEnabled     = 0 < p.nPulse_bpm
+            weightEnabled    = 0 < p.nWeight_10Kg
+            tempEnabled      = 0 < p.nTemp_10c
+            bodyFatEnabled   = 0 < p.nBodyFat_10p
+            skMuscleEnabled  = 0 < p.nSkMuscle_10p
         }
     }
 
