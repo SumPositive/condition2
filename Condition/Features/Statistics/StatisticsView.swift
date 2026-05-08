@@ -40,22 +40,63 @@ func adaptiveChartHeight(base: CGFloat, width: CGFloat, dynamicTypeSize: Dynamic
 
 struct StatisticsView: View {
 
-    @Query(
-        filter: #Predicate<BodyRecord> { $0.dateTime < bodyRecordGoalDate },
-        sort: \BodyRecord.dateTime,
-        order: .reverse
+    private var settings: AppSettings { AppSettings.shared }
+    @State private var cutoffDate = StatisticsView.makeCutoffDate(
+        days: GraphPeriod.threeMonths.rawValue
     )
-    private var allRecords: [BodyRecord]
+
+    var body: some View {
+        StatisticsContentView(
+            cutoffDate: cutoffDate,
+            expandCutoffIfNeeded: expandCutoffIfNeeded(days:)
+        )
+        // 保存済みの統計期間が長い場合だけ、初回表示後に取得範囲を広げる。
+        .onAppear {
+            expandCutoffIfNeeded(days: currentPeriod.rawValue)
+        }
+    }
+
+    private var currentPeriod: GraphPeriod {
+        GraphPeriod(rawValue: settings.statDays) ?? .threeMonths
+    }
+
+    private static func makeCutoffDate(days: Int) -> Date {
+        Calendar.current.date(byAdding: .day, value: -days, to: Date()) ?? Date()
+    }
+
+    private func expandCutoffIfNeeded(days: Int) {
+        let target = Self.makeCutoffDate(days: days)
+        if target < cutoffDate {
+            cutoffDate = target
+        }
+    }
+}
+
+private struct StatisticsContentView: View {
+
+    @Query private var records: [BodyRecord]
 
     private var settings: AppSettings { AppSettings.shared }
+    private let expandCutoffIfNeeded: (Int) -> Void
     @State private var showSettings = false
     @State private var chartWidth: CGFloat = 390
     @State private var isExporting = false
 
+    init(cutoffDate: Date, expandCutoffIfNeeded: @escaping (Int) -> Void) {
+        let predicate = #Predicate<BodyRecord> {
+            cutoffDate <= $0.dateTime && $0.dateTime < bodyRecordGoalDate
+        }
+        _records = Query(filter: predicate, sort: \BodyRecord.dateTime, order: .reverse)
+        self.expandCutoffIfNeeded = expandCutoffIfNeeded
+    }
+
     private var periodBinding: Binding<GraphPeriod> {
         Binding(
             get: { GraphPeriod(rawValue: settings.statDays) ?? .threeMonths },
-            set: { settings.statDays = $0.rawValue }
+            set: { newPeriod in
+                settings.statDays = newPeriod.rawValue
+                expandCutoffIfNeeded(newPeriod.rawValue)
+            }
         )
     }
 
@@ -69,13 +110,13 @@ struct StatisticsView: View {
             value: -currentPeriod.rawValue,
             to: Date()
         ) ?? Date()
-        return allRecords.filter { $0.dateTime >= cutoff }
+        return records.filter { cutoff <= $0.dateTime }
     }
 
     var body: some View {
         NavigationStack {
             Group {
-                if allRecords.isEmpty {
+                if records.isEmpty {
                     ContentUnavailableView(
                         "empty.noData",
                         systemImage: "chart.dots.scatter"
@@ -126,7 +167,7 @@ struct StatisticsView: View {
         ScrollView {
             VStack(spacing: 0) {
                 BeginnerHelpBanner("help.statistics", storageKey: "helpDismissed.statistics")
-                VStack(spacing: 16) {
+                LazyVStack(spacing: 16) {
                     Picker("filter.period", selection: periodBinding) {
                         ForEach(GraphPeriod.allCases, id: \.self) { p in
                             Text(LocalizedStringKey(p.label)).tag(p)

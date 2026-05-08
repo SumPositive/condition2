@@ -130,7 +130,7 @@ private struct GraphContentView: View {
 
     init(cutoffDate: Date, period: Binding<GraphPeriod>) {
         let predicate = #Predicate<BodyRecord> {
-            $0.dateTime >= cutoffDate && $0.dateTime < bodyRecordGoalDate
+            cutoffDate <= $0.dateTime && $0.dateTime < bodyRecordGoalDate
         }
         _records = Query(filter: predicate, sort: \BodyRecord.dateTime, order: .reverse)
         _period = period
@@ -186,7 +186,7 @@ private struct GraphContentView: View {
         ScrollView(.vertical) {
             VStack(spacing: 0) {
                 BeginnerHelpBanner("help.graph", storageKey: "helpDismissed.graph")
-                VStack(spacing: 16) {
+                LazyVStack(spacing: 16) {
                     Picker("filter.period", selection: $period) {
                         ForEach(GraphPeriod.allCases, id: \.self) { p in
                             Text(LocalizedStringKey(p.label)).tag(p)
