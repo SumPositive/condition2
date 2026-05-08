@@ -70,6 +70,7 @@ struct GraphView: View {
 
     @State private var period: GraphPeriod = .month
     @State private var showSettings = false
+    @State private var didPrefetchFullRange = false
     /// フェーズ1: デフォルト期間分だけ即クエリ（高速初期表示）
     @State private var cutoffDate = Calendar.current.date(
         byAdding: .day, value: -GraphPeriod.month.rawValue, to: Date()
@@ -77,7 +78,11 @@ struct GraphView: View {
 
     var body: some View {
         NavigationStack {
-            GraphContentView(cutoffDate: cutoffDate, period: $period)
+            GraphContentView(
+                cutoffDate: cutoffDate,
+                period: $period,
+                isWaitingForPrefetch: !didPrefetchFullRange
+            )
                 .navigationTitle("tab.graph")
                 .toolbar {
                     ToolbarItem(placement: .primaryAction) {
@@ -105,6 +110,7 @@ struct GraphView: View {
         // 初回表示と最初の操作を優先し、広い期間の取得は少し遅らせる。
         try? await Task.sleep(for: .milliseconds(900))
         expandCutoffIfNeeded(days: Self.preloadDays)
+        didPrefetchFullRange = true
     }
 
     /// target が現在の cutoffDate より古ければ cutoffDate を更新する
@@ -127,6 +133,7 @@ private struct GraphContentView: View {
 
     @Query private var records: [BodyRecord]
     @Binding var period: GraphPeriod
+    let isWaitingForPrefetch: Bool
 
     private var settings: AppSettings { AppSettings.shared }
     @State private var chartWidth: CGFloat = 390
@@ -134,17 +141,22 @@ private struct GraphContentView: View {
     @State private var scrollCapture = ScrollCapture()
     @State private var stagedChartCount = GraphContentView.initialChartCount
 
-    init(cutoffDate: Date, period: Binding<GraphPeriod>) {
+    init(cutoffDate: Date, period: Binding<GraphPeriod>, isWaitingForPrefetch: Bool) {
         let predicate = #Predicate<BodyRecord> {
             cutoffDate <= $0.dateTime && $0.dateTime < bodyRecordGoalDate
         }
         _records = Query(filter: predicate, sort: \BodyRecord.dateTime, order: .reverse)
         _period = period
+        self.isWaitingForPrefetch = isWaitingForPrefetch
     }
 
     var body: some View {
         Group {
-            if records.isEmpty {
+            if records.isEmpty && isWaitingForPrefetch {
+                // 初期範囲に記録がない場合は、広い範囲の取得完了まで No Data を出さない。
+                ProgressView()
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else if records.isEmpty {
                 ContentUnavailableView(
                     "empty.noData",
                     systemImage: "chart.line.uptrend.xyaxis"

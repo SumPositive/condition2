@@ -800,9 +800,15 @@ private struct ExportSheetView: View {
                     }
                 }
             }
-            .navigationTitle("export.title")
+            .navigationTitle("")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
+                ToolbarItem(placement: .principal) {
+                    Text("export.title")
+                        .font(.headline)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.5)
+                }
                 ToolbarItem(placement: .cancellationAction) {
                     Button("action.cancel") { dismiss() }
                 }
