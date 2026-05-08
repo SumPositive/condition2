@@ -650,23 +650,21 @@ private struct PruneOldRecordsConfirmSheet: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(alignment: .leading, spacing: 20) {
+                VStack(spacing: 20) {
                     Text("settings.share.pruneConfirmTitle")
                         .font(.title3.weight(.bold))
+                        .multilineTextAlignment(.center)
                         .fixedSize(horizontal: false, vertical: true)
+                        .frame(maxWidth: .infinity)
 
                     Text("settings.share.pruneConfirmMessage")
                         .font(.body)
                         .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
                         .fixedSize(horizontal: false, vertical: true)
-
-                    VStack(spacing: 12) {
-                        Button("action.cancel") {
-                            dismiss()
-                        }
-                        .buttonStyle(.borderedProminent)
                         .frame(maxWidth: .infinity)
 
+                    VStack(spacing: 14) {
                         Button(role: .destructive) {
                             dismiss()
                             onConfirm()
@@ -674,7 +672,16 @@ private struct PruneOldRecordsConfirmSheet: View {
                             Text("action.delete")
                         }
                         .buttonStyle(.bordered)
+
+                        Button("action.cancel") {
+                            dismiss()
+                        }
+                        .font(.title3.weight(.bold))
+                        .buttonStyle(.borderedProminent)
+                        .controlSize(.large)
+                        .frame(maxWidth: .infinity)
                     }
+                    .frame(maxWidth: .infinity)
                 }
                 .padding(20)
             }
@@ -712,8 +719,16 @@ private class WebViewController: UIViewController, WKNavigationDelegate {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        navigationItem.rightBarButtonItem = UIBarButtonItem(
-            barButtonSystemItem: .done, target: self, action: #selector(doneTapped))
+        let closeImage = UIImage(
+            systemName: "chevron.down",
+            withConfiguration: UIImage.SymbolConfiguration(scale: .large)
+        )
+        navigationItem.leftBarButtonItem = UIBarButtonItem(
+            image: closeImage,
+            style: .plain,
+            target: self,
+            action: #selector(doneTapped)
+        )
 
         webView = WKWebView()
         webView.navigationDelegate = self
