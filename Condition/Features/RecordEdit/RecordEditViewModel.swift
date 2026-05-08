@@ -49,6 +49,11 @@ final class RecordEditViewModel {
     var errorMessage: String?
     var isLoadingFromHK: Bool = false
     var dataSource: RecordDataSource = .appInput
+    /// ヘルスケア由来の記録は、日時と値を固定する。
+    var isHealthRecord: Bool {
+        dataSource == .hkImport || dataSource == .hkModified
+    }
+    var valuesLocked: Bool { isHealthRecord }
 
     let mode: EditMode
     private var originalRecord: BodyRecord?
@@ -222,9 +227,15 @@ final class RecordEditViewModel {
             context.insert(record)
 
         case .edit(let record):
-            record.dateTime = dateTime
+            if isHealthRecord {
+                // ヘルスケア由来は日時と値を固定し、区分・メモなどだけ保存する。
+                record.dateTime = originalRecord?.dateTime ?? record.dateTime
+            } else {
+                record.dateTime = dateTime
+            }
             record.dateOpt  = dateOpt
             applyFields(to: record)
+            restoreHealthValues(to: record)
             switch record.dataSource {
             case .appInput:  record.dataSource = .appModified
             case .hkImport:  record.dataSource = .hkModified
@@ -280,6 +291,18 @@ final class RecordEditViewModel {
         record.nWeight_10Kg  = weightEnabled    ? nWeight_10Kg  : 0
         record.nBodyFat_10p  = bodyFatEnabled   ? nBodyFat_10p  : 0
         record.nSkMuscle_10p = skMuscleEnabled  ? nSkMuscle_10p : 0
+    }
+
+    private func restoreHealthValues(to record: BodyRecord) {
+        guard isHealthRecord, let originalRecord else { return }
+        // 項目単位の取得元は保持していないため、ヘルスケア由来の値は全て元値へ戻す。
+        record.nBpHi_mmHg = originalRecord.nBpHi_mmHg
+        record.nBpLo_mmHg = originalRecord.nBpLo_mmHg
+        record.nPulse_bpm = originalRecord.nPulse_bpm
+        record.nTemp_10c = originalRecord.nTemp_10c
+        record.nWeight_10Kg = originalRecord.nWeight_10Kg
+        record.nBodyFat_10p = originalRecord.nBodyFat_10p
+        record.nSkMuscle_10p = originalRecord.nSkMuscle_10p
     }
 
     // MARK: - HealthKit 連携

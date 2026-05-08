@@ -73,10 +73,6 @@ struct RecordEditView: View {
                     noteRow(placeholder: "record.memo1",   text: $vm.sNote1)
                     noteRow(placeholder: "record.memo2",   text: $vm.sNote2)
                     noteRow(placeholder: "record.device",  text: $vm.sEquipment)
-                }
-
-                // オプションセクション
-                Section {
                     Toggle(isOn: $vm.bCaution) {
                         HStack(spacing: 6) {
                             if vm.bCaution {
@@ -166,18 +162,18 @@ struct RecordEditView: View {
     private func fieldRow(for kind: GraphKind) -> some View {
         switch kind {
         case .bp:
-            dialRow(title: "metric.systolic.long", value: $vm.nBpHi_mmHg, enabled: $vm.bpHiEnabled, spec: MeasureRange.bpHi, unit: "unit.mmHg", stepperStep: 1, color: .red)
-            dialRow(title: "metric.diastolic.long", value: $vm.nBpLo_mmHg, enabled: $vm.bpLoEnabled, spec: MeasureRange.bpLo, unit: "unit.mmHg", stepperStep: 1, color: .blue)
+            dialRow(title: "metric.systolic.long", value: $vm.nBpHi_mmHg, enabled: $vm.bpHiEnabled, spec: MeasureRange.bpHi, unit: "unit.mmHg", stepperStep: 1, color: .red, locked: vm.valuesLocked)
+            dialRow(title: "metric.diastolic.long", value: $vm.nBpLo_mmHg, enabled: $vm.bpLoEnabled, spec: MeasureRange.bpLo, unit: "unit.mmHg", stepperStep: 1, color: .blue, locked: vm.valuesLocked)
         case .pulse:
-            dialRow(title: "metric.heartRate", value: $vm.nPulse_bpm, enabled: $vm.pulseEnabled, spec: MeasureRange.pulse, unit: "unit.bpm", stepperStep: 1, color: .orange)
+            dialRow(title: "metric.heartRate", value: $vm.nPulse_bpm, enabled: $vm.pulseEnabled, spec: MeasureRange.pulse, unit: "unit.bpm", stepperStep: 1, color: .orange, locked: vm.valuesLocked)
         case .weight:
-            dialRow(title: "metric.weight", value: $vm.nWeight_10Kg, enabled: $vm.weightEnabled, spec: MeasureRange.weight, unit: "unit.kg", stepperStep: 1, decimals: 1, color: .indigo)
+            dialRow(title: "metric.weight", value: $vm.nWeight_10Kg, enabled: $vm.weightEnabled, spec: MeasureRange.weight, unit: "unit.kg", stepperStep: 1, decimals: 1, color: .indigo, locked: vm.valuesLocked)
         case .temp:
-            dialRow(title: "metric.bodyTemp", value: $vm.nTemp_10c, enabled: $vm.tempEnabled, spec: MeasureRange.temp, unit: "unit.celsius", stepperStep: 1, decimals: 1, color: .pink)
+            dialRow(title: "metric.bodyTemp", value: $vm.nTemp_10c, enabled: $vm.tempEnabled, spec: MeasureRange.temp, unit: "unit.celsius", stepperStep: 1, decimals: 1, color: .pink, locked: vm.valuesLocked)
         case .bodyFat:
-            dialRow(title: "metric.bodyFat", value: $vm.nBodyFat_10p, enabled: $vm.bodyFatEnabled, spec: MeasureRange.bodyFat, unit: "%", stepperStep: 1, decimals: 1, color: .purple)
+            dialRow(title: "metric.bodyFat", value: $vm.nBodyFat_10p, enabled: $vm.bodyFatEnabled, spec: MeasureRange.bodyFat, unit: "%", stepperStep: 1, decimals: 1, color: .purple, locked: vm.valuesLocked)
         case .skMuscle:
-            dialRow(title: "metric.skeletalMuscle", value: $vm.nSkMuscle_10p, enabled: $vm.skMuscleEnabled, spec: MeasureRange.skMuscle, unit: "%", stepperStep: 1, decimals: 1, color: .teal)
+            dialRow(title: "metric.skeletalMuscle", value: $vm.nSkMuscle_10p, enabled: $vm.skMuscleEnabled, spec: MeasureRange.skMuscle, unit: "%", stepperStep: 1, decimals: 1, color: .teal, locked: vm.valuesLocked)
         case .bpAvg, .bmi, .weightChange:
             EmptyView()
         }
@@ -199,6 +195,7 @@ struct RecordEditView: View {
             }
             Section {
                 dateRow
+                    .disabled(vm.isHealthRecord)
                 dateOptRow
             }
         }
@@ -365,7 +362,8 @@ struct RecordEditView: View {
         unit: LocalizedStringKey,
         stepperStep: Int,
         decimals: Int = 0,
-        color: Color = .primary
+        color: Color = .primary,
+        locked: Bool = false
     ) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             ViewThatFits(in: .horizontal) {
@@ -374,13 +372,13 @@ struct RecordEditView: View {
                     Text(title).font(.callout)
                     Spacer()
                     rowControls(value: value, enabled: enabled, spec: spec,
-                                unit: unit, decimals: decimals, color: color)
+                                unit: unit, decimals: decimals, color: color, locked: locked)
                 }
                 // 2行：見出し（左寄せ） ／ 値＋単位＋スイッチ（右寄せ）
                 VStack(alignment: .leading, spacing: 2) {
                     Text(title).font(.callout)
                     rowControls(value: value, enabled: enabled, spec: spec,
-                                unit: unit, decimals: decimals, color: color)
+                                unit: unit, decimals: decimals, color: color, locked: locked)
                         .frame(maxWidth: .infinity, alignment: .trailing)
                 }
             }
@@ -395,8 +393,10 @@ struct RecordEditView: View {
                     style: DialStyle.builtin(id: AppSettings.shared.dialStyle) ?? .shape,
                     tuning: AppSettings.shared.dialTuning
                 )
+                .disabled(locked)
             }
         }
+        .disabled(locked)
         .padding(.vertical, 4)
     }
 
@@ -407,7 +407,8 @@ struct RecordEditView: View {
         spec: MeasureSpec,
         unit: LocalizedStringKey,
         decimals: Int,
-        color: Color
+        color: Color,
+        locked: Bool
     ) -> some View {
         HStack(spacing: 4) {
             if enabled.wrappedValue {

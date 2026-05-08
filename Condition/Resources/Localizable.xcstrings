@@ -2210,13 +2210,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Imported from Health. You can edit or delete it here, but Health will not change."
+            "value": "Imported from Health. Time and values are locked. Category, notes, and deletion are allowed here, but Health will not change."
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "ヘルスケアから読み込まれた記録です。変更や削除が可能ですがヘルスケア側には影響(連携)しません"
+            "value": "ヘルスケアから読み込まれた記録です。日時と計測値は編集できません。区分やメモと記録の削除は可能ですがヘルスケア側には影響(連携)しません。"
           }
         }
       }
@@ -2227,13 +2227,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Changed after Health import. Health was not changed; edit it in Health if needed."
+            "value": "Category or notes were edited after Health import. Edits here will not change Health."
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "ヘルスケアから読み込まれた後に変更された記録です。ヘルスケア側は変更されていません。必要ならばヘルスケア側で修正してください"
+            "value": "ヘルスケアから読み込まれた後に区分やメモが編集された記録です。編集してもヘルスケア側には影響(連携)しません。"
           }
         }
       }
