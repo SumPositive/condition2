@@ -73,6 +73,9 @@ struct StatisticsView: View {
 }
 
 private struct StatisticsContentView: View {
+    private static let initialChartCount = 2
+    private static let chartBatchCount = 2
+    private static let chartBatchDelayMS = 120
 
     @Query private var records: [BodyRecord]
 
@@ -81,6 +84,7 @@ private struct StatisticsContentView: View {
     @State private var showSettings = false
     @State private var chartWidth: CGFloat = 390
     @State private var isExporting = false
+    @State private var stagedChartCount = StatisticsContentView.initialChartCount
 
     init(cutoffDate: Date, expandCutoffIfNeeded: @escaping (Int) -> Void) {
         let predicate = #Predicate<BodyRecord> {
@@ -176,7 +180,7 @@ private struct StatisticsContentView: View {
                     .pickerStyle(.segmented)
                     .padding(.horizontal)
 
-                    ForEach(visibleStatSections) { section in
+                    ForEach(stagedStatSections) { section in
                         statSectionView(section)
                     }
                 }
@@ -185,6 +189,27 @@ private struct StatisticsContentView: View {
             .onGeometryChange(for: CGFloat.self, of: { $0.size.width }) { chartWidth = $0 }
         }
         .environment(\.chartAvailableWidth, chartWidth)
+        .task(id: statStageID) {
+            await revealCharts(total: visibleStatSections.count)
+        }
+    }
+
+    private var stagedStatSections: [StatSection] {
+        Array(visibleStatSections.prefix(min(stagedChartCount, visibleStatSections.count)))
+    }
+
+    private var statStageID: String {
+        visibleStatSections.map { String($0.rawValue) }.joined(separator: "|")
+    }
+
+    @MainActor
+    private func revealCharts(total: Int) async {
+        // 初回は上部に見える分だけ作り、その後に残りを小分けで作る。
+        stagedChartCount = min(Self.initialChartCount, total)
+        while stagedChartCount < total {
+            try? await Task.sleep(for: .milliseconds(Self.chartBatchDelayMS))
+            stagedChartCount = min(stagedChartCount + Self.chartBatchCount, total)
+        }
     }
 
     @ViewBuilder

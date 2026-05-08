@@ -102,7 +102,8 @@ struct GraphView: View {
 
     /// 初期レンダリング完了を待ってから cutoffDate を拡張する
     private func prefetchFullRange() async {
-        try? await Task.sleep(for: .milliseconds(200))
+        // 初回表示と最初の操作を優先し、広い期間の取得は少し遅らせる。
+        try? await Task.sleep(for: .milliseconds(900))
         expandCutoffIfNeeded(days: Self.preloadDays)
     }
 
@@ -120,6 +121,10 @@ struct GraphView: View {
 /// period に応じた日付範囲で @Query を組み立てる内部ビュー。
 /// cutoffDate が変わると SwiftUI が再初期化し @Query が再実行される。
 private struct GraphContentView: View {
+    private static let initialChartCount = 2
+    private static let chartBatchCount = 2
+    private static let chartBatchDelayMS = 120
+
     @Query private var records: [BodyRecord]
     @Binding var period: GraphPeriod
 
@@ -127,6 +132,7 @@ private struct GraphContentView: View {
     @State private var chartWidth: CGFloat = 390
     @State private var isExporting = false
     @State private var scrollCapture = ScrollCapture()
+    @State private var stagedChartCount = GraphContentView.initialChartCount
 
     init(cutoffDate: Date, period: Binding<GraphPeriod>) {
         let predicate = #Predicate<BodyRecord> {
@@ -194,11 +200,8 @@ private struct GraphContentView: View {
                     }
                     .pickerStyle(.segmented)
 
-                    let hidden = Set(settings.graphHiddenPanels)
-                    ForEach(settings.graphDisplayOrder.filter { !hidden.contains($0) }, id: \.self) { kindRaw in
-                        if let kind = GraphKind(rawValue: kindRaw) {
-                            graphPanel(kind: kind)
-                        }
+                    ForEach(stagedGraphKinds, id: \.self) { kind in
+                        graphPanel(kind: kind)
                     }
                 }
                 .padding(.horizontal)
@@ -207,6 +210,35 @@ private struct GraphContentView: View {
             .onGeometryChange(for: CGFloat.self, of: { $0.size.width }) { chartWidth = $0 }
         }
         .environment(\.chartAvailableWidth, chartWidth)
+        .task(id: graphStageID) {
+            await revealCharts(total: visibleGraphKinds.count)
+        }
+    }
+
+    private var visibleGraphKinds: [GraphKind] {
+        let hidden = Set(settings.graphHiddenPanels)
+        return settings.graphDisplayOrder.compactMap { raw in
+            guard !hidden.contains(raw) else { return nil }
+            return GraphKind(rawValue: raw)
+        }
+    }
+
+    private var stagedGraphKinds: [GraphKind] {
+        Array(visibleGraphKinds.prefix(min(stagedChartCount, visibleGraphKinds.count)))
+    }
+
+    private var graphStageID: String {
+        visibleGraphKinds.map { String($0.rawValue) }.joined(separator: "|")
+    }
+
+    @MainActor
+    private func revealCharts(total: Int) async {
+        // 初回は上部に見える分だけ作り、その後に残りを小分けで作る。
+        stagedChartCount = min(Self.initialChartCount, total)
+        while stagedChartCount < total {
+            try? await Task.sleep(for: .milliseconds(Self.chartBatchDelayMS))
+            stagedChartCount = min(stagedChartCount + Self.chartBatchCount, total)
+        }
     }
 
     @ViewBuilder
