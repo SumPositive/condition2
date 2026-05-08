@@ -25,49 +25,58 @@ struct ConditionApp: App {
 
     var body: some Scene {
         WindowGroup {
-            let rootView = Group {
-                switch migrationService.phase {
-                case .idle, .checking:
-                    ProgressView("app.loading")
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-
-                case .migrating(let progress):
-                    MigrationProgressView(progress: progress)
-
-                case .done:
-                    ContentView()
-
-                case .failed(let message):
-                    MigrationErrorView(message: message) {
-                        // 再試行
-                        Task {
-                            let context = ModelContainer.shared.mainContext
-                            await migrationService.migrateIfNeeded(context: context)
-                        }
-                    } onSkip: {
-                        // スキップして続行
-                        // migrationDone フラグは立てない → 次回アップデートで自動再試行
-                        migrationService.skipMigration()
-                    }
-                }
-            }
-            .task {
-                let context = ModelContainer.shared.mainContext
-                await migrationService.migrateIfNeeded(context: context)
-            }
-            .task {
-                await MobileAds.shared.start()
-            }
-            .preferredColorScheme(settings.appearanceMode.colorScheme)
-
-            if settings.fontScale.followsSystem {
-                rootView
-            } else {
-                rootView
-                    .dynamicTypeSize(settings.fontScale.dynamicTypeSize)
-            }
+            RootSceneView(migrationService: migrationService, settings: settings)
         }
         .modelContainer(ModelContainer.shared)
+    }
+}
+
+private struct RootSceneView: View {
+    @Environment(\.dynamicTypeSize) private var systemDynamicTypeSize
+    let migrationService: MigrationService
+    let settings: AppSettings
+
+    private var effectiveDynamicTypeSize: DynamicTypeSize {
+        // 自動ではシステム文字サイズをそのまま使い、ビュー構造は常に同じに保つ。
+        settings.fontScale.followsSystem ? systemDynamicTypeSize : settings.fontScale.dynamicTypeSize
+    }
+
+    var body: some View {
+        Group {
+            switch migrationService.phase {
+            case .idle, .checking:
+                ProgressView("app.loading")
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+            case .migrating(let progress):
+                MigrationProgressView(progress: progress)
+
+            case .done:
+                ContentView()
+
+            case .failed(let message):
+                MigrationErrorView(message: message) {
+                    // 再試行
+                    Task {
+                        let context = ModelContainer.shared.mainContext
+                        await migrationService.migrateIfNeeded(context: context)
+                    }
+                } onSkip: {
+                    // スキップして続行
+                    // migrationDone フラグは立てない → 次回アップデートで自動再試行
+                    migrationService.skipMigration()
+                }
+            }
+        }
+        .task {
+            let context = ModelContainer.shared.mainContext
+            await migrationService.migrateIfNeeded(context: context)
+        }
+        .task {
+            await MobileAds.shared.start()
+        }
+        .preferredColorScheme(settings.appearanceMode.colorScheme)
+        .dynamicTypeSize(effectiveDynamicTypeSize)
     }
 }
 
