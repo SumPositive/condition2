@@ -153,17 +153,17 @@ struct RecordListView: View {
             }
 
             .overlay(alignment: .bottom) {
-                VStack(spacing: 8) {
-                    if !hkService.importProgress.isEmpty {
-                        HKProgressView(message: hkService.importProgress)
-                            .transition(.move(edge: .bottom).combined(with: .opacity))
-                    }
-                    if let msg = toastMessage {
-                        HKToastView(message: msg)
-                            .transition(.move(edge: .bottom).combined(with: .opacity))
-                    }
+                if let msg = toastMessage {
+                    HKToastView(message: msg)
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
+                        .padding(.bottom, 24)
                 }
-                .padding(.bottom, 24)
+            }
+            .overlay(alignment: .center) {
+                if !hkService.importProgress.isEmpty && hkService.lastAutoImportAt == nil {
+                    HKProgressView(message: hkService.importProgress)
+                        .transition(.opacity)
+                }
             }
             .animation(.easeInOut(duration: 0.3), value: toastMessage)
             .animation(.easeInOut(duration: 0.3), value: hkService.importProgress)
@@ -251,7 +251,8 @@ struct RecordListView: View {
         let recentStart = cal.date(byAdding: .day, value: -15, to: now) ?? now.addingTimeInterval(-15 * 24 * 3600)
         let oneYearAgo = cal.date(byAdding: .year, value: -1, to: now) ?? now.addingTimeInterval(-365 * 24 * 3600)
         // 初回または同期時刻クリア後は過去1年、通常復帰では直近15日だけ確認する。
-        let importStart = hkService.lastAutoImportAt == nil ? oneYearAgo : recentStart
+        let isMinimalImport = hkService.lastAutoImportAt != nil
+        let importStart = isMinimalImport ? recentStart : oneYearAgo
 
         let hkValues = await hkService.readSamples(
             from: importStart, to: now,
@@ -286,7 +287,10 @@ struct RecordListView: View {
         }
         if addedCount > 0 {
             try? context.save()
-            showImportToast(count: addedCount)
+            // 直近15日の最小インポート時はトースト不要
+            if !isMinimalImport {
+                showImportToast(count: addedCount)
+            }
         }
     }
 
@@ -330,17 +334,19 @@ struct HKProgressView: View {
     let message: String
 
     var body: some View {
-        HStack(spacing: 8) {
+        VStack(spacing: 12) {
             ProgressView()
                 .tint(.white)
+                .scaleEffect(1.2)
             // HealthKitService は進捗メッセージをローカライズキーで保持する。
             Text(LocalizedStringKey(message))
                 .font(.callout.weight(.medium))
                 .foregroundStyle(.white)
+                .multilineTextAlignment(.center)
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 10)
-        .background(Color.black.opacity(0.75), in: Capsule())
+        .padding(.horizontal, 28)
+        .padding(.vertical, 20)
+        .background(Color.black.opacity(0.75), in: RoundedRectangle(cornerRadius: 16))
     }
 }
 
