@@ -265,8 +265,7 @@ final class RecordEditViewModel {
            record.dataSource == .hkImport || record.dataSource == .hkModified { return }
         let s = AppSettings.shared
         guard s.hkEnabled,
-              HKSyncDirection(rawValue: s.hkDirection)?.canWrite == true,
-              HKSyncTiming(rawValue: s.hkTiming) == .automatic else { return }
+              HKSyncDirection(rawValue: s.hkDirection)?.canWrite == true else { return }
         Task { await HealthKitService.shared.write(currentHealthKitValues()) }
     }
 

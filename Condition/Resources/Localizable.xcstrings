@@ -1915,19 +1915,53 @@
         }
       }
     },
+    "health.bothHelp": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reads and writes Health data. Deletions do not sync. Imported records cannot be changed, but category and notes can be edited."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "読み込みと書き込みを行います。削除は連携しません。読み込んだ記録は変更できませんが、区分やメモの編集が可能です。"
+          }
+        }
+      }
+    },
+    "health.readOnlyHelp": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reads records from Health at startup. Deletions do not sync. Imported records cannot be changed, but category and notes can be edited."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "起動時にヘルスケアから記録を読み込みます。削除は連携されません。読み込んだ記録は変更できませんが、区分やメモの編集が可能です。"
+          }
+        }
+      }
+    },
     "health.writeOnlyHelp": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Adds new records and updates edits when the time stays the same. Deletions are not synced, so changing the time leaves the old record and adds a new one. Delete the old one in Health."
+            "value": "Writes to Health when you save. Deletions do not sync. If you change the time, it is added as a new record and the old one remains, so check and delete it in Health."
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "記録の追加と編集（日時を変えない場合）を連携します。削除は連携しません。そのため日時を変えると前の記録は削除されずに新しい記録として追加されますので、ヘルスケア側での削除操作が必要になります。"
+            "value": "記録を保存した時にヘルスケアへ書き込みます。削除は連携しません。編集で日時を変えた場合は新しい記録として追加されて前の記録は残りますのでヘルスケア側で確認して削除してください。"
           }
         }
       }
@@ -1949,23 +1983,6 @@
         }
       }
     },
-    "health.import": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Import Health"
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "ヘルスケアから取得"
-          }
-        }
-      }
-    },
     "health.importedCount": {
       "extractionState": "manual",
       "localizations": {
@@ -1983,19 +2000,36 @@
         }
       }
     },
-    "health.importPastYear": {
+    "health.importStartDate": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Imports unread records from the past year"
+            "value": "Import From"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "過去1年の未読記録を読み込みます"
+            "value": "読み込み開始日"
+          }
+        }
+      }
+    },
+    "health.importStartDateHelp": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reads Health data from this date. It starts one year back, then uses the last 15 days. Reset if you need older Health data."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "この日付以降のヘルスケア情報を読み取ります。最初は1年前ですが以後は15日前になります。もし15日より前のヘルスケア情報を読み込みたい時はリセットしてください。"
           }
         }
       }
@@ -2017,6 +2051,23 @@
         }
       }
     },
+    "health.integrationHelp": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Syncs with Apple Health. Adds and edits sync; deletions do not."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apple標準のヘルスケアデータと連携します。追加と編集(変更)を連携します。削除は連携しません。"
+          }
+        }
+      }
+    },
     "health.open": {
       "extractionState": "manual",
       "localizations": {
@@ -2034,6 +2085,23 @@
         }
       }
     },
+    "health.resetOneYear": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reset (1 yr)"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "リセット（1年前）"
+          }
+        }
+      }
+    },
     "health.permissions": {
       "extractionState": "manual",
       "localizations": {
@@ -2046,7 +2114,58 @@
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "アクセス権限"
+            "value": "連携許可状態"
+          }
+        }
+      }
+    },
+    "health.writableFields": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Writable"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "書き込み対象"
+          }
+        }
+      }
+    },
+    "health.noWritableFields": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "None"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "なし"
+          }
+        }
+      }
+    },
+    "health.readableFieldsPrivacyHelp": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Readable items cannot be shown because of privacy limits. Check them in Health."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "読み込み対象は、プライバシー制限により取得できませんのでヘルスケア側で確認してください。"
           }
         }
       }
@@ -2165,7 +2284,24 @@
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "同期方向"
+            "value": "連携方向"
+          }
+        }
+      }
+    },
+    "health.syncDetails": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sync Details"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "連携詳細"
           }
         }
       }
@@ -2199,7 +2335,7 @@
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "このアプリからヘルスケアの記録は削除できません、禁止されています。このアプリで記録を削除したときはヘルスケア側で「すべてのデータを表示」画面を開いて削除してください。"
+            "value": "このアプリからヘルスケアの記録は削除できません、禁止されています。ヘルスケア側で削除する場合は、ヘルスケアにある「すべてのデータを表示」画面を開いて削除してください。"
           }
         }
       }
@@ -2238,57 +2374,6 @@
         }
       }
     },
-    "health.timing": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Timing"
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "タイミング"
-          }
-        }
-      }
-    },
-    "health.timing.auto": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Auto (save/open)"
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "自動（保存時 / 画面表示時）"
-          }
-        }
-      }
-    },
-    "health.timing.manual": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Manual (button)"
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "手動（ボタン操作）"
-          }
-        }
-      }
-    },
     "health.title": {
       "extractionState": "manual",
       "localizations": {
@@ -2319,23 +2404,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "未許可"
-          }
-        }
-      }
-    },
-    "health.write": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Write Health"
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "ヘルスケアへ書き込み"
           }
         }
       }
@@ -3299,41 +3367,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "歩"
-          }
-        }
-      }
-    },
-    "metric.syncedFieldsSystolicDiastolicBpHeart": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Sync: BP, heart, weight, temp, steps, fat"
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "連携対象：上・下血圧、心拍数、体重、体温、歩数、体脂肪率"
-          }
-        }
-      }
-    },
-    "metric.syncedSystolicDiastolicBpHeartRate": {
-      "comment": "A description of the health data that can be synced with HealthKit.",
-      "isCommentAutoGenerated": true,
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Sync: BP, heart, weight, temp, fat"
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "連携対象：上・下血圧、心拍数、体重、体温、体脂肪率"
           }
         }
       }

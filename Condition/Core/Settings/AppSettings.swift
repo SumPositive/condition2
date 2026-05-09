@@ -273,9 +273,6 @@ final class AppSettings {
     var hkDirection: Int = HKSyncDirection.both.rawValue {
         didSet { ud.set(hkDirection, forKey: UDefKeys.hkDirection) }
     }
-    var hkTiming: Int = HKSyncTiming.automatic.rawValue {
-        didSet { ud.set(hkTiming, forKey: UDefKeys.hkTiming) }
-    }
 
     // MARK: - 起動・フォアグラウンド時の動作
     var openNewRecordOnForeground: Bool = false {
@@ -291,7 +288,6 @@ final class AppSettings {
         // UserDefaults デフォルト値登録（キー未登録時は 0 が返るため明示的に設定）
         ud.register(defaults: [
             UDefKeys.hkDirection:   HKSyncDirection.both.rawValue,
-            UDefKeys.hkTiming:      HKSyncTiming.automatic.rawValue,
             UDefKeys.appearanceMode: AppAppearanceMode.automatic.rawValue,
             UDefKeys.userLevel:     AppUserLevel.beginner.rawValue,
             UDefKeys.fontScale:     AppFontScale.system.rawValue,
@@ -302,7 +298,6 @@ final class AppSettings {
         hkDisabledByDemo = ud.bool(forKey: UDefKeys.hkDisabledByDemo)
         hkEnabled   = hkDisabledByDemo ? false : ud.bool(forKey: UDefKeys.hkEnabled)
         hkDirection = ud.integer(forKey: UDefKeys.hkDirection)
-        hkTiming    = ud.integer(forKey: UDefKeys.hkTiming)
         appearanceMode = AppAppearanceMode(rawValue: ud.integer(forKey: UDefKeys.appearanceMode)) ?? .automatic
         userLevel  = AppUserLevel(rawValue:  ud.integer(forKey: UDefKeys.userLevel))  ?? .beginner
         fontScale  = AppFontScale(rawValue:  ud.integer(forKey: UDefKeys.fontScale))  ?? .system

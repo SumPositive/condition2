@@ -27,9 +27,6 @@ struct RecordEditView: View {
     private var hkDirection: HKSyncDirection {
         HKSyncDirection(rawValue: settings.hkDirection) ?? .writeOnly
     }
-    private var hkTiming: HKSyncTiming {
-        HKSyncTiming(rawValue: settings.hkTiming) ?? .automatic
-    }
 
     private var isNewRecord: Bool {
         if case .addNew = vm.mode { return true }
@@ -201,35 +198,11 @@ struct RecordEditView: View {
         }
     }
 
-    // MARK: - HealthKit 取得ボタン（先頭・新規追加かつ手動のみ）
+    // MARK: - HealthKit 取得ボタン（常に自動連携のため非表示）
 
     @ViewBuilder
     private var hkImportSection: some View {
-        if isNewRecord && settings.hkEnabled && hkDirection.canRead && hkTiming == .manual {
-            Section {
-                Button {
-                    bulkImportFromHealthKit()
-                } label: {
-                    HStack {
-                        Label(
-                            "health.import",
-                            systemImage: "arrow.down.heart"
-                        )
-                        Spacer()
-                        if vm.isLoadingFromHK {
-                            ProgressView()
-                        }
-                    }
-                }
-                .disabled(vm.isLoadingFromHK)
-            } footer: {
-                if vm.isLoadingFromHK, !hkService.importProgress.isEmpty {
-                    Text(LocalizedStringKey(hkService.importProgress))
-                } else {
-                    Text("health.importPastYear")
-                }
-            }
-        }
+        EmptyView()
     }
 
     private func bulkImportFromHealthKit() {
@@ -276,24 +249,11 @@ struct RecordEditView: View {
         }
     }
 
-    // MARK: - HealthKit セクション（書き込み手動のみ）
+    // MARK: - HealthKit セクション（常に自動連携のため非表示）
 
     @ViewBuilder
     private var healthKitSection: some View {
-        let isHKRecord = vm.dataSource == .hkImport || vm.dataSource == .hkModified
-        let showWrite = settings.hkEnabled && hkDirection.canWrite && hkTiming == .manual && !isHKRecord
-        if showWrite {
-            Section("health.title") {
-                Button {
-                    vm.writeToHealthKit()
-                } label: {
-                    Label(
-                        "health.write",
-                        systemImage: "arrow.up.heart"
-                    )
-                }
-            }
-        }
+        EmptyView()
     }
 
     // MARK: - 日時行

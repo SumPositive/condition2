@@ -117,15 +117,27 @@ struct SettingsView: View {
                         NavigationLink {
                             HealthKitSettingsView()
                         } label: {
-                            Toggle(
-                                "health.integration",
-                                isOn: $settings.hkEnabled
-                            )
-                            .onChange(of: settings.hkEnabled) { _, enabled in
-                                if enabled {
-                                    Task { await healthKit.requestAuthorization() }
-                                    showHKSettings = true
-                                    healthKit.needsAutoImport = true
+                            VStack(alignment: .leading, spacing: 6) {
+                                Toggle(
+                                    "health.integration",
+                                    isOn: $settings.hkEnabled
+                                )
+                                .onChange(of: settings.hkEnabled) { _, enabled in
+                                    if enabled {
+                                        Task { await healthKit.requestAuthorization() }
+                                        showHKSettings = true
+                                        healthKit.needsAutoImport = true
+                                    } else {
+                                        healthKit.clearLastAutoImportAt()
+                                    }
+                                }
+
+                                if settings.userLevel == .beginner {
+                                    // 初心者向けに、削除が連携されない点を明示する。
+                                    Text("health.integrationHelp")
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                        .fixedSize(horizontal: false, vertical: true)
                                 }
                             }
                         }
@@ -1324,11 +1336,25 @@ struct HealthKitSettingsView: View {
             set: { settings.hkDirection = $0.rawValue }
         )
     }
-    private var timingBinding: Binding<HKSyncTiming> {
-        Binding(
-            get: { HKSyncTiming(rawValue: settings.hkTiming) ?? .automatic },
-            set: { settings.hkTiming = $0.rawValue }
-        )
+
+    private var importStartDate: Date {
+        let now = Date()
+        let cal = Calendar.current
+        if hkService.lastAutoImportAt == nil {
+            return cal.date(byAdding: .year, value: -1, to: now) ?? now.addingTimeInterval(-365 * 24 * 3600)
+        }
+        return cal.date(byAdding: .day, value: -15, to: now) ?? now.addingTimeInterval(-15 * 24 * 3600)
+    }
+
+    private var directionHelpKey: String {
+        switch directionBinding.wrappedValue {
+        case .writeOnly:
+            return "health.writeOnlyHelp"
+        case .readOnly:
+            return "health.readOnlyHelp"
+        case .both:
+            return "health.bothHelp"
+        }
     }
 
     var body: some View {
@@ -1352,6 +1378,31 @@ struct HealthKitSettingsView: View {
                     .buttonStyle(.bordered)
                     .buttonBorderShape(.capsule)
                 }
+
+                ViewThatFits(in: .horizontal) {
+                    HStack(alignment: .firstTextBaseline, spacing: 10) {
+                        Text("health.writableFields")
+                        Spacer()
+                        Text(hkService.authorizedShareFieldsText)
+                            .foregroundStyle(.secondary)
+                            .multilineTextAlignment(.trailing)
+                    }
+
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("health.writableFields")
+                        Text(hkService.authorizedShareFieldsText)
+                            .foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+
+                if settings.userLevel == .beginner {
+                    // 読み込み対象は HealthKit のプライバシー制限で個別取得できない。
+                    Text("health.readableFieldsPrivacyHelp")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
             }
 
             Section("health.syncDirection") {
@@ -1367,31 +1418,48 @@ struct HealthKitSettingsView: View {
                 .pickerStyle(.inline)
                 .labelsHidden()
 
-                if directionBinding.wrappedValue != .readOnly {
-                    // 書き込みを含む同期方向の動作を初心者向けに補足する
-                    Text("health.writeOnlyHelp")
+                if settings.userLevel == .beginner {
+                    // 選択した連携方向ごとの動作を初心者向けに補足する。
+                    Text(LocalizedStringKey(directionHelpKey))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }
 
-            Section("health.timing") {
-                Picker("health.timing",
-                       selection: timingBinding) {
-                    Text("health.timing.auto")
-                        .tag(HKSyncTiming.automatic)
-                    Text("health.timing.manual")
-                        .tag(HKSyncTiming.manual)
+            Section("health.syncDetails") {
+                ViewThatFits(in: .horizontal) {
+                    HStack(alignment: .firstTextBaseline, spacing: 10) {
+                        Text("health.importStartDate")
+                        Spacer()
+                        Text(importStartDate, format: .dateTime.year().month().day())
+                            .foregroundStyle(.secondary)
+                            .monospacedDigit()
+                        resetImportDateButton
+                    }
+
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("health.importStartDate")
+                        HStack(alignment: .firstTextBaseline, spacing: 10) {
+                            Text(importStartDate, format: .dateTime.year().month().day())
+                                .foregroundStyle(.secondary)
+                                .monospacedDigit()
+                            Spacer()
+                            resetImportDateButton
+                        }
+                    }
                 }
-                .pickerStyle(.inline)
-                .labelsHidden()
+
+                if settings.userLevel == .beginner {
+                    // 読み込み範囲の自動短縮と、必要時の再読み込み方法を説明する。
+                    Text("health.importStartDateHelp")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
             }
 
             Section {
-                Text("metric.syncedSystolicDiastolicBpHeartRate")
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
                 Text("health.thisAppCannotModifyOrDelete")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
@@ -1402,7 +1470,6 @@ struct HealthKitSettingsView: View {
         .navigationBarTitleDisplayMode(.inline)
         .onAppear { hkService.checkAuthorization() }
         .onChange(of: settings.hkDirection) { _, _ in updateNeedsAutoImport() }
-        .onChange(of: settings.hkTiming)    { _, _ in updateNeedsAutoImport() }
         .alert(
             "health.changePermission",
             isPresented: $showGuideAlert
@@ -1418,9 +1485,19 @@ struct HealthKitSettingsView: View {
 
     private func updateNeedsAutoImport() {
         let canImport = settings.hkEnabled &&
-            (HKSyncDirection(rawValue: settings.hkDirection)?.canRead == true) &&
-            HKSyncTiming(rawValue: settings.hkTiming) == .automatic
+            (HKSyncDirection(rawValue: settings.hkDirection)?.canRead == true)
         if canImport { hkService.needsAutoImport = true }
+    }
+
+    private var resetImportDateButton: some View {
+        Button("health.resetOneYear") {
+            hkService.clearLastAutoImportAt()
+            updateNeedsAutoImport()
+        }
+        .font(.caption)
+        .buttonStyle(.bordered)
+        .buttonBorderShape(.capsule)
+        .controlSize(.small)
     }
 }
 

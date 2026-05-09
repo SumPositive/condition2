@@ -7,7 +7,7 @@ import OSLog
 
 private let logger = Logger(subsystem: "com.azukid.AzBodyNote", category: "HealthKit")
 
-// MARK: - 同期方向・タイミング
+// MARK: - 連携方向
 
 enum HKSyncDirection: Int, CaseIterable {
     case writeOnly = 0  // アプリ → HealthKit
@@ -16,11 +16,6 @@ enum HKSyncDirection: Int, CaseIterable {
 
     var canWrite: Bool { self == .writeOnly || self == .both }
     var canRead:  Bool { self == .readOnly  || self == .both }
-}
-
-enum HKSyncTiming: Int, CaseIterable {
-    case automatic = 0  // 自動（保存時 / 画面表示時）
-    case manual    = 1  // 手動（ボタン操作）
 }
 
 // MARK: - データ転送用構造体
@@ -46,6 +41,8 @@ final class HealthKitService {
     private let store = HKHealthStore()
 
     var isAuthorized = false
+    /// HealthKit へ書き込み許可済みの項目名一覧
+    var authorizedShareFieldsText: String = ""
     /// 一括インポート実行中フラグ（並走防止）
     var isImporting: Bool = false
     /// 一括インポート中の進捗メッセージ（空文字 = 実行中でない）
@@ -54,6 +51,20 @@ final class HealthKitService {
     var needsAutoImport: Bool = false
     /// タイムアウトが発生したときに true になるフラグ（アラート表示用）
     var importTimedOut: Bool = false
+    /// 自動インポート済み時刻。画面表示にも使うため、変更時に UserDefaults へ保存する。
+    var lastAutoImportAt: Date? = UserDefaults.standard.object(forKey: UDefKeys.hkLastAutoImportAt) as? Date {
+        didSet {
+            if let lastAutoImportAt {
+                UserDefaults.standard.set(lastAutoImportAt, forKey: UDefKeys.hkLastAutoImportAt)
+            } else {
+                UserDefaults.standard.removeObject(forKey: UDefKeys.hkLastAutoImportAt)
+            }
+        }
+    }
+
+    func clearLastAutoImportAt() {
+        lastAutoImportAt = nil
+    }
 
     private static let shareTypes: Set<HKSampleType> = [
         HKQuantityType(.bloodPressureSystolic),
@@ -62,6 +73,15 @@ final class HealthKitService {
         HKQuantityType(.bodyTemperature),
         HKQuantityType(.bodyMass),
         HKQuantityType(.bodyFatPercentage),
+    ]
+
+    private static let shareFieldLabels: [(type: HKQuantityType, key: String)] = [
+        (HKQuantityType(.bloodPressureSystolic), "metric.systolic"),
+        (HKQuantityType(.bloodPressureDiastolic), "metric.diastolic"),
+        (HKQuantityType(.heartRate), "metric.heartRate"),
+        (HKQuantityType(.bodyTemperature), "metric.bodyTemp"),
+        (HKQuantityType(.bodyMass), "metric.weight"),
+        (HKQuantityType(.bodyFatPercentage), "metric.bodyFat"),
     ]
 
     private static let readTypes: Set<HKObjectType> = [
@@ -83,7 +103,7 @@ final class HealthKitService {
         guard isAvailable else { return }
         do {
             try await store.requestAuthorization(toShare: Self.shareTypes, read: Self.readTypes)
-            isAuthorized = true
+            refreshAuthorizationStatus()
             logger.info("HealthKit 権限リクエスト完了")
         } catch {
             logger.error("HealthKit 権限エラー: \(error.localizedDescription)")
@@ -92,8 +112,18 @@ final class HealthKitService {
 
     func checkAuthorization() {
         guard isAvailable else { return }
-        let status = store.authorizationStatus(for: HKQuantityType(.bloodPressureSystolic))
-        isAuthorized = status == .sharingAuthorized
+        refreshAuthorizationStatus()
+    }
+
+    private func refreshAuthorizationStatus() {
+        let authorizedNames = Self.shareFieldLabels.compactMap { item -> String? in
+            guard store.authorizationStatus(for: item.type) == .sharingAuthorized else { return nil }
+            return Bundle.main.localizedString(forKey: item.key, value: nil, table: nil)
+        }
+        isAuthorized = !authorizedNames.isEmpty
+        authorizedShareFieldsText = authorizedNames.isEmpty
+            ? Bundle.main.localizedString(forKey: "health.noWritableFields", value: nil, table: nil)
+            : ListFormatter.localizedString(byJoining: authorizedNames)
     }
 
     // MARK: - 書き込み

@@ -241,24 +241,27 @@ struct RecordListView: View {
     private func autoImportFromHealthKitIfNeeded() async {
         guard !hkService.isImporting,
               settings.hkEnabled,
-              (HKSyncDirection(rawValue: settings.hkDirection)?.canRead) == true,
-              HKSyncTiming(rawValue: settings.hkTiming) == .automatic
+              (HKSyncDirection(rawValue: settings.hkDirection)?.canRead) == true
         else { return }
         hkService.isImporting = true
         defer { hkService.isImporting = false }
 
         let cal = Calendar.current
         let now = Date()
+        let recentStart = cal.date(byAdding: .day, value: -15, to: now) ?? now.addingTimeInterval(-15 * 24 * 3600)
         let oneYearAgo = cal.date(byAdding: .year, value: -1, to: now) ?? now.addingTimeInterval(-365 * 24 * 3600)
+        // 初回または同期時刻クリア後は過去1年、通常復帰では直近15日だけ確認する。
+        let importStart = hkService.lastAutoImportAt == nil ? oneYearAgo : recentStart
 
         let hkValues = await hkService.readSamples(
-            from: oneYearAgo, to: now,
+            from: importStart, to: now,
             hiddenFields: Set(settings.hiddenFields)
         )
+        hkService.lastAutoImportAt = now
         guard !hkValues.isEmpty else { return }
 
         let descriptor = FetchDescriptor<BodyRecord>(
-            predicate: #Predicate { $0.dateTime >= oneYearAgo && $0.dateTime < now }
+            predicate: #Predicate { importStart <= $0.dateTime && $0.dateTime < now }
         )
         let existing = (try? context.fetch(descriptor)) ?? []
         func roundToMinute(_ d: Date) -> Date {
