@@ -12,13 +12,33 @@ private let adUnavailableMessage = "support.noAdsAvailableRightNowPlease"
 
 // 広告ユニットID
 // AdMob コンソールで体調メモ用の広告ユニットを作成後、リリース用 ID に置き換えてください
-#if DEBUG
+// シミュレータでは Release 構成でも本番広告が返らないことがあるため、必ずテスト広告IDを使う。
+#if DEBUG || targetEnvironment(simulator)
 let ADMOB_REWARD_UnitID = "ca-app-pub-3940256099942544/1712485313"  // テスト用リワード
-let ADMOB_BANNER_UnitID = "ca-app-pub-3940256099942544/2435281174"  // テスト用バナー
+let ADMOB_BANNER_UnitID = "ca-app-pub-3940256099942544/2934735716"  // テスト用固定サイズバナー
 #else
 let ADMOB_REWARD_UnitID = "ca-app-pub-7576639777972199/4693657810"  // 本番用リワード ID を設定
 let ADMOB_BANNER_UnitID = "ca-app-pub-7576639777972199/9141270336"  // 本番用バナー ID を設定
 #endif
+
+@MainActor
+private enum AdMobBootstrap {
+    private static var startTask: Task<Void, Never>?
+
+    static func startIfNeeded() async {
+        if let startTask {
+            await startTask.value
+            return
+        }
+
+        // 広告ロード前に SDK 起動完了を待つ。
+        let task = Task<Void, Never> {
+            _ = await MobileAds.shared.start()
+        }
+        startTask = task
+        await task.value
+    }
+}
 
 // MARK: - AdMobAdSheetView
 
@@ -104,6 +124,7 @@ struct AdMobAdSheetView: View {
             loader.onAdFailedToPresent = { _ in
                 rewardDescription = adUnavailableMessage
             }
+            loader.loadAd()
         }
         if settings.fontScale.followsSystem {
             content
@@ -226,31 +247,32 @@ final class RewardedAdLoader: NSObject, ObservableObject, FullScreenContentDeleg
     init(adUnitID: String) {
         self.adUnitID = adUnitID
         super.init()
-        loadAd()
     }
 
     func loadAd() {
+        guard !isLoading else { return }
         isLoading = true
         isReady = false
         errorMessage = nil
 
-        let request = Request()
-        RewardedAd.load(with: adUnitID, request: request) { [weak self] ad, error in
-            guard let self else { return }
-            // ad を assumeIsolated の外で代入し、isolation 境界を越える Sending を回避
-            self.rewardedAd = ad
-            if let ad { ad.fullScreenContentDelegate = self }
-            MainActor.assumeIsolated { [weak self] in
+        let adUnitID = adUnitID
+        Task { [weak self] in
+            await AdMobBootstrap.startIfNeeded()
+            do {
+                let request = Request()
+                let ad = try await RewardedAd.load(with: adUnitID, request: request)
+                guard let self else { return }
+                self.rewardedAd = ad
+                ad.fullScreenContentDelegate = self
+                self.isLoading = false
+                self.isReady = true
+                self.onAdLoaded?()
+            } catch {
                 guard let self else { return }
                 self.isLoading = false
-                if let error {
-                    self.errorMessage = adUnavailableMessage
-                    self.onAdFailedToLoad?(error)
-                    self.rewardedAd = nil
-                } else if self.rewardedAd != nil {
-                    self.isReady = true
-                    self.onAdLoaded?()
-                }
+                self.errorMessage = adUnavailableMessage
+                self.rewardedAd = nil
+                self.onAdFailedToLoad?(error)
             }
         }
     }
@@ -382,7 +404,7 @@ struct AdMobBannerRepresentable: UIViewControllerRepresentable {
         ])
 
         context.coordinator.bannerView = bannerView
-        bannerView.load(Request())
+        context.coordinator.loadBanner()
 
         return viewController
     }
@@ -391,6 +413,7 @@ struct AdMobBannerRepresentable: UIViewControllerRepresentable {
         context.coordinator.bannerView?.rootViewController = uiViewController
     }
 
+    @MainActor
     final class Coordinator: NSObject, BannerViewDelegate {
         weak var bannerView: BannerView?
         private let onReceiveAd: () -> Void
@@ -407,6 +430,13 @@ struct AdMobBannerRepresentable: UIViewControllerRepresentable {
 
         func bannerView(_ bannerView: BannerView, didFailToReceiveAdWithError error: Error) {
             onFailToReceiveAd(error)
+        }
+
+        func loadBanner() {
+            Task {
+                await AdMobBootstrap.startIfNeeded()
+                bannerView?.load(Request())
+            }
         }
     }
 }
