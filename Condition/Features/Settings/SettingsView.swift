@@ -1153,6 +1153,8 @@ struct DateOptMatrixView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 0) {
+                BeginnerHelpBanner("help.dateOptMatrix", storageKey: "helpDismissed.dateOptMatrix")
+
                 // ヘッダー行
                 HStack(spacing: 1) {
                     Spacer().frame(width: 28)
@@ -1357,6 +1359,12 @@ struct FieldOrderSettingsView: View {
 
     var body: some View {
         List {
+            Section {
+                BeginnerHelpBanner("help.fieldOrder", storageKey: "helpDismissed.fieldOrder")
+                    .listRowInsets(EdgeInsets())
+                    .listRowBackground(Color.clear)
+                    .listRowSeparator(.hidden)
+            }
             Section {
                 ForEach(settings.graphPanelOrder, id: \.self) { raw in
                     if let kind = GraphKind(rawValue: raw), kind.isRecordField {

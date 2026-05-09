@@ -215,15 +215,16 @@ private struct StatisticsContentView: View {
     @ViewBuilder
     private func statSectionView(_ section: StatSection) -> some View {
         switch section {
-        case .bpJsh:          BpJshView(records: targetRecords)
-        case .bpRatio:        BpJshRatioView(records: targetRecords)
-        case .bpDateOptCorr:  BpDateOptCorrView(records: targetRecords)
-        case .bp24h:          Bp24HChartView(records: targetRecords)
-        case .bpSummary:      BpSummaryView(records: targetRecords)
-        case .weightSummary:  WeightSummaryView(records: targetRecords)
-        case .tempSummary:    TempSummaryView(records: targetRecords)
-        case .temp24h:        Temp24HChartView(records: targetRecords)
-        case .tempHist:       TempHistogramView(records: targetRecords)
+        case .bpJsh:           BpJshView(records: targetRecords)
+        case .bpRatio:         BpJshRatioView(records: targetRecords)
+        case .bpDateOptCorr:   BpDateOptCorrView(records: targetRecords)
+        case .bp24h:           Bp24HChartView(records: targetRecords)
+        case .bpSummary:       BpSummaryView(records: targetRecords)
+        case .weightSummary:   WeightSummaryView(records: targetRecords)
+        case .tempSummary:     TempSummaryView(records: targetRecords)
+        case .temp24h:         Temp24HChartView(records: targetRecords)
+        case .tempHist:        TempHistogramView(records: targetRecords)
+        case .weightBpScatter: WeightBpScatterView(records: targetRecords)
         }
     }
 
@@ -1464,5 +1465,142 @@ struct TempHistogramView: View {
             Text(label).font(.caption).foregroundStyle(.secondary)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+    }
+}
+
+// MARK: - 体重 × 血圧 相関散布図
+
+struct WeightBpScatterView: View {
+    let records: [BodyRecord]
+
+    @Environment(\.chartAvailableWidth) private var chartWidth
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
+    private struct Point: Identifiable {
+        let id: Int
+        let weight: Double  // kg
+        let bp: Int         // mmHg
+        let isSystolic: Bool
+    }
+
+    /// 体重・血圧どちらも記録されているレコードのみ使用
+    private var validRecords: [BodyRecord] {
+        records.filter { $0.nWeight_10Kg > 0 && $0.nBpHi_mmHg > 0 && $0.nBpLo_mmHg > 0 }
+    }
+
+    private var points: [Point] {
+        var result: [Point] = []
+        for (i, r) in validRecords.enumerated() {
+            let w = Double(r.nWeight_10Kg) / 10.0
+            result.append(Point(id: i * 2,     weight: w, bp: r.nBpHi_mmHg, isSystolic: true))
+            result.append(Point(id: i * 2 + 1, weight: w, bp: r.nBpLo_mmHg, isSystolic: false))
+        }
+        return result
+    }
+
+    private var xDomain: ClosedRange<Double> {
+        guard !validRecords.isEmpty else { return 40...100 }
+        let ws = validRecords.map { Double($0.nWeight_10Kg) / 10.0 }
+        let lo = (ws.min()! - 2).rounded(.down)
+        let hi = (ws.max()! + 2).rounded(.up)
+        return lo...hi
+    }
+
+    private var yDomain: ClosedRange<Int> {
+        guard !validRecords.isEmpty else { return 50...180 }
+        let allBp = validRecords.flatMap { [$0.nBpHi_mmHg, $0.nBpLo_mmHg] }
+        let lower = max(30, (allBp.min()! / 10) * 10 - 10)
+        let upper = min(260, ((allBp.max()! + 9) / 10) * 10 + 10)
+        return lower...upper
+    }
+
+    /// ピアソン相関係数（体重 vs 収縮期）
+    private var correlation: Double? {
+        guard validRecords.count >= 3 else { return nil }
+        let xs = validRecords.map { Double($0.nWeight_10Kg) / 10.0 }
+        let ys = validRecords.map { Double($0.nBpHi_mmHg) }
+        let n = Double(xs.count)
+        let xMean = xs.reduce(0, +) / n
+        let yMean = ys.reduce(0, +) / n
+        let num = zip(xs, ys).map { ($0 - xMean) * ($1 - yMean) }.reduce(0, +)
+        let denX = sqrt(xs.map { pow($0 - xMean, 2) }.reduce(0, +))
+        let denY = sqrt(ys.map { pow($0 - yMean, 2) }.reduce(0, +))
+        guard denX > 0, denY > 0 else { return nil }
+        return num / (denX * denY)
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(alignment: .firstTextBaseline, spacing: 6) {
+                Text("metric.weightBpCorrelation")
+                    .font(.title3)
+                if let r = correlation {
+                    Spacer()
+                    Text(String(format: "r = %.2f", r))
+                        .font(.caption.monospacedDigit())
+                        .foregroundStyle(correlationColor(r))
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 3)
+                        .background(correlationColor(r).opacity(0.12), in: Capsule())
+                }
+            }
+            .padding(.horizontal)
+
+            if validRecords.isEmpty {
+                Text("empty.noDataInPeriod")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity)
+                    .padding()
+            } else {
+                Chart(points) { pt in
+                    PointMark(
+                        x: .value("metric.weight", pt.weight),
+                        y: .value("unit.mmHg", pt.bp)
+                    )
+                    .foregroundStyle(pt.isSystolic ? Color.red.opacity(0.55) : Color.blue.opacity(0.55))
+                    .symbolSize(28)
+                }
+                .chartXScale(domain: xDomain)
+                .chartYScale(domain: yDomain)
+                .chartXAxisLabel("unit.kg")
+                .chartYAxisLabel("unit.mmHg")
+                .frame(height: adaptiveChartHeight(base: 240, width: chartWidth, dynamicTypeSize: dynamicTypeSize))
+                .padding(.horizontal)
+
+                // 凡例
+                HStack(spacing: 14) {
+                    Spacer()
+                    HStack(spacing: 4) {
+                        Circle().fill(Color.red.opacity(0.8)).frame(width: 8, height: 8)
+                        Text("metric.systolic.short").font(.caption).foregroundStyle(.secondary)
+                    }
+                    HStack(spacing: 4) {
+                        Circle().fill(Color.blue.opacity(0.8)).frame(width: 8, height: 8)
+                        Text("metric.diastolic.short").font(.caption).foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                }
+
+                // r 値の解説
+                if correlation != nil {
+                    Text("chart.correlationCoefficientRGuideAbsoluteValue")
+                        .font(.caption)
+                        .foregroundStyle(.tertiary)
+                        .frame(maxWidth: .infinity, alignment: .center)
+                        .padding(.horizontal)
+                }
+            }
+        }
+        .padding(.vertical, 8)
+        .background(.background.secondary)
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+    }
+
+    private func correlationColor(_ r: Double) -> Color {
+        let abs = Swift.abs(r)
+        if abs >= 0.7 { return .red }
+        if abs >= 0.4 { return .orange }
+        return .secondary
     }
 }

@@ -132,29 +132,31 @@ enum GraphKind: Int, CaseIterable, Identifiable, Codable {
 }
 
 enum StatSection: Int, CaseIterable, Identifiable {
-    case bpJsh          = 0
-    case bpRatio        = 1
-    case bpDateOptCorr  = 2
-    case bp24h          = 3
-    case bpSummary      = 8   // 血圧 上下平均サマリー
-    case weightSummary  = 4
-    case tempSummary    = 5
-    case temp24h        = 6
-    case tempHist       = 7
+    case bpJsh           = 0
+    case bpRatio         = 1
+    case bpDateOptCorr   = 2
+    case bp24h           = 3
+    case bpSummary       = 8   // 血圧 上下平均サマリー
+    case weightSummary   = 4
+    case tempSummary     = 5
+    case temp24h         = 6
+    case tempHist        = 7
+    case weightBpScatter = 10  // 体重 × 血圧 相関散布図
 
     var id: Int { rawValue }
 
     var title: String {
         switch self {
-        case .bpJsh:          return "metric.bloodPressureDistribution"
-        case .bpRatio:        return "metric.bpJshRatio"
-        case .bpDateOptCorr:  return "metric.bpByCategory"
-        case .bp24h:          return "metric.bp24hDistribution"
-        case .bpSummary:      return "metric.bloodPressureSummary"
-        case .weightSummary:  return "metric.weightSummary"
-        case .tempSummary:    return "metric.bodyTempSummary"
-        case .temp24h:        return "metric.bodyTemp24hDistribution"
-        case .tempHist:       return "metric.bodyTempDistribution"
+        case .bpJsh:           return "metric.bloodPressureDistribution"
+        case .bpRatio:         return "metric.bpJshRatio"
+        case .bpDateOptCorr:   return "metric.bpByCategory"
+        case .bp24h:           return "metric.bp24hDistribution"
+        case .bpSummary:       return "metric.bloodPressureSummary"
+        case .weightSummary:   return "metric.weightSummary"
+        case .tempSummary:     return "metric.bodyTempSummary"
+        case .temp24h:         return "metric.bodyTemp24hDistribution"
+        case .tempHist:        return "metric.bodyTempDistribution"
+        case .weightBpScatter: return "metric.weightBpCorrelation"
         }
     }
 }

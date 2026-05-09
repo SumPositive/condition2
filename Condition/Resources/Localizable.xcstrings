@@ -2140,6 +2140,40 @@
         }
       }
     },
+    "help.dateOptMatrix" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tap a cell to set the default category for each hour. The selected category is applied automatically when creating a new record."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "時間ごとにタップして区分の初期値を設定します。新しい記録を追加するときに、その時刻に応じた区分が自動で選ばれます。"
+          }
+        }
+      }
+    },
+    "help.fieldOrder" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Toggle the switch to show or hide each item in the record screen. Drag the handle on the right to change the order."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "スイッチで記録画面への表示・非表示を切り替えられます。右端のハンドルをドラッグすると表示順を変えられます。"
+          }
+        }
+      }
+    },
     "help.record" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -3310,6 +3344,23 @@
         }
       }
     },
+    "metric.weightBpCorrelation" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Weight × Blood Pressure"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "体重 × 血圧"
+          }
+        }
+      }
+    },
     "metric.weightSummary" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -4254,13 +4305,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Beginner mode shows helpful hints in settings."
+            "value" : "Beginners get hints and help throughout the app. Switch to Expert when you're comfortable."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "初心者モードでは各設定にヒントを表示します。"
+            "value" : "初心者には各所にヒントやヘルプを表示します。慣れたら達人を選択してください。"
           }
         }
       }

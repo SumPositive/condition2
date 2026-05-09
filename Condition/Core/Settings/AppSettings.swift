@@ -391,7 +391,10 @@ final class AppSettings {
         if ud.object(forKey: SettingsKeys.settStatTimeLine) != nil { statShowTimeLine = ud.bool(forKey: SettingsKeys.settStatTimeLine) }
         if ud.object(forKey: SettingsKeys.settStat24HLine)  != nil { statShow24HLine  = ud.bool(forKey: SettingsKeys.settStat24HLine) }
         if let arr = ud.array(forKey: SettingsKeys.settStatSections) as? [Int], !arr.isEmpty {
-            statSectionOrder = arr
+            // 保存済み配列に含まれていない新セクションを末尾に追加する（バージョンアップ対応）
+            let known = Set(arr)
+            let appended = arr + StatSection.allCases.map(\.rawValue).filter { !known.contains($0) }
+            statSectionOrder = appended
         }
         if let arr = ud.array(forKey: SettingsKeys.settStatHiddenSections) as? [Int] {
             statHiddenSections = arr
