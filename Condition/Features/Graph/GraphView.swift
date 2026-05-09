@@ -817,11 +817,21 @@ struct BpChartView: View {
                     RuleMark(y: .value("chart.goalSystolic", settings.goalBpHi))
                         .foregroundStyle(.red.opacity(0.7))
                         .lineStyle(StrokeStyle(lineWidth: 1, dash: [4]))
+                        .annotation(position: .trailing, alignment: .center, spacing: 3) {
+                            Text("goal.title")
+                                .font(.caption2.weight(.semibold))
+                                .foregroundStyle(.red.opacity(0.7))
+                        }
                 }
                 if settings.goalBpLo > 0 {
                     RuleMark(y: .value("chart.goalDiastolic", settings.goalBpLo))
                         .foregroundStyle(.blue.opacity(0.7))
                         .lineStyle(StrokeStyle(lineWidth: 1, dash: [4]))
+                        .annotation(position: .trailing, alignment: .center, spacing: 3) {
+                            Text("goal.title")
+                                .font(.caption2.weight(.semibold))
+                                .foregroundStyle(.blue.opacity(0.7))
+                        }
                 }
             }
             .chartYTightDomain(enabled: true, minVal: yearMinLo, maxVal: yearMaxHi,
@@ -969,6 +979,11 @@ struct BpPpChartView: View {
                     RuleMark(y: .value("goal.title", goalValue))
                         .foregroundStyle(Color.orange.opacity(0.7))
                         .lineStyle(StrokeStyle(lineWidth: 1, dash: [4]))
+                        .annotation(position: .trailing, alignment: .center, spacing: 3) {
+                            Text("goal.title")
+                                .font(.caption2.weight(.semibold))
+                                .foregroundStyle(Color.orange.opacity(0.7))
+                        }
                 }
             }
             .chartYTightDomain(enabled: true, minVal: minPP, maxVal: maxPP,
@@ -1193,6 +1208,11 @@ struct LineChartView: View {
                     RuleMark(y: .value("goal.title", goalValue))
                         .foregroundStyle(color.opacity(0.7))
                         .lineStyle(StrokeStyle(lineWidth: 1, dash: [4]))
+                        .annotation(position: .trailing, alignment: .center, spacing: 3) {
+                            Text("goal.title")
+                                .font(.caption2.weight(.semibold))
+                                .foregroundStyle(color.opacity(0.7))
+                        }
                 }
             }
             .chartYTightDomain(enabled: tightDomain && !showAsBar, minVal: yearMinValue, maxVal: yearMaxValue,
@@ -1399,6 +1419,11 @@ private struct BMIChartView: View {
                     RuleMark(y: .value("goal.title", goalBMIDouble))
                         .foregroundStyle(Color.cyan.opacity(0.7))
                         .lineStyle(StrokeStyle(lineWidth: 1, dash: [4]))
+                        .annotation(position: .trailing, alignment: .center, spacing: 3) {
+                            Text("goal.title")
+                                .font(.caption2.weight(.semibold))
+                                .foregroundStyle(Color.cyan.opacity(0.7))
+                        }
                 }
             }
             .chartYTightDomain(minVal: yearMinBMI, maxVal: yearMaxBMI,
