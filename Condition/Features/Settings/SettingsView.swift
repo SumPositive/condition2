@@ -839,52 +839,49 @@ private struct TipSheetView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var store = TipStore.shared
     @State private var showThankYou = false
+    @State private var activeThrow: CoinThrow? = nil
+    @State private var targetScale: CGFloat = 1.0
     private var settings: AppSettings { AppSettings.shared }
 
+    private struct CoinThrow: Identifiable {
+        let id = UUID()
+        let buttonIndex: Int
+        let color: Color
+        let product: Product
+    }
+
     var body: some View {
-        let content = NavigationView {
-            VStack(spacing: 20) {
-                Image(systemName: "heart.fill")
-                    .font(.system(size: 48))
-                    .foregroundStyle(.pink)
-                    .symbolEffect(.breathe.pulse.byLayer, options: .repeat(.periodic(delay: 0.0)))
-
-                Text("support.yourSupportHelpsKeepThisApp")
-                    .font(.callout)
-                    .multilineTextAlignment(.center)
-                    .foregroundStyle(.secondary)
-                    .padding(.horizontal)
-
-                if store.isLoadingProducts {
-                    ProgressView()
-                } else if store.products.isEmpty {
-                    Text("text.notAvailableAtThisTime")
-                        .font(.callout)
-                        .foregroundStyle(.secondary)
-                } else {
-                    HStack(spacing: 12) {
-                        ForEach(store.products, id: \.id) { product in
-                            Button {
-                                Task {
-                                    if await store.purchase(product) {
-                                        showThankYou = true
-                                    }
-                                }
-                            } label: {
-                                Text(product.displayPrice)
-                                    .frame(maxWidth: .infinity)
+        let content = NavigationStack {
+            GeometryReader { geo in
+                ZStack {
+                    sheetContent(geo: geo)
+                    if let toss = activeThrow {
+                        let startX = toss.buttonIndex == 0
+                            ? geo.size.width * 0.33
+                            : geo.size.width * 0.67
+                        TossedCoin(
+                            key: toss.id,
+                            start: CGPoint(x: startX, y: geo.size.height - 130),
+                            end: CGPoint(x: geo.size.width * 0.5, y: 90),
+                            color: toss.color
+                        ) {
+                            withAnimation(.spring(response: 0.22, dampingFraction: 0.35)) {
+                                targetScale = 1.22
                             }
-                            .buttonStyle(.borderedProminent)
-                            .tint(.pink)
-                            .disabled(store.isPurchasing)
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.22) {
+                                withAnimation(.spring) { targetScale = 1.0 }
+                            }
+                            let product = toss.product
+                            activeThrow = nil
+                            Task {
+                                if await store.purchase(product) {
+                                    showThankYou = true
+                                }
+                            }
                         }
                     }
-                    .padding(.horizontal)
                 }
-
-                Spacer()
             }
-            .padding(.top, 32)
             .navigationTitle("support.tip")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -898,6 +895,7 @@ private struct TipSheetView: View {
                     }
                 }
             }
+            .task { await store.loadProducts() }
             .alert(
                 "support.thanks.title",
                 isPresented: $showThankYou
@@ -912,6 +910,236 @@ private struct TipSheetView: View {
         } else {
             content.dynamicTypeSize(settings.fontScale.dynamicTypeSize)
         }
+    }
+
+    @ViewBuilder
+    private func sheetContent(geo: GeometryProxy) -> some View {
+        VStack(spacing: 0) {
+            developerTarget
+                .padding(.top, 32)
+
+            TossArcHint()
+                .frame(height: 52)
+                .padding(.horizontal, 56)
+                .padding(.top, 6)
+
+            Text("support.yourSupportHelpsKeepThisApp")
+                .font(.callout)
+                .multilineTextAlignment(.center)
+                .foregroundStyle(.secondary)
+                .padding(.horizontal, 32)
+                .padding(.top, 16)
+
+            Spacer()
+            coinSection
+                .padding(.bottom, 56)
+        }
+    }
+
+    private var developerTarget: some View {
+        ZStack {
+            Circle()
+                .fill(.pink.opacity(0.10))
+                .frame(width: 108, height: 108)
+            Circle()
+                .stroke(.pink.opacity(0.22), lineWidth: 1.5)
+                .frame(width: 108, height: 108)
+            Image(systemName: "person.fill")
+                .font(.system(size: 50))
+                .foregroundStyle(.pink)
+            Image(systemName: "heart.fill")
+                .font(.system(size: 18))
+                .foregroundStyle(.pink)
+                .offset(x: 24, y: -24)
+        }
+        .scaleEffect(targetScale)
+    }
+
+    @ViewBuilder
+    private var coinSection: some View {
+        if store.isLoadingProducts {
+            ProgressView()
+        } else if store.products.isEmpty {
+            Text("text.notAvailableAtThisTime")
+                .font(.callout)
+                .foregroundStyle(.secondary)
+        } else {
+            HStack(spacing: 40) {
+                ForEach(Array(store.products.enumerated()), id: \.element.id) { index, product in
+                    let isLarge = index == store.products.count - 1
+                    let coinColor: Color = isLarge
+                        ? Color(red: 0.90, green: 0.72, blue: 0.18)
+                        : Color(red: 0.72, green: 0.45, blue: 0.20)
+                    TipCoinButton(
+                        price: product.displayPrice,
+                        color: coinColor,
+                        disabled: activeThrow != nil || store.isPurchasing
+                    ) {
+                        activeThrow = CoinThrow(
+                            buttonIndex: index,
+                            color: coinColor,
+                            product: product
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+// MARK: - コインボタン
+
+private struct TipCoinButton: View {
+    let price: String
+    let color: Color
+    let disabled: Bool
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            ZStack {
+                Circle()
+                    .fill(LinearGradient(
+                        colors: [color.opacity(0.18), color.opacity(0.06)],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    ))
+                Circle()
+                    .stroke(
+                        LinearGradient(
+                            colors: [color, color.opacity(0.45)],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        ),
+                        lineWidth: 3
+                    )
+                Circle()
+                    .stroke(color.opacity(0.25), lineWidth: 1)
+                    .padding(10)
+                Text(price)
+                    .font(.subheadline.bold().monospacedDigit())
+                    .foregroundStyle(color)
+            }
+            .frame(width: 100, height: 100)
+            .shadow(color: color.opacity(0.35), radius: 10, x: 0, y: 5)
+        }
+        .buttonStyle(TipCoinPressStyle())
+        .disabled(disabled)
+        .opacity(disabled ? 0.5 : 1.0)
+    }
+}
+
+private struct TipCoinPressStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(configuration.isPressed ? 0.88 : 1.0)
+            .animation(.spring(response: 0.2, dampingFraction: 0.55), value: configuration.isPressed)
+    }
+}
+
+// MARK: - 軌跡ヒント
+
+private struct TossArcHint: View {
+    var body: some View {
+        Canvas { ctx, size in
+            let width = size.width
+            let height = size.height
+            for (startRatio, controlRatio) in [(0.25, 0.82), (0.75, 0.18)] as [(Double, Double)] {
+                var path = Path()
+                path.move(to: CGPoint(x: width * startRatio, y: height))
+                path.addQuadCurve(
+                    to: CGPoint(x: width * 0.5, y: 0),
+                    control: CGPoint(x: width * controlRatio, y: height * 0.12)
+                )
+                ctx.stroke(
+                    path,
+                    with: .color(.secondary.opacity(0.28)),
+                    style: StrokeStyle(lineWidth: 1.5, dash: [3, 5])
+                )
+            }
+        }
+    }
+}
+
+// MARK: - 飛ぶコイン
+
+private struct TossedCoin: View {
+    let key: UUID
+    let start: CGPoint
+    let end: CGPoint
+    let color: Color
+    let onLanded: () -> Void
+
+    private struct KeyframeValue {
+        var offsetX: CGFloat = 0
+        var offsetY: CGFloat = 0
+        var rotation: Double = 0
+        var scale: CGFloat = 1
+        var opacity: Double = 1
+    }
+
+    @State private var fire = false
+    private let duration: Double = 1.8
+    private let sway: CGFloat = 24
+
+    private var deltaX: CGFloat { end.x - start.x }
+    private var deltaY: CGFloat { end.y - start.y }
+
+    var body: some View {
+        Circle()
+            .fill(LinearGradient(
+                colors: [color.opacity(0.95), color.opacity(0.70)],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            ))
+            .overlay(
+                ZStack {
+                    Circle().stroke(.white.opacity(0.28), lineWidth: 1.5).padding(5)
+                    Text(verbatim: "¥").font(.title3.bold()).foregroundStyle(.white)
+                }
+            )
+            .shadow(color: color.opacity(0.55), radius: 10, x: 0, y: 4)
+            .frame(width: 50, height: 50)
+            .keyframeAnimator(initialValue: KeyframeValue(), trigger: fire) { content, value in
+                content
+                    .offset(x: value.offsetX, y: value.offsetY)
+                    .scaleEffect(value.scale)
+                    .opacity(value.opacity)
+            } keyframes: { _ in
+                KeyframeTrack(\.offsetX) {
+                    LinearKeyframe(0,                    duration: 0.01)
+                    CubicKeyframe(deltaX * 0.25 + sway,  duration: duration * 0.25)
+                    CubicKeyframe(deltaX * 0.50 - sway,  duration: duration * 0.25)
+                    CubicKeyframe(deltaX * 0.75 + sway,  duration: duration * 0.25)
+                    CubicKeyframe(deltaX,                duration: duration * 0.25)
+                }
+                KeyframeTrack(\.offsetY) {
+                    LinearKeyframe(0,      duration: 0.01)
+                    LinearKeyframe(deltaY, duration: duration * 0.99)
+                }
+                KeyframeTrack(\.rotation) {
+                    LinearKeyframe(0, duration: duration)
+                }
+                KeyframeTrack(\.scale) {
+                    LinearKeyframe(1.0,  duration: duration * 0.35)
+                    CubicKeyframe(1.12,  duration: duration * 0.30)
+                    CubicKeyframe(1.0,   duration: duration * 0.25)
+                    LinearKeyframe(0.2,  duration: duration * 0.10)
+                }
+                KeyframeTrack(\.opacity) {
+                    LinearKeyframe(1.0, duration: duration * 0.90)
+                    LinearKeyframe(0.0, duration: duration * 0.10)
+                }
+            }
+            .position(start)
+            .allowsHitTesting(false)
+            .onAppear {
+                fire = true
+                DispatchQueue.main.asyncAfter(deadline: .now() + duration + 0.05) {
+                    onLanded()
+                }
+            }
+            .id(key)
     }
 }
 

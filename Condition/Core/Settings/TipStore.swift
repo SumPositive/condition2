@@ -11,7 +11,7 @@ final class TipStore {
     static let shared = TipStore()
 
     private let productIds: [String] = [
-        "Tips_1",
+        "Tips_1",   // 製品ID Apple申請の通り
         "Tips_5",
     ]
 
