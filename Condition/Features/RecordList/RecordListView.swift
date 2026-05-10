@@ -481,7 +481,7 @@ struct RecordColumnHeader: View {
     @ScaledMetric(relativeTo: .title3) private var pulseW:    CGFloat = 42
     @ScaledMetric(relativeTo: .title3) private var weightW:   CGFloat = 60
     @ScaledMetric(relativeTo: .title3) private var otherW:    CGFloat = 52
-    @ScaledMetric(relativeTo: .title3) private var catW:      CGFloat = 28
+    @ScaledMetric(relativeTo: .title3) private var catW:      CGFloat = 24
     // 見出し行の高さ・セパレータ高さを footnote 基準でスケール
     @ScaledMetric(relativeTo: .footnote) private var sepH:   CGFloat = 16
 
@@ -557,8 +557,9 @@ struct RecordRowView: View {
     @ScaledMetric(relativeTo: .title3) private var pulseW:    CGFloat = 42
     @ScaledMetric(relativeTo: .title3) private var weightW:   CGFloat = 60
     @ScaledMetric(relativeTo: .title3) private var otherW:    CGFloat = 52
-    @ScaledMetric(relativeTo: .title3) private var catW:      CGFloat = 28
-    @ScaledMetric(relativeTo: .title3) private var catIconSz: CGFloat = 19
+    @ScaledMetric(relativeTo: .title3) private var catW:      CGFloat = 24
+    @ScaledMetric(relativeTo: .title3) private var catIconSz: CGFloat = 16
+    @ScaledMetric(relativeTo: .footnote) private var weekdayW: CGFloat = 20
     /// フラグ・HKマークを caption2 基準でスケール（標準:10pt、上限でクランプ）
     @ScaledMetric(relativeTo: .caption2) private var scaledMarkSz: CGFloat = 10
     /// 値行とメモ行の間隔
@@ -607,7 +608,9 @@ struct RecordRowView: View {
                             Text(Self.weekdayFormatter.string(from: record.dateTime))
                                 .font(.footnote)
                                 .foregroundStyle(.secondary)
-                                .fixedSize(horizontal: true, vertical: false)
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.6)
+                                .frame(width: weekdayW, alignment: .leading)
                         }
                         Text(Self.timeFormatter.string(from: record.dateTime))
                             .font(.subheadline.monospacedDigit())
@@ -637,6 +640,7 @@ struct RecordRowView: View {
                     .frame(width: catW, alignment: .center)
                 }
                 .frame(width: dateColW, alignment: .leading)
+                .clipped()
                 .padding(.trailing, 4)
 
                 // 最初の縦線の幅を確保（実線は overlay で描画）
