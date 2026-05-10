@@ -152,8 +152,13 @@ private struct StatisticsContentView: View {
                 }
             }
             .sheet(isPresented: $showSettings) {
-                NavigationStack {
+                let content = NavigationStack {
                     StatSettingsView(isModal: true)
+                }
+                if AppSettings.shared.fontScale.followsSystem {
+                    content
+                } else {
+                    content.dynamicTypeSize(AppSettings.shared.fontScale.dynamicTypeSize)
                 }
             }
         }

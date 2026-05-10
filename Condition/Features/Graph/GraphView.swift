@@ -92,8 +92,13 @@ struct GraphView: View {
                     }
                 }
                 .sheet(isPresented: $showSettings) {
-                    NavigationStack {
+                    let content = NavigationStack {
                         GraphSettingsView(isModal: true)
+                    }
+                    if AppSettings.shared.fontScale.followsSystem {
+                        content
+                    } else {
+                        content.dynamicTypeSize(AppSettings.shared.fontScale.dynamicTypeSize)
                     }
                 }
                 // フェーズ2: 初期表示後にプリフェッチ範囲まで拡張（横スクロール対応）
