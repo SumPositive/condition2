@@ -1,8 +1,10 @@
-# 体調メモ Condition
+# Condition / 体調メモ 開発メモ
 
-iOS 向けの健康記録アプリです。SwiftUI と SwiftData で開発しています。
+この `README.md` は、開発者向けの設計メモです。
 
-**User Guide**
+**最新バージョン**: 2.2.0（2026-05-10）
+
+**User Guide**  
 [English](https://docs.azukid.com/en/sumpo/Condition/condition.html) / [日本語](https://docs.azukid.com/jp/sumpo/Condition/condition.html)
 
 ![Platform](https://img.shields.io/badge/platform-iOS%2017%2B-blue)
