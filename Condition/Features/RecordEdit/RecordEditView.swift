@@ -123,15 +123,6 @@ struct RecordEditView: View {
                         dismiss()
                     }
                 }
-                ToolbarItemGroup(placement: .keyboard) {
-                    Spacer()
-                    Button("action.done") {
-                        UIApplication.shared.sendAction(
-                            #selector(UIResponder.resignFirstResponder),
-                            to: nil, from: nil, for: nil
-                        )
-                    }
-                }
             }
             .sheet(isPresented: $showDatePicker) {
                 DatePickerSheet(date: $vm.dateTime) {
