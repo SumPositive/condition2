@@ -21,9 +21,11 @@ struct BeginnerHelpBanner: View {
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
                 .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+                .background(Color(.tertiarySystemFill), in: RoundedRectangle(cornerRadius: 10))
                 .padding(.horizontal, 16)
                 .padding(.vertical, 4)
-                .background(.background.secondary)
         }
     }
 }
