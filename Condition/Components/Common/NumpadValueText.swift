@@ -163,9 +163,9 @@ private struct NumpadInputSheet: View {
             .padding(.horizontal, 24)
             .padding(.bottom, 8)
         }
-        .presentationBackground(Color(.systemBackground))
         .presentationDetents(isCompact ? [.large] : [.height(idealHeight), .large])
         .presentationDragIndicator(.visible)
+        .presentationBackground(Color(.systemBackground))
     }
 
     // MARK: - キー操作

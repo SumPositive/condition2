@@ -23,7 +23,7 @@ struct BeginnerHelpBanner: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 8)
-                .background(Color(.tertiarySystemFill), in: RoundedRectangle(cornerRadius: 10))
+                .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 10))
                 .padding(.horizontal, 16)
                 .padding(.vertical, 4)
         }

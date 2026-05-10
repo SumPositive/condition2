@@ -106,6 +106,7 @@ struct RecordEditView: View {
                     }
                 }
             }
+            .scrollDismissesKeyboard(.interactively)
             .navigationTitle(title)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -120,6 +121,15 @@ struct RecordEditView: View {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("action.cancel") {
                         dismiss()
+                    }
+                }
+                ToolbarItemGroup(placement: .keyboard) {
+                    Spacer()
+                    Button("action.done") {
+                        UIApplication.shared.sendAction(
+                            #selector(UIResponder.resignFirstResponder),
+                            to: nil, from: nil, for: nil
+                        )
                     }
                 }
             }
@@ -419,6 +429,7 @@ struct DatePickerSheet: View {
     @Binding var date: Date
     let onChanged: () -> Void
     @Environment(\.dismiss) private var dismiss
+    @State private var contentHeight: CGFloat = 500
 
     var body: some View {
         NavigationStack {
@@ -431,6 +442,13 @@ struct DatePickerSheet: View {
             .datePickerStyle(.graphical)
             .labelsHidden()
             .padding()
+            .onGeometryChange(for: CGFloat.self, of: { $0.size.height }) { h in
+                // ナビゲーションバー高さ（inline: 約44）＋セーフエリアを加算
+                let safeArea = (UIApplication.shared.connectedScenes
+                    .compactMap { ($0 as? UIWindowScene)?.windows.first(where: { $0.isKeyWindow }) }
+                    .first?.safeAreaInsets.bottom ?? 0)
+                contentHeight = h + 44 + safeArea
+            }
             .navigationTitle("record.datetime.select")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -442,5 +460,8 @@ struct DatePickerSheet: View {
                 }
             }
         }
+        .presentationDetents([.height(contentHeight)])
+        .presentationDragIndicator(.visible)
+        .presentationBackground(Color(.systemBackground))
     }
 }
