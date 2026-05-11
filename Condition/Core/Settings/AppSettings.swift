@@ -279,6 +279,12 @@ final class AppSettings {
         didSet { ud.set(openNewRecordOnForeground, forKey: UDefKeys.openNewRecordOnForeground) }
     }
 
+    // MARK: - 新規記録シート（非永続・セッションのみ）
+    /// TabView 上位から新規記録シートを開くトリガー
+    var showNewRecordSheet: Bool = false
+    /// 新規記録シートに未保存の変更があるか
+    var newRecordSheetModified: Bool = false
+
     // MARK: - 購入状態（制限解除済み）
     let isUnlocked: Bool = true
 

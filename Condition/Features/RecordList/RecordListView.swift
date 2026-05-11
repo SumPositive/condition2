@@ -17,12 +17,9 @@ struct RecordListView: View {
     private var records: [BodyRecord]
 
     @State private var editTarget: BodyRecord? = nil
-    @State private var showAddSheet = false
     @State private var showExportSheet = false
-    /// 開いている編集シートに未保存の変更がある場合 true
+    /// 編集シートに未保存の変更がある場合 true
     @State private var editHasUnsavedChanges = false
-    /// シート dismiss 後に新規記録シートを開く予約フラグ
-    @State private var pendingOpenNewRecord = false
 
     @State private var toastMessage: String? = nil
     @State private var showHKTimeoutAlert = false
@@ -98,38 +95,14 @@ struct RecordListView: View {
                         .tint(.orange)
                     }
                     #endif // targetEnvironment(simulator)
-                    Button { showAddSheet = true } label: {
+                    Button { settings.showNewRecordSheet = true } label: {
                         Image(systemName: "plus")
                     }
                 }
             }
-            .sheet(isPresented: $showAddSheet,
-                   onDismiss: {
-                       editHasUnsavedChanges = false
-                       if pendingOpenNewRecord {
-                           pendingOpenNewRecord = false
-                           showAddSheet = true
-                       }
-                   }) {
-                addNewRecordSheet
-            }
             .onChange(of: scenePhase) { _, phase in
                 if phase == .active {
                     Task { await autoImportFromHealthKitIfNeeded() }
-                    guard settings.openNewRecordOnForeground else { return }
-                    if editHasUnsavedChanges {
-                        // 未保存の変更あり → 何もしない
-                        return
-                    }
-                    if !showAddSheet && editTarget == nil {
-                        // 何も開いていない → 即座に新規を開く
-                        showAddSheet = true
-                    } else {
-                        // 変更なしのシートが開いている → 閉じた後に新規を開く
-                        pendingOpenNewRecord = true
-                        showAddSheet = false
-                        editTarget = nil
-                    }
                 }
             }
             .onAppear {
@@ -139,13 +112,7 @@ struct RecordListView: View {
                 }
             }
             .sheet(item: $editTarget,
-                   onDismiss: {
-                       editHasUnsavedChanges = false
-                       if pendingOpenNewRecord {
-                           pendingOpenNewRecord = false
-                           showAddSheet = true
-                       }
-                   }) { record in
+                   onDismiss: { editHasUnsavedChanges = false }) { record in
                 editRecordSheet(record: record)
             }
             .sheet(isPresented: $showExportSheet) {
@@ -182,15 +149,6 @@ struct RecordListView: View {
     }
 
     // MARK: - シートコンテンツ（型検査の負荷分散のため body 外に切り出す）
-
-    @ViewBuilder
-    private var addNewRecordSheet: some View {
-        RecordEditView(
-            mode: .addNew,
-            onHKImported: { count in showImportToast(count: count) },
-            onModifiedChanged: { editHasUnsavedChanges = $0 }
-        )
-    }
 
     @ViewBuilder
     private func editRecordSheet(record: BodyRecord) -> some View {

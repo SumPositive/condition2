@@ -77,6 +77,14 @@ private struct RootSceneView: View {
         }
         .preferredColorScheme(settings.appearanceMode.colorScheme)
         .dynamicTypeSize(effectiveDynamicTypeSize)
+        // 新規記録シートをルートレベルで呈示：TabView の選択タブに関わらず確実に表示される
+        .sheet(isPresented: Bindable(settings).showNewRecordSheet,
+               onDismiss: { settings.newRecordSheetModified = false }) {
+            RecordEditView(
+                mode: .addNew,
+                onModifiedChanged: { settings.newRecordSheetModified = $0 }
+            )
+        }
     }
 }
 
