@@ -590,7 +590,9 @@ struct RecordRowView: View {
     }
 
     var body: some View {
-        let notes = [record.sNote1, record.sNote2].filter { !$0.isEmpty }.joined(separator: "  ")
+        let notes = [record.sNote1, record.sNote2]
+            .compactMap { $0.components(separatedBy: .newlines).first(where: { !$0.isEmpty }) }
+            .joined(separator: "  ")
         VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 0) {
                 // 日付＋区分

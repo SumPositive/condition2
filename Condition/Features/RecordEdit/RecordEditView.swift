@@ -398,7 +398,8 @@ struct RecordEditView: View {
                     .allowsHitTesting(false)
             }
             TextEditor(text: text)
-                .frame(minHeight: 60)
+                .scrollDisabled(true)
+                .frame(minHeight: 36)
         }
     }
 
