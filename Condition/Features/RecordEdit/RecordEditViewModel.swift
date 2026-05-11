@@ -280,9 +280,9 @@ final class RecordEditViewModel {
 
     private func applyFields(to record: BodyRecord) {
         record.bCaution      = bCaution
-        record.sNote1        = sNote1
-        record.sNote2        = sNote2
-        record.sEquipment    = sEquipment
+        record.sNote1        = sNote1.trimmingCharacters(in: .newlines)
+        record.sNote2        = sNote2.trimmingCharacters(in: .newlines)
+        record.sEquipment    = sEquipment.trimmingCharacters(in: .newlines)
         record.nBpHi_mmHg    = bpHiEnabled      ? nBpHi_mmHg   : 0
         record.nBpLo_mmHg    = bpLoEnabled      ? nBpLo_mmHg   : 0
         record.nPulse_bpm    = pulseEnabled     ? nPulse_bpm   : 0
