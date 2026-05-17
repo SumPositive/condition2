@@ -105,6 +105,9 @@ struct RecentConflictSheet: View {
     @State private var selection: ConflictAction
     @State private var contentHeight: CGFloat = 480
 
+    /// 値セル列の幅（文字サイズに連動して伸縮）
+    @ScaledMetric(relativeTo: .body) private var colW: CGFloat = 56
+
     init(conflict: RecentConflict, onAction: @escaping (ConflictAction) -> Void) {
         self.conflict = conflict
         self.onAction = onAction
@@ -150,11 +153,12 @@ struct RecentConflictSheet: View {
                 .padding(.vertical, 6)
                 .background(Color(.secondarySystemBackground))
 
-                // 項目（VStack で内容ぴったりの高さ）
+                // 項目：内容に合わせて自然な高さ
                 VStack(spacing: 4) {
                     ForEach(conflict.items) { item in
                         ConflictRowView(
                             item: item,
+                            colW: colW,
                             highlightPrev: highlightPrev,
                             highlightNew: highlightNew,
                             highlightAverage: highlightAverage,
@@ -193,11 +197,19 @@ struct RecentConflictSheet: View {
                 // ナビバー44 + 内部高さ + 下部セーフエリア
                 contentHeight = h + 44 + safeArea
             }
-            .navigationTitle("settings.merge.window")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("action.cancel") { dismiss() }
+                }
+                ToolbarItem(placement: .principal) {
+                    // 収まる時のみタイトル表示、欠ける場合は非表示
+                    ViewThatFits {
+                        Text("settings.merge.window")
+                            .font(.headline)
+                            .lineLimit(1)
+                        Color.clear.frame(width: 0, height: 0)
+                    }
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("action.save") { onAction(selection) }
@@ -206,7 +218,7 @@ struct RecentConflictSheet: View {
             }
             .animation(.snappy, value: selection)
         }
-        .presentationDetents([.height(contentHeight)])
+        .presentationDetents([.height(contentHeight), .large])
         .presentationDragIndicator(.visible)
         .presentationBackground(Color(.systemBackground))
     }
@@ -243,7 +255,10 @@ struct RecentConflictSheet: View {
             Text(key)
                 .font(.caption.bold())
                 .foregroundStyle(isOn ? Color.accentColor : .secondary)
-                .frame(width: 64, alignment: .trailing)
+                .lineLimit(2)
+                .minimumScaleFactor(0.7)
+                .multilineTextAlignment(.trailing)
+                .frame(width: colW, alignment: .trailing)
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -263,10 +278,11 @@ private struct SelectorButton: View {
                 .font(.callout)
                 .fontWeight(isOn ? .bold : .regular)
                 .foregroundStyle(isOn ? Color.accentColor : .primary)
-                .lineLimit(1)
+                .lineLimit(2)
                 .minimumScaleFactor(0.7)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 8)
+                .multilineTextAlignment(.center)
+                .frame(maxWidth: .infinity, minHeight: 36)
+                .padding(.vertical, 6)
                 .padding(.horizontal, 4)
                 .background(
                     RoundedRectangle(cornerRadius: 8)
@@ -288,6 +304,7 @@ private struct SelectorButton: View {
 
 private struct ConflictRowView: View {
     let item: ConflictItem
+    let colW: CGFloat
     let highlightPrev: Bool
     let highlightNew: Bool
     let highlightAverage: Bool
@@ -301,7 +318,7 @@ private struct ConflictRowView: View {
                 .font(.callout)
                 .foregroundStyle(item.field.color)
                 .lineLimit(2)
-                .minimumScaleFactor(0.8)
+                .minimumScaleFactor(0.7)
                 .fixedSize(horizontal: false, vertical: true)
                 .frame(maxWidth: .infinity, alignment: .leading)
             valueButton(item.prevValue, lifted: highlightPrev, action: onTapPrev)
@@ -317,7 +334,9 @@ private struct ConflictRowView: View {
             Text(ValueFormatter.format(value, decimals: item.field.decimals))
                 .fontWeight(lifted ? .bold : .regular)
                 .foregroundStyle(lifted ? Color.accentColor : .primary)
-                .frame(width: 64, alignment: .trailing)
+                .lineLimit(1)
+                .fixedSize(horizontal: true, vertical: false)
+                .frame(width: colW, alignment: .trailing)
                 .padding(.vertical, 4)
                 .padding(.horizontal, 4)
                 .background(
