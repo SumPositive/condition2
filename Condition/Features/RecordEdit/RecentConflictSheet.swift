@@ -68,9 +68,15 @@ enum ConflictField: String, CaseIterable {
 struct ConflictItem: Identifiable {
     var id: String { field.rawValue }
     let field: ConflictField
-    let prevValue: Int   // > 0 のみ
-    let newValue: Int    // > 0 のみ
-    var avgValue: Int { (prevValue + newValue) / 2 }
+    let prevValue: Int   // 0 = 直前に値なし
+    let newValue: Int    // 0 = 新規に値なし（どちらか必ず > 0）
+    /// 平均は両方に値があるときのみ計算可能。片方のみなら 0（「—」表示）
+    var avgValue: Int {
+        (prevValue > 0 && newValue > 0) ? (prevValue + newValue) / 2 : 0
+    }
+    var hasPrev: Bool { prevValue > 0 }
+    var hasNew:  Bool { newValue  > 0 }
+    var hasBoth: Bool { hasPrev && hasNew }
 }
 
 struct RecentConflict: Identifiable {
@@ -105,9 +111,6 @@ struct RecentConflictSheet: View {
     @State private var selection: ConflictAction
     @State private var contentHeight: CGFloat = 480
 
-    /// 値セル列の幅（文字サイズに連動して伸縮）
-    @ScaledMetric(relativeTo: .body) private var colW: CGFloat = 56
-
     init(conflict: RecentConflict, onAction: @escaping (ConflictAction) -> Void) {
         self.conflict = conflict
         self.onAction = onAction
@@ -121,56 +124,97 @@ struct RecentConflictSheet: View {
         return f
     }()
 
-    /// 各列のハイライト状態
+    /// 列見出しのハイライト（選択されたアクションを示す）
     private var highlightPrev:    Bool { selection == .keepPrevious || selection == .keepBoth }
     private var highlightNew:     Bool { selection == .useNew        || selection == .keepBoth }
     private var highlightAverage: Bool { selection == .useAverage }
 
+    /// 各セルのハイライト（実際に保存される値を示す。fallback も反映）
+    private func cellHighlightPrev(_ item: ConflictItem) -> Bool {
+        switch selection {
+        case .keepPrevious: return item.hasPrev                    // 直前あり（なければ new へフォールバック）
+        case .useNew:       return !item.hasNew                    // 新規になければ直前へフォールバック
+        case .useAverage:   return item.hasPrev && !item.hasNew    // 平均算出不可 → 直前にフォールバック
+        case .keepBoth:     return item.hasPrev
+        }
+    }
+    private func cellHighlightNew(_ item: ConflictItem) -> Bool {
+        switch selection {
+        case .keepPrevious: return !item.hasPrev                   // 直前になければ新規へフォールバック
+        case .useNew:       return item.hasNew
+        case .useAverage:   return item.hasNew && !item.hasPrev    // 平均算出不可 → 新規にフォールバック
+        case .keepBoth:     return item.hasNew
+        }
+    }
+    private func cellHighlightAverage(_ item: ConflictItem) -> Bool {
+        selection == .useAverage && item.hasBoth                   // 両方ある時のみ平均ハイライト
+    }
+
+    private var settings: AppSettings { AppSettings.shared }
+
     var body: some View {
+        let nav = navContent
+        if settings.fontScale.followsSystem {
+            nav
+        } else {
+            nav.dynamicTypeSize(settings.fontScale.dynamicTypeSize)
+        }
+    }
+
+    @ViewBuilder
+    private var navContent: some View {
         NavigationStack {
             VStack(spacing: 0) {
                 header
 
                 Divider()
 
-                // 列見出し（タップで選択切替）
-                HStack(spacing: 4) {
-                    Text("conflict.item")
-                        .font(.caption.bold())
-                        .foregroundStyle(.secondary)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                    columnHeaderButton("conflict.previous", isOn: highlightPrev) {
-                        selection = .keepPrevious
+                // Grid で列幅を内容に合わせて自動調整（重なり・欠け防止）
+                Grid(horizontalSpacing: 12, verticalSpacing: 6) {
+                    // 見出し行
+                    GridRow {
+                        Text("conflict.item")
+                            .font(.caption.bold())
+                            .foregroundStyle(.secondary)
+                            .gridColumnAlignment(.leading)
+                        gridHeader("conflict.previous", isOn: highlightPrev) {
+                            selection = .keepPrevious
+                        }
+                        gridHeader("conflict.new", isOn: highlightNew) {
+                            selection = .useNew
+                        }
+                        gridHeader("conflict.average", isOn: highlightAverage) {
+                            selection = .useAverage
+                        }
                     }
-                    columnHeaderButton("conflict.new", isOn: highlightNew) {
-                        selection = .useNew
-                    }
-                    columnHeaderButton("conflict.average", isOn: highlightAverage) {
-                        selection = .useAverage
-                    }
-                }
-                .padding(.horizontal)
-                .padding(.vertical, 6)
-                .background(Color(.secondarySystemBackground))
+                    Divider().gridCellUnsizedAxes(.horizontal)
 
-                // 項目：内容に合わせて自然な高さ
-                VStack(spacing: 4) {
-                    ForEach(conflict.items) { item in
-                        ConflictRowView(
-                            item: item,
-                            colW: colW,
-                            highlightPrev: highlightPrev,
-                            highlightNew: highlightNew,
-                            highlightAverage: highlightAverage,
-                            onTapPrev:    { selection = .keepPrevious },
-                            onTapNew:     { selection = .useNew },
-                            onTapAverage: { selection = .useAverage }
-                        )
-                        Divider()
+                    // データ行
+                    ForEach(Array(conflict.items.enumerated()), id: \.element.id) { idx, item in
+                        GridRow {
+                            Text(LocalizedStringKey(item.field.labelKey))
+                                .font(.callout)
+                                .foregroundStyle(item.field.color)
+                                .lineLimit(3)
+                                .minimumScaleFactor(0.85)
+                                .fixedSize(horizontal: false, vertical: true)
+                            gridValue(item.prevValue, field: item.field, lifted: cellHighlightPrev(item)) {
+                                selection = .keepPrevious
+                            }
+                            gridValue(item.newValue,  field: item.field, lifted: cellHighlightNew(item)) {
+                                selection = .useNew
+                            }
+                            gridValue(item.avgValue,  field: item.field, lifted: cellHighlightAverage(item)) {
+                                selection = .useAverage
+                            }
+                        }
+                        if idx < conflict.items.count - 1 {
+                            Divider().gridCellUnsizedAxes(.horizontal)
+                        }
                     }
                 }
                 .padding(.horizontal)
-                .padding(.top, 4)
+                .padding(.top, 6)
 
                 // セレクタ：項目の直下に配置
                 // セグメント風セレクタ：列ハイライトと同じスタイル
@@ -235,6 +279,7 @@ struct RecentConflictSheet: View {
                 .font(.callout)
                 .foregroundStyle(.primary)
                 .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
             HStack(spacing: 6) {
                 Image(systemName: conflict.previous.dateOpt.icon)
                     .foregroundStyle(.secondary)
@@ -250,15 +295,41 @@ struct RecentConflictSheet: View {
         .padding(.vertical, 10)
     }
 
-    private func columnHeaderButton(_ key: LocalizedStringKey, isOn: Bool, action: @escaping () -> Void) -> some View {
+    /// 見出し列（タップで選択切替）
+    private func gridHeader(_ key: LocalizedStringKey, isOn: Bool, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Text(key)
                 .font(.caption.bold())
                 .foregroundStyle(isOn ? Color.accentColor : .secondary)
                 .lineLimit(2)
-                .minimumScaleFactor(0.7)
                 .multilineTextAlignment(.trailing)
-                .frame(width: colW, alignment: .trailing)
+                .fixedSize(horizontal: false, vertical: true)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .gridColumnAlignment(.trailing)
+    }
+
+    /// 値セル（タップで選択切替、文字サイズ通り）
+    /// value == 0 のときは「—」を表示する（タップ可、ハイライト可）。
+    private func gridValue(_ value: Int, field: ConflictField, lifted: Bool, action: @escaping () -> Void) -> some View {
+        let hasValue = value > 0
+        return Button(action: action) {
+            Text(hasValue ? ValueFormatter.format(value, decimals: field.decimals) : "—")
+                .font(.body.monospacedDigit())
+                .fontWeight(lifted ? .bold : .regular)
+                .foregroundStyle(lifted ? Color.accentColor : (hasValue ? .primary : Color(.tertiaryLabel)))
+                .lineLimit(1)
+                .fixedSize(horizontal: true, vertical: false)
+                .padding(.vertical, 4)
+                .padding(.horizontal, 8)
+                .background(
+                    RoundedRectangle(cornerRadius: 6)
+                        .fill(lifted ? Color.accentColor.opacity(0.15) : Color.clear)
+                )
+                .scaleEffect(lifted ? 1.08 : 1.0)
+                .shadow(color: lifted ? Color.accentColor.opacity(0.25) : .clear,
+                        radius: lifted ? 3 : 0, y: lifted ? 1 : 0)
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -300,54 +371,3 @@ private struct SelectorButton: View {
     }
 }
 
-// MARK: - 衝突行
-
-private struct ConflictRowView: View {
-    let item: ConflictItem
-    let colW: CGFloat
-    let highlightPrev: Bool
-    let highlightNew: Bool
-    let highlightAverage: Bool
-    let onTapPrev: () -> Void
-    let onTapNew: () -> Void
-    let onTapAverage: () -> Void
-
-    var body: some View {
-        HStack(spacing: 4) {
-            Text(LocalizedStringKey(item.field.labelKey))
-                .font(.callout)
-                .foregroundStyle(item.field.color)
-                .lineLimit(2)
-                .minimumScaleFactor(0.7)
-                .fixedSize(horizontal: false, vertical: true)
-                .frame(maxWidth: .infinity, alignment: .leading)
-            valueButton(item.prevValue, lifted: highlightPrev, action: onTapPrev)
-            valueButton(item.newValue,  lifted: highlightNew,  action: onTapNew)
-            valueButton(item.avgValue,  lifted: highlightAverage, action: onTapAverage)
-        }
-        .font(.body.monospacedDigit())
-        .padding(.vertical, 4)
-    }
-
-    private func valueButton(_ value: Int, lifted: Bool, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Text(ValueFormatter.format(value, decimals: item.field.decimals))
-                .fontWeight(lifted ? .bold : .regular)
-                .foregroundStyle(lifted ? Color.accentColor : .primary)
-                .lineLimit(1)
-                .fixedSize(horizontal: true, vertical: false)
-                .frame(width: colW, alignment: .trailing)
-                .padding(.vertical, 4)
-                .padding(.horizontal, 4)
-                .background(
-                    RoundedRectangle(cornerRadius: 6)
-                        .fill(lifted ? Color.accentColor.opacity(0.15) : Color.clear)
-                )
-                .scaleEffect(lifted ? 1.08 : 1.0)
-                .shadow(color: lifted ? Color.accentColor.opacity(0.25) : .clear,
-                        radius: lifted ? 3 : 0, y: lifted ? 1 : 0)
-                .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-    }
-}

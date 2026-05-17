@@ -288,7 +288,8 @@ final class RecordEditViewModel {
         let diff = now.timeIntervalSince(prev.dateTime)
         guard diff >= 0, diff <= threshold else { return nil }
 
-        let hidden = Set(AppSettings.shared.hiddenFields)
+        let settings = AppSettings.shared
+        let hidden = Set(settings.hiddenFields)
         let newBpHi   = bpHiEnabled      ? nBpHi_mmHg    : 0
         let newBpLo   = bpLoEnabled      ? nBpLo_mmHg    : 0
         let newPulse  = pulseEnabled     ? nPulse_bpm    : 0
@@ -297,20 +298,42 @@ final class RecordEditViewModel {
         let newBF     = bodyFatEnabled   ? nBodyFat_10p  : 0
         let newSK     = skMuscleEnabled  ? nSkMuscle_10p : 0
 
-        var items: [ConflictItem] = []
-        func push(_ f: ConflictField, p: Int, n: Int) {
-            // 非表示項目は除外
-            guard !hidden.contains(f.graphKind.rawValue) else { return }
-            guard p > 0, n > 0 else { return }
-            items.append(ConflictItem(field: f, prevValue: p, newValue: n))
+        func valuesFor(_ field: ConflictField) -> (Int, Int) {
+            switch field {
+            case .bpHi:     return (prev.nBpHi_mmHg,    newBpHi)
+            case .bpLo:     return (prev.nBpLo_mmHg,    newBpLo)
+            case .pulse:    return (prev.nPulse_bpm,    newPulse)
+            case .temp:     return (prev.nTemp_10c,     newTemp)
+            case .weight:   return (prev.nWeight_10Kg,  newWeight)
+            case .bodyFat:  return (prev.nBodyFat_10p,  newBF)
+            case .skMuscle: return (prev.nSkMuscle_10p, newSK)
+            }
         }
-        push(.bpHi,     p: prev.nBpHi_mmHg,    n: newBpHi)
-        push(.bpLo,     p: prev.nBpLo_mmHg,    n: newBpLo)
-        push(.pulse,    p: prev.nPulse_bpm,    n: newPulse)
-        push(.temp,     p: prev.nTemp_10c,     n: newTemp)
-        push(.weight,   p: prev.nWeight_10Kg,  n: newWeight)
-        push(.bodyFat,  p: prev.nBodyFat_10p,  n: newBF)
-        push(.skMuscle, p: prev.nSkMuscle_10p, n: newSK)
+
+        // 記録入力画面と同じ順序：settings.graphPanelOrder に従う
+        let orderedFields: [ConflictField] = settings.graphPanelOrder
+            .compactMap { GraphKind(rawValue: $0) }
+            .flatMap { kind -> [ConflictField] in
+                switch kind {
+                case .bp:       return [.bpHi, .bpLo]
+                case .pulse:    return [.pulse]
+                case .temp:     return [.temp]
+                case .weight:   return [.weight]
+                case .bodyFat:  return [.bodyFat]
+                case .skMuscle: return [.skMuscle]
+                default:        return []
+                }
+            }
+
+        var items: [ConflictItem] = []
+        for field in orderedFields {
+            // 非表示項目は除外
+            guard !hidden.contains(field.graphKind.rawValue) else { continue }
+            let (p, n) = valuesFor(field)
+            // どちらかに値があれば表示（消えるという誤解を防ぐ）
+            guard p > 0 || n > 0 else { continue }
+            items.append(ConflictItem(field: field, prevValue: p, newValue: n))
+        }
 
         guard !items.isEmpty else { return nil }
         return RecentConflict(previous: prev, items: items)
@@ -320,20 +343,23 @@ final class RecordEditViewModel {
     func resolveConflict(_ action: ConflictAction, previous: BodyRecord, context: ModelContext) throws {
         switch action {
         case .keepPrevious:
-            // 何もしない（新しい記録は保存しない）
-            isModified = false
+            // 両方に値があれば直前を優先、片方のみなら値のあるほうを採用（新規のみフィールドも失われない）
+            try overwritePrevious(previous, mode: .preferPrev, context: context)
         case .keepBoth:
             try save(context: context)
         case .useNew:
-            try overwritePrevious(previous, useAverage: false, context: context)
+            try overwritePrevious(previous, mode: .preferNew, context: context)
         case .useAverage:
-            try overwritePrevious(previous, useAverage: true, context: context)
+            try overwritePrevious(previous, mode: .average, context: context)
         }
     }
 
-    /// 直前レコードを上書きする（useAverage=true なら平均値、false なら新しい値）。
-    /// 両方に値がない場合は値のあるほうを残す。
-    private func overwritePrevious(_ prev: BodyRecord, useAverage: Bool, context: ModelContext) throws {
+    /// 直前レコードの上書きモード
+    private enum MergeMode { case preferPrev, preferNew, average }
+
+    /// 直前レコードを上書きする。両方に値がある項目の扱いは mode に従う。
+    /// 片方のみに値がある項目は値のあるほうを採用。
+    private func overwritePrevious(_ prev: BodyRecord, mode: MergeMode, context: ModelContext) throws {
         isSaving = true
         defer { isSaving = false }
 
@@ -347,8 +373,14 @@ final class RecordEditViewModel {
         let newSK     = skMuscleEnabled  ? nSkMuscle_10p : 0
 
         func merge(_ p: Int, _ n: Int) -> Int {
-            if p > 0, n > 0 { return useAverage ? (p + n) / 2 : n }
-            return n > 0 ? n : p
+            if p > 0, n > 0 {
+                switch mode {
+                case .preferPrev: return p
+                case .preferNew:  return n
+                case .average:    return (p + n) / 2
+                }
+            }
+            return max(p, n)   // 片方のみ → 値のあるほう
         }
         func apply(_ f: ConflictField, prev p: Int, new n: Int) -> Int {
             // 非表示項目は直前値をそのまま維持
@@ -384,8 +416,8 @@ final class RecordEditViewModel {
 
         try context.save()
         isModified = false
-        // 平均値は実測値ではないため HealthKit へは書き戻さない
-        if !useAverage {
+        // 平均値・直前優先では実測値と異なる可能性があるため HealthKit には書き戻さない
+        if mode == .preferNew {
             writeToHealthKitIfAutomatic()
         }
     }
