@@ -269,15 +269,16 @@ final class RecordEditViewModel {
         Task { await HealthKitService.shared.write(currentHealthKitValues()) }
     }
 
-    // MARK: - 直近10分以内の衝突検出と解決
+    // MARK: - 直近の衝突検出と解決
 
-    /// 衝突判定の時間しきい値（10分）
-    private static let conflictThreshold: TimeInterval = 10 * 60
-
-    /// 新規追加モードのとき、直前10分以内の記録との衝突情報を返す。
-    /// 重なる項目（両方に値あり）が一つもなければ nil。
+    /// 新規追加モードのとき、設定で指定された時間内の直前記録との衝突情報を返す。
+    /// 設定が「しない」(0分) または重なる項目がなければ nil。
     func findRecentConflict(context: ModelContext) -> RecentConflict? {
         guard case .addNew = mode else { return nil }
+        let windowMinutes = AppSettings.shared.mergeWindowMinutes
+        guard windowMinutes > 0 else { return nil }
+        let threshold: TimeInterval = TimeInterval(windowMinutes) * 60
+
         let now = dateTime
         let descriptor = FetchDescriptor<BodyRecord>(
             predicate: #Predicate { $0.dateTime < now && $0.dateTime < bodyRecordGoalDate },
@@ -285,7 +286,7 @@ final class RecordEditViewModel {
         )
         guard let prev = (try? context.fetch(descriptor))?.first else { return nil }
         let diff = now.timeIntervalSince(prev.dateTime)
-        guard diff >= 0, diff <= Self.conflictThreshold else { return nil }
+        guard diff >= 0, diff <= threshold else { return nil }
 
         let hidden = Set(AppSettings.shared.hiddenFields)
         let newBpHi   = bpHiEnabled      ? nBpHi_mmHg    : 0

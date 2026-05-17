@@ -79,11 +79,20 @@ struct RecentConflict: Identifiable {
     let items: [ConflictItem]
 }
 
-enum ConflictAction: Hashable {
-    case keepPrevious   // 直前値：新しい記録を保存しない
-    case useNew         // 新しい値：直前を新しい値で上書き
-    case useAverage     // 平均値：直前を平均値で上書き
-    case keepBoth       // 両方残す：通常通り新規挿入
+enum ConflictAction: Int, Hashable, CaseIterable {
+    case keepBoth     = 0   // 両方残す：通常通り新規挿入
+    case keepPrevious = 1   // 直前値：新しい記録を保存しない
+    case useNew       = 2   // 新しい値：直前を新しい値で上書き
+    case useAverage   = 3   // 平均値：直前を平均値で上書き
+
+    var labelKey: LocalizedStringKey {
+        switch self {
+        case .keepBoth:     return "conflict.action.keepBoth"
+        case .keepPrevious: return "conflict.action.keepPrevious"
+        case .useNew:       return "conflict.action.useNew"
+        case .useAverage:   return "conflict.action.useAverage"
+        }
+    }
 }
 
 // MARK: - シート
@@ -93,8 +102,15 @@ struct RecentConflictSheet: View {
     let onAction: (ConflictAction) -> Void
 
     @Environment(\.dismiss) private var dismiss
-    @State private var selection: ConflictAction = .useAverage
+    @State private var selection: ConflictAction
     @State private var contentHeight: CGFloat = 480
+
+    init(conflict: RecentConflict, onAction: @escaping (ConflictAction) -> Void) {
+        self.conflict = conflict
+        self.onAction = onAction
+        let defaultRaw = AppSettings.shared.mergeDefaultAction
+        _selection = State(initialValue: ConflictAction(rawValue: defaultRaw) ?? .useAverage)
+    }
 
     private static let timeFormatter: DateFormatter = {
         let f = DateFormatter()
@@ -153,15 +169,19 @@ struct RecentConflictSheet: View {
                 .padding(.top, 4)
 
                 // セレクタ：項目の直下に配置
-                Picker("", selection: $selection) {
-                    Text("conflict.action.keepBoth").tag(ConflictAction.keepBoth)
-                    Text("conflict.action.keepPrevious").tag(ConflictAction.keepPrevious)
-                    Text("conflict.action.useNew").tag(ConflictAction.useNew)
-                    Text("conflict.action.useAverage").tag(ConflictAction.useAverage)
+                // セグメント風セレクタ：列ハイライトと同じスタイル
+                HStack(spacing: 6) {
+                    ForEach(ConflictAction.allCases, id: \.rawValue) { action in
+                        SelectorButton(
+                            label: action.labelKey,
+                            isOn: selection == action
+                        ) {
+                            selection = action
+                        }
+                    }
                 }
-                .pickerStyle(.segmented)
                 .padding(.horizontal)
-                .padding(.top, 8)
+                .padding(.top, 10)
                 .padding(.bottom, 4)
 
                 BeginnerHelpBanner("conflict.help", storageKey: "helpDismissed.conflict")
@@ -173,13 +193,14 @@ struct RecentConflictSheet: View {
                 // ナビバー44 + 内部高さ + 下部セーフエリア
                 contentHeight = h + 44 + safeArea
             }
+            .navigationTitle("settings.merge.window")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("action.cancel") { dismiss() }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("action.done") { onAction(selection) }
+                    Button("action.save") { onAction(selection) }
                         .bold()
                 }
             }
@@ -192,8 +213,13 @@ struct RecentConflictSheet: View {
 
     @ViewBuilder
     private var header: some View {
+        let minutes = AppSettings.shared.mergeWindowMinutes
+        let msg = String(
+            format: NSLocalizedString("conflict.message", comment: ""),
+            minutes
+        )
         VStack(spacing: 4) {
-            Text("conflict.message")
+            Text(msg)
                 .font(.callout)
                 .foregroundStyle(.primary)
                 .multilineTextAlignment(.center)
@@ -218,6 +244,40 @@ struct RecentConflictSheet: View {
                 .font(.caption.bold())
                 .foregroundStyle(isOn ? Color.accentColor : .secondary)
                 .frame(width: 64, alignment: .trailing)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+// MARK: - セレクタボタン（列ハイライトと同じ見た目）
+
+private struct SelectorButton: View {
+    let label: LocalizedStringKey
+    let isOn: Bool
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Text(label)
+                .font(.callout)
+                .fontWeight(isOn ? .bold : .regular)
+                .foregroundStyle(isOn ? Color.accentColor : .primary)
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 8)
+                .padding(.horizontal, 4)
+                .background(
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(isOn ? Color.accentColor.opacity(0.15) : Color(.tertiarySystemBackground))
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 8)
+                        .strokeBorder(isOn ? Color.accentColor.opacity(0.4) : Color.clear, lineWidth: 1)
+                )
+                .shadow(color: isOn ? Color.accentColor.opacity(0.25) : .clear,
+                        radius: isOn ? 3 : 0, y: isOn ? 1 : 0)
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)

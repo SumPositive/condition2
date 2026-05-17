@@ -203,6 +203,28 @@ struct SettingsView: View {
                             }
                         }
                     }
+
+                    // 記録をまとめる（衝突検出）
+                    VStack(alignment: .leading, spacing: 8) {
+                        Picker("settings.merge.window", selection: $settings.mergeWindowMinutes) {
+                            Text("settings.merge.off").tag(0)
+                            Text("settings.merge.5min").tag(5)
+                            Text("settings.merge.10min").tag(10)
+                            Text("settings.merge.15min").tag(15)
+                            Text("settings.merge.30min").tag(30)
+                        }
+                        Picker("settings.merge.defaultAction", selection: $settings.mergeDefaultAction) {
+                            ForEach(ConflictAction.allCases, id: \.rawValue) { act in
+                                Text(act.labelKey).tag(act.rawValue)
+                            }
+                        }
+                        if settings.userLevel == .beginner {
+                            Text("settings.help.merge")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                    }
                 }
                 .onAppear { if healthKit.isAvailable { healthKit.checkAuthorization() } }
                 .navigationDestination(isPresented: $showHKSettings) {

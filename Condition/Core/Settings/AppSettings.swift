@@ -279,6 +279,16 @@ final class AppSettings {
         didSet { ud.set(openNewRecordOnForeground, forKey: UDefKeys.openNewRecordOnForeground) }
     }
 
+    // MARK: - 記録をまとめる（衝突検出設定）
+    /// 直前記録との衝突を検出する時間しきい値（分）。0=しない
+    var mergeWindowMinutes: Int = 10 {
+        didSet { ud.set(mergeWindowMinutes, forKey: UDefKeys.mergeWindowMinutes) }
+    }
+    /// 衝突解決の初期選択 (ConflictAction.rawValue)
+    var mergeDefaultAction: Int = ConflictAction.useAverage.rawValue {
+        didSet { ud.set(mergeDefaultAction, forKey: UDefKeys.mergeDefaultAction) }
+    }
+
     // MARK: - 新規記録シート（非永続・セッションのみ）
     /// TabView 上位から新規記録シートを開くトリガー
     var showNewRecordSheet: Bool = false
@@ -309,6 +319,12 @@ final class AppSettings {
         fontScale  = AppFontScale(rawValue:  ud.integer(forKey: UDefKeys.fontScale))  ?? .system
         if ud.object(forKey: UDefKeys.openNewRecordOnForeground) != nil {
             openNewRecordOnForeground = ud.bool(forKey: UDefKeys.openNewRecordOnForeground)
+        }
+        if ud.object(forKey: UDefKeys.mergeWindowMinutes) != nil {
+            mergeWindowMinutes = ud.integer(forKey: UDefKeys.mergeWindowMinutes)
+        }
+        if ud.object(forKey: UDefKeys.mergeDefaultAction) != nil {
+            mergeDefaultAction = ud.integer(forKey: UDefKeys.mergeDefaultAction)
         }
     }
 

@@ -115,7 +115,8 @@ struct RecordEditView: View {
                     Button("action.save") {
                         saveAndDismiss()
                     }
-                    .disabled(!vm.isModified && !isNewRecord)
+                    .disabled((!vm.isModified && !isNewRecord) || conflictData != nil)
+                    .opacity(conflictData == nil ? 1 : 0)
                     .bold()
                     .tint(vm.isModified ? .accentColor : Color(.secondaryLabel))
                 }
@@ -412,7 +413,7 @@ struct RecordEditView: View {
     // MARK: - 保存
 
     private func saveAndDismiss() {
-        // 新規追加で直前10分以内に衝突があればシート表示
+        // 新規追加で「記録をまとめる」時間内に衝突があればシート表示
         if let conflict = vm.findRecentConflict(context: context) {
             conflictData = conflict
             return
