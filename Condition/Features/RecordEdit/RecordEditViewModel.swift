@@ -269,6 +269,159 @@ final class RecordEditViewModel {
         Task { await HealthKitService.shared.write(currentHealthKitValues()) }
     }
 
+    // MARK: - 直近の衝突検出と解決
+
+    /// 新規追加モードのとき、設定で指定された時間内の直前記録との衝突情報を返す。
+    /// 設定が「しない」(0分) または重なる項目がなければ nil。
+    func findRecentConflict(context: ModelContext) -> RecentConflict? {
+        guard case .addNew = mode else { return nil }
+        let windowMinutes = AppSettings.shared.mergeWindowMinutes
+        guard windowMinutes > 0 else { return nil }
+        let threshold: TimeInterval = TimeInterval(windowMinutes) * 60
+
+        let now = dateTime
+        let descriptor = FetchDescriptor<BodyRecord>(
+            predicate: #Predicate { $0.dateTime < now && $0.dateTime < bodyRecordGoalDate },
+            sortBy: [SortDescriptor(\BodyRecord.dateTime, order: .reverse)]
+        )
+        guard let prev = (try? context.fetch(descriptor))?.first else { return nil }
+        let diff = now.timeIntervalSince(prev.dateTime)
+        guard diff >= 0, diff <= threshold else { return nil }
+
+        let settings = AppSettings.shared
+        let hidden = Set(settings.hiddenFields)
+        let newBpHi   = bpHiEnabled      ? nBpHi_mmHg    : 0
+        let newBpLo   = bpLoEnabled      ? nBpLo_mmHg    : 0
+        let newPulse  = pulseEnabled     ? nPulse_bpm    : 0
+        let newTemp   = tempEnabled      ? nTemp_10c     : 0
+        let newWeight = weightEnabled    ? nWeight_10Kg  : 0
+        let newBF     = bodyFatEnabled   ? nBodyFat_10p  : 0
+        let newSK     = skMuscleEnabled  ? nSkMuscle_10p : 0
+
+        func valuesFor(_ field: ConflictField) -> (Int, Int) {
+            switch field {
+            case .bpHi:     return (prev.nBpHi_mmHg,    newBpHi)
+            case .bpLo:     return (prev.nBpLo_mmHg,    newBpLo)
+            case .pulse:    return (prev.nPulse_bpm,    newPulse)
+            case .temp:     return (prev.nTemp_10c,     newTemp)
+            case .weight:   return (prev.nWeight_10Kg,  newWeight)
+            case .bodyFat:  return (prev.nBodyFat_10p,  newBF)
+            case .skMuscle: return (prev.nSkMuscle_10p, newSK)
+            }
+        }
+
+        // 記録入力画面と同じ順序：settings.graphPanelOrder に従う
+        let orderedFields: [ConflictField] = settings.graphPanelOrder
+            .compactMap { GraphKind(rawValue: $0) }
+            .flatMap { kind -> [ConflictField] in
+                switch kind {
+                case .bp:       return [.bpHi, .bpLo]
+                case .pulse:    return [.pulse]
+                case .temp:     return [.temp]
+                case .weight:   return [.weight]
+                case .bodyFat:  return [.bodyFat]
+                case .skMuscle: return [.skMuscle]
+                default:        return []
+                }
+            }
+
+        var items: [ConflictItem] = []
+        for field in orderedFields {
+            // 非表示項目は除外
+            guard !hidden.contains(field.graphKind.rawValue) else { continue }
+            let (p, n) = valuesFor(field)
+            // どちらかに値があれば表示（消えるという誤解を防ぐ）
+            guard p > 0 || n > 0 else { continue }
+            items.append(ConflictItem(field: field, prevValue: p, newValue: n))
+        }
+
+        guard !items.isEmpty else { return nil }
+        return RecentConflict(previous: prev, items: items)
+    }
+
+    /// 衝突の解決を適用する。
+    func resolveConflict(_ action: ConflictAction, previous: BodyRecord, context: ModelContext) throws {
+        switch action {
+        case .keepPrevious:
+            // 両方に値があれば直前を優先、片方のみなら値のあるほうを採用（新規のみフィールドも失われない）
+            try overwritePrevious(previous, mode: .preferPrev, context: context)
+        case .keepBoth:
+            try save(context: context)
+        case .useNew:
+            try overwritePrevious(previous, mode: .preferNew, context: context)
+        case .useAverage:
+            try overwritePrevious(previous, mode: .average, context: context)
+        }
+    }
+
+    /// 直前レコードの上書きモード
+    private enum MergeMode { case preferPrev, preferNew, average }
+
+    /// 直前レコードを上書きする。両方に値がある項目の扱いは mode に従う。
+    /// 片方のみに値がある項目は値のあるほうを採用。
+    private func overwritePrevious(_ prev: BodyRecord, mode: MergeMode, context: ModelContext) throws {
+        isSaving = true
+        defer { isSaving = false }
+
+        let hidden = Set(AppSettings.shared.hiddenFields)
+        let newBpHi   = bpHiEnabled      ? nBpHi_mmHg    : 0
+        let newBpLo   = bpLoEnabled      ? nBpLo_mmHg    : 0
+        let newPulse  = pulseEnabled     ? nPulse_bpm    : 0
+        let newTemp   = tempEnabled      ? nTemp_10c     : 0
+        let newWeight = weightEnabled    ? nWeight_10Kg  : 0
+        let newBF     = bodyFatEnabled   ? nBodyFat_10p  : 0
+        let newSK     = skMuscleEnabled  ? nSkMuscle_10p : 0
+
+        func merge(_ p: Int, _ n: Int) -> Int {
+            if p > 0, n > 0 {
+                switch mode {
+                case .preferPrev: return p
+                case .preferNew:  return n
+                case .average:    return (p + n) / 2
+                }
+            }
+            return max(p, n)   // 片方のみ → 値のあるほう
+        }
+        func apply(_ f: ConflictField, prev p: Int, new n: Int) -> Int {
+            // 非表示項目は直前値をそのまま維持
+            if hidden.contains(f.graphKind.rawValue) { return p }
+            return merge(p, n)
+        }
+
+        prev.nBpHi_mmHg    = apply(.bpHi,     prev: prev.nBpHi_mmHg,    new: newBpHi)
+        prev.nBpLo_mmHg    = apply(.bpLo,     prev: prev.nBpLo_mmHg,    new: newBpLo)
+        prev.nPulse_bpm    = apply(.pulse,    prev: prev.nPulse_bpm,    new: newPulse)
+        prev.nTemp_10c     = apply(.temp,     prev: prev.nTemp_10c,     new: newTemp)
+        prev.nWeight_10Kg  = apply(.weight,   prev: prev.nWeight_10Kg,  new: newWeight)
+        prev.nBodyFat_10p  = apply(.bodyFat,  prev: prev.nBodyFat_10p,  new: newBF)
+        prev.nSkMuscle_10p = apply(.skMuscle, prev: prev.nSkMuscle_10p, new: newSK)
+
+        // メモ・装備：新しい記録が入力済みなら上書き、空なら直前を残す
+        let n1 = sNote1.trimmingCharacters(in: .newlines)
+        let n2 = sNote2.trimmingCharacters(in: .newlines)
+        let eq = sEquipment.trimmingCharacters(in: .newlines)
+        if !n1.isEmpty { prev.sNote1     = n1 }
+        if !n2.isEmpty { prev.sNote2     = n2 }
+        if !eq.isEmpty { prev.sEquipment = eq }
+        // 注意フラグ・区分：新しい値で上書き
+        prev.bCaution = bCaution
+        prev.dateOpt  = dateOpt
+
+        // dataSource を「修正済み」へ
+        switch prev.dataSource {
+        case .appInput: prev.dataSource = .appModified
+        case .hkImport: prev.dataSource = .hkModified
+        default: break
+        }
+
+        try context.save()
+        isModified = false
+        // 平均値・直前優先では実測値と異なる可能性があるため HealthKit には書き戻さない
+        if mode == .preferNew {
+            writeToHealthKitIfAutomatic()
+        }
+    }
+
     // MARK: - 削除
 
     func delete(record: BodyRecord, context: ModelContext) throws {

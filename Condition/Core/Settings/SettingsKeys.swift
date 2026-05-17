@@ -109,4 +109,6 @@ enum UDefKeys {
     static let fontScale        = "UDEF_FontScale"          // 文字サイズ rawValue
     static let settingsMigratedFromKVS = "UDEF_SettingsMigratedFromKVS" // 旧KVS設定の移行済みフラグ
     static let openNewRecordOnForeground = "UDEF_OpenNewRecordOnForeground" // フォアグランド復帰時に新しい記録を開く
+    static let mergeWindowMinutes        = "UDEF_MergeWindowMinutes"        // 記録をまとめる時間（分）0=しない
+    static let mergeDefaultAction        = "UDEF_MergeDefaultAction"        // 衝突解決の初期選択 ConflictAction.rawValue
 }

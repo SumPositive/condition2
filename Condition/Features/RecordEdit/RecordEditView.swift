@@ -14,6 +14,7 @@ struct RecordEditView: View {
     @State private var vm: RecordEditViewModel
     @State private var showDatePicker = false
     @State private var showDeleteAlert = false
+    @State private var conflictData: RecentConflict? = nil
 
     private static let dateTimeFormatter: DateFormatter = {
         let f = DateFormatter()
@@ -114,7 +115,8 @@ struct RecordEditView: View {
                     Button("action.save") {
                         saveAndDismiss()
                     }
-                    .disabled(!vm.isModified && !isNewRecord)
+                    .disabled((!vm.isModified && !isNewRecord) || conflictData != nil)
+                    .opacity(conflictData == nil ? 1 : 0)
                     .bold()
                     .tint(vm.isModified ? .accentColor : Color(.secondaryLabel))
                 }
@@ -127,6 +129,11 @@ struct RecordEditView: View {
             .sheet(isPresented: $showDatePicker) {
                 DatePickerSheet(date: $vm.dateTime) {
                     vm.onDateChanged()
+                }
+            }
+            .sheet(item: $conflictData) { conflict in
+                RecentConflictSheet(conflict: conflict) { action in
+                    handleConflictAction(action, previous: conflict.previous)
                 }
             }
             .onAppear {
@@ -406,8 +413,23 @@ struct RecordEditView: View {
     // MARK: - 保存
 
     private func saveAndDismiss() {
+        // 新規追加で「記録をまとめる」時間内に衝突があればシート表示
+        if let conflict = vm.findRecentConflict(context: context) {
+            conflictData = conflict
+            return
+        }
         do {
             try vm.save(context: context)
+            dismiss()
+        } catch {
+            vm.errorMessage = error.localizedDescription
+        }
+    }
+
+    private func handleConflictAction(_ action: ConflictAction, previous: BodyRecord) {
+        do {
+            try vm.resolveConflict(action, previous: previous, context: context)
+            conflictData = nil
             dismiss()
         } catch {
             vm.errorMessage = error.localizedDescription
