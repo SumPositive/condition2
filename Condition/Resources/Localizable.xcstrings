@@ -1086,6 +1086,187 @@
         }
       }
     },
+    "conflict.action.keepBoth" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Keep Both"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "両方残す"
+          }
+        }
+      }
+    },
+    "conflict.action.keepPrevious" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Keep Previous"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "直前値"
+          }
+        }
+      }
+    },
+    "conflict.action.useAverage" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Use Average"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "平均値"
+          }
+        }
+      }
+    },
+    "conflict.action.useNew" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Use New Value"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "新しい値"
+          }
+        }
+      }
+    },
+    "conflict.average" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Average"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "平均"
+          }
+        }
+      }
+    },
+    "conflict.help" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose which values to keep in the record."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "どの値を記録に残すのか選択してください"
+          }
+        }
+      }
+    },
+    "conflict.item" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Item"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "項目"
+          }
+        }
+      }
+    },
+    "conflict.message" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A record was made within the past 10 minutes."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "10分以内に記録された値があります"
+          }
+        }
+      }
+    },
+    "conflict.new" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "New"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "新しい"
+          }
+        }
+      }
+    },
+    "conflict.previous" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Previous"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "直前"
+          }
+        }
+      }
+    },
+    "conflict.title" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Recent Record Found"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "直近の記録があります"
+          }
+        }
+      }
+    },
     "demo.addedOneYear" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -2123,23 +2304,6 @@
         }
       }
     },
-    "help.graph" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Time-series charts for the selected period. Scroll horizontally to shift dates. Rotate to landscape to expand the time axis. Use the settings button (top right) to show/hide or reorder charts."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "選択された期間を横軸にした時系列グラフです。横スクロールして期日を移動できます。横向けにすれば横軸が伸びて拡大されます。右上にある設定ボタンから各グラフの表示や順を変更できます。"
-          }
-        }
-      }
-    },
     "help.dateOptMatrix" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -2170,6 +2334,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "スイッチで記録画面への表示・非表示を切り替えられます。右端のハンドルをドラッグすると表示順を変えられます。"
+          }
+        }
+      }
+    },
+    "help.graph" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Time-series charts for the selected period. Scroll horizontally to shift dates. Rotate to landscape to expand the time axis. Use the settings button (top right) to show/hide or reorder charts."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "選択された期間を横軸にした時系列グラフです。横スクロールして期日を移動できます。横向けにすれば横軸が伸びて拡大されます。右上にある設定ボタンから各グラフの表示や順を変更できます。"
           }
         }
       }
@@ -3291,6 +3472,23 @@
         }
       }
     },
+    "metric.weightBpCorrelation" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Weight × Blood Pressure"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "体重 × 血圧"
+          }
+        }
+      }
+    },
     "metric.weightChange" : {
       "comment" : "A label displayed above the weight change chart.",
       "extractionState" : "manual",
@@ -3340,23 +3538,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "体重・歩数 相関"
-          }
-        }
-      }
-    },
-    "metric.weightBpCorrelation" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Weight × Blood Pressure"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "体重 × 血圧"
           }
         }
       }

@@ -29,6 +29,7 @@
 		A3F2C8D14B9E0571CF823DEA /* BeginnerHelpBanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7C41E920D3A5F68EA271B5C /* BeginnerHelpBanner.swift */; };
 		B01892399930A51751ED92F1 /* RecordEditView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C5B54F260937D2BF7A3B8E0 /* RecordEditView.swift */; };
 		BFF8BE17437CFD77E63A1B44 /* TipStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 132A076B61B2C635E9A5FADA /* TipStore.swift */; };
+		C31B57052FB944B10090CAEC /* RecentConflictSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = C31B57042FB944B10090CAEC /* RecentConflictSheet.swift */; };
 		C394AF052F80F53C00F9C557 /* AZDial in Frameworks */ = {isa = PBXBuildFile; productRef = C3713DD32F7FF32400DF8BB3 /* AZDial */; };
 		C3DC29A22F7040EA007F4C3A /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = C3DC29A12F7040EA007F4C3A /* PrivacyInfo.xcprivacy */; };
 		C3DC29A42F72BE25007F4C3A /* PDFPanelExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3DC29A32F72BE25007F4C3A /* PDFPanelExporter.swift */; };
@@ -70,6 +71,7 @@
 		A14BB534396221BF4A8DD998 /* ValueFormatter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ValueFormatter.swift; sourceTree = "<group>"; };
 		B6FE488F42254CBC37C55F0C /* Condition.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Condition.entitlements; sourceTree = "<group>"; };
 		B7C41E920D3A5F68EA271B5C /* BeginnerHelpBanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BeginnerHelpBanner.swift; sourceTree = "<group>"; };
+		C31B57042FB944B10090CAEC /* RecentConflictSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecentConflictSheet.swift; sourceTree = "<group>"; };
 		C3DC29A12F7040EA007F4C3A /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		C3DC29A32F72BE25007F4C3A /* PDFPanelExporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PDFPanelExporter.swift; sourceTree = "<group>"; };
 		D11FAFC4E99DE815E66D2AEB /* MigrationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MigrationService.swift; sourceTree = "<group>"; };
@@ -234,6 +236,7 @@
 		A6F7DFDE639A596B1DDD04D7 /* RecordEdit */ = {
 			isa = PBXGroup;
 			children = (
+				C31B57042FB944B10090CAEC /* RecentConflictSheet.swift */,
 				2C5B54F260937D2BF7A3B8E0 /* RecordEditView.swift */,
 				037CD7BBB175D96B6BA9D41C /* RecordEditViewModel.swift */,
 			);
@@ -375,6 +378,7 @@
 				8206959AD5C6A8FA4D0CF941 /* ContentView.swift in Sources */,
 				F15A862490DED9463FCB6F26 /* DateOpt.swift in Sources */,
 				D6C3A1A72F3E9B12734FC1FB /* GraphView.swift in Sources */,
+				C31B57052FB944B10090CAEC /* RecentConflictSheet.swift in Sources */,
 				22D5E84A1E28C0A1784D9244 /* HealthKitService.swift in Sources */,
 				2CCB75F6B884B4807D49F2DD /* SettingsKeys.swift in Sources */,
 				CC257634A8AF415F5F40872E /* MigrationService.swift in Sources */,

@@ -269,6 +269,126 @@ final class RecordEditViewModel {
         Task { await HealthKitService.shared.write(currentHealthKitValues()) }
     }
 
+    // MARK: - 直近10分以内の衝突検出と解決
+
+    /// 衝突判定の時間しきい値（10分）
+    private static let conflictThreshold: TimeInterval = 10 * 60
+
+    /// 新規追加モードのとき、直前10分以内の記録との衝突情報を返す。
+    /// 重なる項目（両方に値あり）が一つもなければ nil。
+    func findRecentConflict(context: ModelContext) -> RecentConflict? {
+        guard case .addNew = mode else { return nil }
+        let now = dateTime
+        let descriptor = FetchDescriptor<BodyRecord>(
+            predicate: #Predicate { $0.dateTime < now && $0.dateTime < bodyRecordGoalDate },
+            sortBy: [SortDescriptor(\BodyRecord.dateTime, order: .reverse)]
+        )
+        guard let prev = (try? context.fetch(descriptor))?.first else { return nil }
+        let diff = now.timeIntervalSince(prev.dateTime)
+        guard diff >= 0, diff <= Self.conflictThreshold else { return nil }
+
+        let hidden = Set(AppSettings.shared.hiddenFields)
+        let newBpHi   = bpHiEnabled      ? nBpHi_mmHg    : 0
+        let newBpLo   = bpLoEnabled      ? nBpLo_mmHg    : 0
+        let newPulse  = pulseEnabled     ? nPulse_bpm    : 0
+        let newTemp   = tempEnabled      ? nTemp_10c     : 0
+        let newWeight = weightEnabled    ? nWeight_10Kg  : 0
+        let newBF     = bodyFatEnabled   ? nBodyFat_10p  : 0
+        let newSK     = skMuscleEnabled  ? nSkMuscle_10p : 0
+
+        var items: [ConflictItem] = []
+        func push(_ f: ConflictField, p: Int, n: Int) {
+            // 非表示項目は除外
+            guard !hidden.contains(f.graphKind.rawValue) else { return }
+            guard p > 0, n > 0 else { return }
+            items.append(ConflictItem(field: f, prevValue: p, newValue: n))
+        }
+        push(.bpHi,     p: prev.nBpHi_mmHg,    n: newBpHi)
+        push(.bpLo,     p: prev.nBpLo_mmHg,    n: newBpLo)
+        push(.pulse,    p: prev.nPulse_bpm,    n: newPulse)
+        push(.temp,     p: prev.nTemp_10c,     n: newTemp)
+        push(.weight,   p: prev.nWeight_10Kg,  n: newWeight)
+        push(.bodyFat,  p: prev.nBodyFat_10p,  n: newBF)
+        push(.skMuscle, p: prev.nSkMuscle_10p, n: newSK)
+
+        guard !items.isEmpty else { return nil }
+        return RecentConflict(previous: prev, items: items)
+    }
+
+    /// 衝突の解決を適用する。
+    func resolveConflict(_ action: ConflictAction, previous: BodyRecord, context: ModelContext) throws {
+        switch action {
+        case .keepPrevious:
+            // 何もしない（新しい記録は保存しない）
+            isModified = false
+        case .keepBoth:
+            try save(context: context)
+        case .useNew:
+            try overwritePrevious(previous, useAverage: false, context: context)
+        case .useAverage:
+            try overwritePrevious(previous, useAverage: true, context: context)
+        }
+    }
+
+    /// 直前レコードを上書きする（useAverage=true なら平均値、false なら新しい値）。
+    /// 両方に値がない場合は値のあるほうを残す。
+    private func overwritePrevious(_ prev: BodyRecord, useAverage: Bool, context: ModelContext) throws {
+        isSaving = true
+        defer { isSaving = false }
+
+        let hidden = Set(AppSettings.shared.hiddenFields)
+        let newBpHi   = bpHiEnabled      ? nBpHi_mmHg    : 0
+        let newBpLo   = bpLoEnabled      ? nBpLo_mmHg    : 0
+        let newPulse  = pulseEnabled     ? nPulse_bpm    : 0
+        let newTemp   = tempEnabled      ? nTemp_10c     : 0
+        let newWeight = weightEnabled    ? nWeight_10Kg  : 0
+        let newBF     = bodyFatEnabled   ? nBodyFat_10p  : 0
+        let newSK     = skMuscleEnabled  ? nSkMuscle_10p : 0
+
+        func merge(_ p: Int, _ n: Int) -> Int {
+            if p > 0, n > 0 { return useAverage ? (p + n) / 2 : n }
+            return n > 0 ? n : p
+        }
+        func apply(_ f: ConflictField, prev p: Int, new n: Int) -> Int {
+            // 非表示項目は直前値をそのまま維持
+            if hidden.contains(f.graphKind.rawValue) { return p }
+            return merge(p, n)
+        }
+
+        prev.nBpHi_mmHg    = apply(.bpHi,     prev: prev.nBpHi_mmHg,    new: newBpHi)
+        prev.nBpLo_mmHg    = apply(.bpLo,     prev: prev.nBpLo_mmHg,    new: newBpLo)
+        prev.nPulse_bpm    = apply(.pulse,    prev: prev.nPulse_bpm,    new: newPulse)
+        prev.nTemp_10c     = apply(.temp,     prev: prev.nTemp_10c,     new: newTemp)
+        prev.nWeight_10Kg  = apply(.weight,   prev: prev.nWeight_10Kg,  new: newWeight)
+        prev.nBodyFat_10p  = apply(.bodyFat,  prev: prev.nBodyFat_10p,  new: newBF)
+        prev.nSkMuscle_10p = apply(.skMuscle, prev: prev.nSkMuscle_10p, new: newSK)
+
+        // メモ・装備：新しい記録が入力済みなら上書き、空なら直前を残す
+        let n1 = sNote1.trimmingCharacters(in: .newlines)
+        let n2 = sNote2.trimmingCharacters(in: .newlines)
+        let eq = sEquipment.trimmingCharacters(in: .newlines)
+        if !n1.isEmpty { prev.sNote1     = n1 }
+        if !n2.isEmpty { prev.sNote2     = n2 }
+        if !eq.isEmpty { prev.sEquipment = eq }
+        // 注意フラグ・区分：新しい値で上書き
+        prev.bCaution = bCaution
+        prev.dateOpt  = dateOpt
+
+        // dataSource を「修正済み」へ
+        switch prev.dataSource {
+        case .appInput: prev.dataSource = .appModified
+        case .hkImport: prev.dataSource = .hkModified
+        default: break
+        }
+
+        try context.save()
+        isModified = false
+        // 平均値は実測値ではないため HealthKit へは書き戻さない
+        if !useAverage {
+            writeToHealthKitIfAutomatic()
+        }
+    }
+
     // MARK: - 削除
 
     func delete(record: BodyRecord, context: ModelContext) throws {
