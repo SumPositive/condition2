@@ -201,6 +201,15 @@ final class RecordEditViewModel {
             tempEnabled      = 0 < p.nTemp_10c
             bodyFatEnabled   = 0 < p.nBodyFat_10p
             skMuscleEnabled  = 0 < p.nSkMuscle_10p
+
+            // 「記録をまとめる」時間以内であれば、直前の区分を引き継ぐ
+            let windowMinutes = AppSettings.shared.mergeWindowMinutes
+            if windowMinutes > 0 {
+                let diff = now.timeIntervalSince(p.dateTime)
+                if diff >= 0, diff <= TimeInterval(windowMinutes) * 60 {
+                    dateOpt = p.dateOpt
+                }
+            }
         }
     }
 
