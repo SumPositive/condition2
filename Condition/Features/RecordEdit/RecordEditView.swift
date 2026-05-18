@@ -429,10 +429,14 @@ struct RecordEditView: View {
     private func handleConflictAction(_ action: ConflictAction, previous: BodyRecord) {
         do {
             try vm.resolveConflict(action, previous: previous, context: context)
-            conflictData = nil
+            // RecordEditView を閉じれば上の衝突シートも SwiftUI が自動で閉じる。
+            // 手動で conflictData = nil と dismiss() を併用すると二重 dismiss となり、
+            // 親シートの isPresented バインディングが false に戻らず再表示できなくなる。
             dismiss()
         } catch {
             vm.errorMessage = error.localizedDescription
+            // エラー時のみ衝突シートを閉じてエラーメッセージを見せる
+            conflictData = nil
         }
     }
 }

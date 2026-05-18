@@ -79,7 +79,12 @@ private struct RootSceneView: View {
         .dynamicTypeSize(effectiveDynamicTypeSize)
         // 新規記録シートをルートレベルで呈示：TabView の選択タブに関わらず確実に表示される
         .sheet(isPresented: Bindable(settings).showNewRecordSheet,
-               onDismiss: { settings.newRecordSheetModified = false }) {
+               onDismiss: {
+                   // 保険：シート閉じ完了時に状態を確実にリセット
+                   // （ネストされた衝突シート併用時にバインディングが戻らないケースの安全装置）
+                   settings.showNewRecordSheet = false
+                   settings.newRecordSheetModified = false
+               }) {
             RecordEditView(
                 mode: .addNew,
                 onModifiedChanged: { settings.newRecordSheetModified = $0 }

@@ -95,7 +95,17 @@ struct RecordListView: View {
                         .tint(.orange)
                     }
                     #endif // targetEnvironment(simulator)
-                    Button { settings.showNewRecordSheet = true } label: {
+                    Button {
+                        // 状態が true のまま戻っていない異常時はリセットしてから再セット
+                        if settings.showNewRecordSheet {
+                            settings.showNewRecordSheet = false
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+                                settings.showNewRecordSheet = true
+                            }
+                        } else {
+                            settings.showNewRecordSheet = true
+                        }
+                    } label: {
                         Image(systemName: "plus")
                     }
                 }
